@@ -11,7 +11,7 @@ class UserMapper
             UserModel(
                 id = dto.id,
                 login = dto.login,
-                name = dto.name,
+                fio = dto.name,
                 role = dto.role,
             )
 
@@ -19,7 +19,7 @@ class UserMapper
             UserDto(
                 id = model.id,
                 login = model.login,
-                name = model.name,
+                name = model.fio,
                 role = model.role,
             )
     }

@@ -52,7 +52,7 @@ private fun UserContent(user: UserModel) {
     Column(modifier = Modifier.padding(16.dp)) {
         Text(text = "ID: ${user.id}", style = MaterialTheme.typography.bodyLarge)
         Text(text = "Login: ${user.login}", style = MaterialTheme.typography.bodyMedium)
-        Text(text = "Name: ${user.name}", style = MaterialTheme.typography.bodyMedium)
+        Text(text = "Name: ${user.fio}", style = MaterialTheme.typography.bodyMedium)
         Text(text = "Role: ${user.role}", style = MaterialTheme.typography.bodyMedium)
     }
 }

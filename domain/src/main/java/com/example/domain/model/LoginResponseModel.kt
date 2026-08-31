@@ -1,6 +1,6 @@
 package com.example.domain.model
 
-data class SignInModel (
+data class LoginResponseModel (
     val username: String,
     val password: String
 )

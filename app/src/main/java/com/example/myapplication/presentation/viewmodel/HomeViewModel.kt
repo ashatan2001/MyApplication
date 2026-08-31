@@ -33,7 +33,7 @@ class HomeViewModel @Inject constructor(
             _uiState.value = HomeUiState.Loading
             try {
                 val user = getUser(1)  // ИСПРАВЛЕНО - вызвать UseCase
-                _uiState.value = HomeUiState.Success(userName = user.name)
+                _uiState.value = HomeUiState.Success(userName = user.fio)
             } catch (e: Exception) {
                 _uiState.value = HomeUiState.Error(e.message ?: "Unknown error")
             }
