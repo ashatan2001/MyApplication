@@ -1,0 +1,23 @@
+# Android / Gradle
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+*.iws
+*.ipr
+*.class
+*.apk
+*.dex
+*.log
+
+# Kotlin
+.kotlin/
+
+# macOS
+.DS_Store
+
+# Временные файлы
+*.tmp
+*.temp
