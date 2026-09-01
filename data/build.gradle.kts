@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         minSdk = 24
-        buildConfigField("String", "BASE_URL", "\"https://api.example.com/\"")
+        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
     }
 
     buildFeatures {
