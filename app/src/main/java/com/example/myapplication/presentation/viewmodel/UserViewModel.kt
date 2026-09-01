@@ -45,7 +45,7 @@ class UserViewModel
                 _userState.value = UserUiState.Success(user)
             } catch (e: Exception) {
                 _userState.value = UserUiState.Error(
-                    message = e.message ?: "Unknown error",
+                    message = e.message ?: "Неизвестная ошибка",
                     isNetworkError = e is NetworkException
                 )
             }

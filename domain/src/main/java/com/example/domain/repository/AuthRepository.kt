@@ -1,11 +1,12 @@
 package com.example.domain.repository
 
-import com.example.domain.model.LoginResponseModel
+import com.example.domain.model.AuthState
+import com.example.domain.model.AuthSuccess
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
-    suspend fun login(username: String, password: String): LoginResponseModel)
+    suspend fun login(username: String, password: String): AuthSuccess
+    suspend fun refreshToken()
     suspend fun logout()
-    suspend fun getToken()
-    suspend fun getAuthState(): Flow<AuthState>
+    fun getAuthState(): Flow<AuthState>
 }

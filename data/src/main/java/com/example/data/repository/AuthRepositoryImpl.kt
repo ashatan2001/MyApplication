@@ -1,13 +1,15 @@
 package com.example.data.repository
 
-import com.example.data.dto.LoginResponseDto
 import com.example.data.local.AuthLocalDataSource
-import com.example.data.mapper.AuthMapper
 import com.example.data.network.CustomCookieJar
 import com.example.data.remote.AuthRemoteDataSource
-import com.example.domain.model.LoginResponseModel
+import com.example.domain.model.AuthSuccess
 import com.example.domain.repository.AuthRepository
+import com.example.domain.model.AuthState
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+
 
 class AuthRepositoryImpl
     @Inject
@@ -16,12 +18,15 @@ class AuthRepositoryImpl
         private val remoteDataSource: AuthRemoteDataSource,
         private val localDataSource: AuthLocalDataSource,
         private val cookieJar: CustomCookieJar,
-        private val mapper: AuthMapper
     ) : AuthRepository {
-        override suspend fun login(username: String, password: String): LoginResponseModel {
+
+        override suspend fun login(username: String, password: String): AuthSuccess {
             val responseDto = remoteDataSource.login(username, password)
             localDataSource.saveAuthState(true)
-            return mapper.toModel(responseDto)
+            return AuthSuccess(
+                fio = responseDto.fio,
+                message = responseDto.message
+            )
         }
 
         override suspend fun refreshToken() {
@@ -34,9 +39,13 @@ class AuthRepositoryImpl
             localDataSource.clearSession()
         }
 
-        override suspend fun getAuthState() {
-            TODO("Not yet implemented")
+        override fun getAuthState(): Flow<AuthState> {
+            return localDataSource.getAuthState().map { isAuthenticated ->
+                if (isAuthenticated) {
+                    AuthState.Authenticated
+                } else {
+                    AuthState.Unauthenticated
+                }
+            }
         }
-
-
 }

@@ -12,7 +12,6 @@ class UserMapper
                 id = dto.id,
                 login = dto.login,
                 fio = dto.name,
-                role = dto.role,
             )
 
         fun toDto(model: UserModel): UserDto =
@@ -20,6 +19,5 @@ class UserMapper
                 id = model.id,
                 login = model.login,
                 name = model.fio,
-                role = model.role,
             )
     }

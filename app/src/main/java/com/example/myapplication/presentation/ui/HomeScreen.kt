@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -24,14 +25,17 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun HomeScreen(onOpenUser: (Int) -> Unit) {
+fun HomeScreen(
+    onOpenUser: (Int) -> Unit,
+    onLogout: () -> Unit
+) {
     // 1. Состояние для боковой панели
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val viewModel: HomeViewModel = hiltViewModel()
 
     LaunchedEffect(Unit) {
-        viewModel.loadUserData() // Загружаем при старте
+        viewModel.loadUserData()
     }
 
     // 2. Обертка с боковой панелью
@@ -43,10 +47,11 @@ fun HomeScreen(onOpenUser: (Int) -> Unit) {
                 onCloseDrawer = {
                     scope.launch { drawerState.close() }
                 },
-                onOpenUser = onOpenUser
+                onOpenUser = onOpenUser,
+                onLogout = onLogout
             )
         },
-        gesturesEnabled = true // Свайп от левого края для открытия
+        gesturesEnabled = true
     ) {
         // 3. Основной контент с верхней панелью
         Scaffold(
@@ -76,7 +81,6 @@ fun HomeScreen(onOpenUser: (Int) -> Unit) {
                 )
             }
         ) { innerPadding ->
-            // Ваш существующий контент с отступами под TopAppBar
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -101,7 +105,8 @@ fun HomeScreen(onOpenUser: (Int) -> Unit) {
 @Composable
 fun DrawerContent(
     onCloseDrawer: () -> Unit,
-    onOpenUser: (Int) -> Unit
+    onOpenUser: (Int) -> Unit,
+    onLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -142,6 +147,16 @@ fun DrawerContent(
         )
 
         Spacer(modifier = Modifier.weight(1f))
+
+        // 4. Пункт выхода (внизу)
+        DrawerItem(
+            icon = Icons.Default.ExitToApp,
+            text = "Выйти",
+            onClick = {
+                onCloseDrawer()
+                onLogout()
+            }
+        )
     }
 }
 
@@ -174,4 +189,7 @@ fun DrawerItem(
 
 @Preview
 @Composable
-fun HomePreview() = HomeScreen(onOpenUser = {})
+fun HomePreview() = HomeScreen(
+    onOpenUser = {},
+    onLogout = {}
+)

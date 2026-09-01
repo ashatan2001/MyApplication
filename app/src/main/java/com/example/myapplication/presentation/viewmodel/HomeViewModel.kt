@@ -18,14 +18,15 @@ sealed class HomeUiState {
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getUser: UserUseCase  // ИСПРАВЛЕНО - использовать UseCase
+    private val getUser: UserUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        loadUserData()
+        // loadUserData()
+        _uiState.value = HomeUiState.Success(userName = "Тест")
     }
 
     fun loadUserData() {

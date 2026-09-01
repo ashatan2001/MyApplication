@@ -53,6 +53,5 @@ private fun UserContent(user: UserModel) {
         Text(text = "ID: ${user.id}", style = MaterialTheme.typography.bodyLarge)
         Text(text = "Login: ${user.login}", style = MaterialTheme.typography.bodyMedium)
         Text(text = "Name: ${user.fio}", style = MaterialTheme.typography.bodyMedium)
-        Text(text = "Role: ${user.role}", style = MaterialTheme.typography.bodyMedium)
     }
 }
