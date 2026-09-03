@@ -1,12 +1,14 @@
-package com.example.app.presentation.user
-
+package com.example.myapplication.presentation.user
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.exception.NetworkException
+import com.example.domain.exception.UserNotFoundException
 import com.example.domain.model.UserModel
-import com.example.domain.exception.NetworkException
-import com.example.domain.usecase.UserUseCase
+import com.example.domain.usecase.GetUserUseCase
+import com.example.domain.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,37 +22,43 @@ sealed class UserUiState {
 }
 
 @HiltViewModel
-class UserViewModel
-    @Inject
-    constructor(
-        private val getUser: UserUseCase
-    ) : ViewModel() {
-
+class UserViewModel @Inject constructor(
+    private val getUserUseCase: GetUserUseCase
+) : ViewModel() {
     private val _userState = MutableStateFlow<UserUiState>(UserUiState.Loading)
     val userState: StateFlow<UserUiState> = _userState.asStateFlow()
 
     private var currentUserId: Int? = null
+    private var loadJob: Job? = null
 
     fun loadUser(userId: Int) {
-        if (currentUserId?.equals(userId) == true && _userState.value is UserUiState.Success) {
-            return
-        }
-
+        if (currentUserId == userId && _userState.value is UserUiState.Success) return
         currentUserId = userId
-        _userState.value = UserUiState.Loading
+        doLoad(userId)
+    }
 
-        viewModelScope.launch {
-            try {
-                val user = getUser(userId)
-                _userState.value = UserUiState.Success(user)
-            } catch (e: Exception) {
-                _userState.value = UserUiState.Error(
-                    message = e.message ?: "Неизвестная ошибка",
-                    isNetworkError = e is NetworkException
-                )
+    fun retry() {
+        currentUserId?.let { doLoad(it) }
+    }
+
+    private fun doLoad(userId: Int) {
+        _userState.value = UserUiState.Loading
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            when (val result = getUserUseCase(userId)) {
+                is Result.Success -> _userState.value = UserUiState.Success(result.data)
+                is Result.Failure -> {
+                    val message = when (result.error) {
+                        is UserNotFoundException -> "Пользователь не найден"
+                        is NetworkException -> "Нет соединения с интернетом"
+                        else -> result.error.message ?: "Неизвестная ошибка"
+                    }
+                    _userState.value = UserUiState.Error(
+                        message = message,
+                        isNetworkError = result.error is NetworkException
+                    )
+                }
             }
         }
     }
-    }
-
-
+}

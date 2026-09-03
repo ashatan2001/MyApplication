@@ -2,8 +2,8 @@ package com.example.data.di
 
 import com.example.data.repository.AuthRepositoryImpl
 import com.example.data.repository.UserRepositoryImpl
-import com.example.domain.repository.UserRepository
 import com.example.domain.repository.AuthRepository
+import com.example.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

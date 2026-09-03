@@ -1,7 +1,8 @@
 {
-  "id": 1,
-  "login": "User001",
-  "password": "12345678",
-  "name": "User Userson",
-  "role": "user"
+  "PersonID": "1",
+  "FIO": "Админ Администратович Администратов",
+  "Position": "Администратор системы",
+  "PositionID": 9,
+  "IsEmployee": true,
+  "IsActive": true
 }

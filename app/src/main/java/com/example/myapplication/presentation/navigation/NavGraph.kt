@@ -1,85 +1,80 @@
 package com.example.myapplication.presentation.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.app.presentation.auth.AuthScreen
-import com.example.app.presentation.home.HomeScreen
-import com.example.app.presentation.user.UserScreen
 import com.example.domain.model.AuthState
-import com.example.domain.usecase.CheckAuthStateUseCase
-
+import com.example.domain.usecase.ObserveAuthStateUseCase
+import com.example.myapplication.presentation.ui.AuthScreen
+import com.example.myapplication.presentation.ui.HomeScreen
+import com.example.myapplication.presentation.ui.UserScreen
 
 sealed class Screen(val route: String) {
-    object Home : Screen("home")
-
-    object UserInfo : Screen("user_info/{userId}") {
+    data object Home : Screen("home")
+    data object UserInfo : Screen("user_info/{userId}") {
         fun createRoute(userId: Int) = "user_info/$userId"
     }
-
-    object UserAuth : Screen("user_auth") // Упрощено, userId здесь не нужен
+    data object UserAuth : Screen("user_auth")
 }
 
 @Composable
-fun NavGraph(
-    checkAuthStateUseCase: CheckAuthStateUseCase // <-- Передаем UseCase для проверки состояния
-) {
+fun NavGraph(observeAuthStateUseCase: ObserveAuthStateUseCase) {
     val navController = rememberNavController()
+    val authState by observeAuthStateUseCase().collectAsStateWithLifecycle(initialValue = AuthState.Loading)
 
-    // 1. Наблюдаем за глобальным состоянием авторизации
-    val authState by checkAuthStateUseCase().collectAsState(initial = AuthState.Unauthenticated)
-
-    // 2. Динамически выбираем стартовый экран
     val startDestination = when (authState) {
         is AuthState.Authenticated -> Screen.Home.route
-        is AuthState.Unauthenticated -> Screen.UserAuth.route
+        else -> Screen.UserAuth.route
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-    ) {
-        // 3. Экран авторизации
-        composable(route = Screen.UserAuth.route) {
-            AuthScreen(
-                onLoginSuccess = {
-                    // При успешном входе переходим на Home и очищаем стек назад
+    // Принудительная навигация при смене состояния авторизации
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Unauthenticated -> {
+                navController.navigate(Screen.UserAuth.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+            is AuthState.Authenticated -> {
+                if (navController.currentDestination?.route == Screen.UserAuth.route) {
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.UserAuth.route) {
-                            inclusive = true
-                        }
+                        popUpTo(Screen.UserAuth.route) { inclusive = true }
                     }
                 }
-            )
+            }
+            else -> {}
         }
+    }
 
-        // 4. Главный экран
-        composable(route = Screen.Home.route) {
+    NavHost(navController = navController, startDestination = startDestination) {
+        composable(Screen.UserAuth.route) {
+            AuthScreen(onLoginSuccess = {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.UserAuth.route) { inclusive = true }
+                }
+            })
+        }
+        composable(Screen.Home.route) {
             HomeScreen(
-                onOpenUser = { userId ->
-                    navController.navigate(Screen.UserInfo.createRoute(userId))
-                },
-                onLogout = { // <-- Добавлен колбэк для выхода
+                onOpenUser = { userId -> navController.navigate(Screen.UserInfo.createRoute(userId)) },
+                onLogout = {
                     navController.navigate(Screen.UserAuth.route) {
-                        popUpTo(Screen.Home.route) {
-                            inclusive = true
-                        }
+                        popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 }
             )
         }
-
-        // 5. Информация пользователя
         composable(
             route = Screen.UserInfo.route,
-            arguments = listOf(navArgument("userId") { type = NavType.IntType }),
+            arguments = listOf(navArgument("userId") { type = NavType.IntType })
         ) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getInt("userId") ?: 1
+            val userId = backStackEntry.arguments?.getInt("userId") ?: 0
             UserScreen(userId = userId)
         }
     }

@@ -2,7 +2,8 @@ package com.example.data.local
 
 import android.content.Context
 import com.example.data.dto.UserDto
-import com.example.domain.exception.DataParsingException
+import com.example.data.exception.DataException
+import com.example.data.exception.DataParsingException
 import com.example.domain.exception.UserNotFoundException
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -17,26 +18,29 @@ class UserLocalDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
     private val json: Json
 ) {
-
-    /**
-     * Читает пользователя из assets по имени файла.
-     * @throws UserNotFoundException если файл не найден
-     * @throws DataParsingException если JSON некорректен
-     */
     suspend fun getUserFromAssets(fileName: String): UserDto = withContext(Dispatchers.IO) {
         try {
-            val jsonString = context.assets
-                .open(fileName)
-                .bufferedReader()
-                .use { it.readText() }
-
+            val jsonString = context.assets.open(fileName).bufferedReader().use { it.readText() }
             json.decodeFromString<UserDto>(jsonString)
         } catch (e: FileNotFoundException) {
-            throw UserNotFoundException("File not found: $fileName", e)
+            // ✅ Используем UserNotFoundException, который уже есть в domain.exception
+            throw UserNotFoundException(
+                userId = null,
+                message = "Файл не найден: $fileName",
+                cause = e
+            )
         } catch (e: SerializationException) {
-            throw DataParsingException("Failed to parse user JSON from $fileName", e)
+            // ✅ Используем DataParsingException из domain.exception
+            throw DataParsingException(
+                message = "Ошибка парсинга JSON из $fileName",
+                cause = e
+            )
         } catch (e: IOException) {
-            throw DataParsingException("I/O error while reading $fileName", e)
+            // ✅ Используем DataException для общих ошибок ввода-вывода
+            throw DataException(
+                message = "Ошибка ввода-вывода при чтении $fileName",
+                cause = e
+            )
         }
     }
 }

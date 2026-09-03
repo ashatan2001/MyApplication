@@ -1,4 +1,4 @@
-package com.example.app.presentation.user
+package com.example.myapplication.presentation.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.UserModel
+import com.example.myapplication.presentation.user.UserUiState
+import com.example.myapplication.presentation.user.UserViewModel
 
 @Composable
 fun UserScreen(
@@ -34,14 +36,15 @@ fun UserScreen(
                 CircularProgressIndicator()
             }
         }
-
         is UserUiState.Success -> {
             UserContent(user = state.user)
         }
-
         is UserUiState.Error -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+                Text(
+                    text = "Error: ${state.message}",
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
@@ -51,7 +54,13 @@ fun UserScreen(
 private fun UserContent(user: UserModel) {
     Column(modifier = Modifier.padding(16.dp)) {
         Text(text = "ID: ${user.id}", style = MaterialTheme.typography.bodyLarge)
-        Text(text = "Login: ${user.login}", style = MaterialTheme.typography.bodyMedium)
+        // Text(text = "Login: ${user.login}", style = MaterialTheme.typography.bodyMedium)
         Text(text = "Name: ${user.fio}", style = MaterialTheme.typography.bodyMedium)
+        Text(text = "FIO: ${user.id}", style = MaterialTheme.typography.bodyLarge)
+        Text(text = "Position: ${user.position}", style = MaterialTheme.typography.bodyMedium)
+        Text(text = "PositionId: ${user.positionId}", style = MaterialTheme.typography.bodyMedium)
+        Text(text = "Name: ${user.fio}", style = MaterialTheme.typography.bodyMedium)
+        Text(text = "isEmployee: ${user.isEmployee}", style = MaterialTheme.typography.bodyMedium)
+        Text(text = "isActive: ${user.isActive}", style = MaterialTheme.typography.bodyMedium)
     }
 }
