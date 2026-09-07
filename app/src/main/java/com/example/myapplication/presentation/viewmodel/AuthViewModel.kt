@@ -45,7 +45,7 @@ class AuthViewModel @Inject constructor(
             _uiState.value = AuthUiState.Loading
             when (val result = loginUseCase(username, password)) {
                 is Result.Success -> {
-                    _uiState.value = AuthUiState.Success(result.data.fio)
+                    _uiState.value = AuthUiState.Success(result.data.fullname)
                     _events.trySend(AuthEvent.LoginSuccess)
                     _uiState.value = AuthUiState.Idle
                 }

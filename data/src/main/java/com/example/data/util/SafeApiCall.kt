@@ -1,4 +1,4 @@
-package com.example.domain.util
+package com.example.data.util
 
 import com.example.data.exception.*
 import retrofit2.HttpException

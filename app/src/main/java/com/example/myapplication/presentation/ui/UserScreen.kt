@@ -54,12 +54,9 @@ fun UserScreen(
 private fun UserContent(user: UserModel) {
     Column(modifier = Modifier.padding(16.dp)) {
         Text(text = "ID: ${user.id}", style = MaterialTheme.typography.bodyLarge)
-        // Text(text = "Login: ${user.login}", style = MaterialTheme.typography.bodyMedium)
-        Text(text = "Name: ${user.fio}", style = MaterialTheme.typography.bodyMedium)
-        Text(text = "FIO: ${user.id}", style = MaterialTheme.typography.bodyLarge)
+        Text(text = "FIO: ${user.fio}", style = MaterialTheme.typography.bodyLarge)
         Text(text = "Position: ${user.position}", style = MaterialTheme.typography.bodyMedium)
         Text(text = "PositionId: ${user.positionId}", style = MaterialTheme.typography.bodyMedium)
-        Text(text = "Name: ${user.fio}", style = MaterialTheme.typography.bodyMedium)
         Text(text = "isEmployee: ${user.isEmployee}", style = MaterialTheme.typography.bodyMedium)
         Text(text = "isActive: ${user.isActive}", style = MaterialTheme.typography.bodyMedium)
     }

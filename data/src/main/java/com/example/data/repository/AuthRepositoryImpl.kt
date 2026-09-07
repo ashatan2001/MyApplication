@@ -36,14 +36,14 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun logout() {
         try {
             remoteDataSource.logout()
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            android.util.Log.e("AuthRepository", "Network error during logout", e)
+        }
 
         cookieJar.clear()
         localDataSource.clearSession()
 
-        if (userRepository is UserRepositoryImpl) {
-            userRepository.clearCache()
-        }
+        userRepository.clearCache()
     }
 
     override suspend fun getCurrentUser(): UserModel {

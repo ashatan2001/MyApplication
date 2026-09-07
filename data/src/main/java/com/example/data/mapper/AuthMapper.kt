@@ -6,7 +6,7 @@ import javax.inject.Inject
 
 class AuthMapper @Inject constructor() {
     fun toDomain(dto: LoginResponseDto): AuthSuccess = AuthSuccess(
-        fio = dto.fio,
+        fullname = dto.fullname,
         message = dto.message
     )
 }
