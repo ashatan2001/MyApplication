@@ -38,7 +38,7 @@ class HomeViewModel @Inject constructor(
                 when (val result = getUser(currentUser.id)) {
                     is Result.Success -> {
                         _uiState.value = HomeUiState.Success(
-                            userName = result.data.fio,
+                            userName = result.data.fullname,
                             userId = result.data.id
                         )
                     }
