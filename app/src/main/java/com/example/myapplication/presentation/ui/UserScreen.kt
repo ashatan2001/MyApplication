@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.UserModel
-import com.example.myapplication.presentation.user.UserUiState
-import com.example.myapplication.presentation.user.UserViewModel
+import com.example.myapplication.presentation.viewmodel.UserUiState
+import com.example.myapplication.presentation.viewmodel.UserViewModel
 
 @Composable
 fun UserScreen(

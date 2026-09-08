@@ -29,6 +29,11 @@ class CacheException(
     cause: Throwable? = null
 ) : DataLayerException(errorCode = 1003, message = message, cause = cause)
 
+class UnauthorizedException(
+    message: String = "Unauthorized or Forbidden",
+    cause: Throwable? = null
+) : DataLayerException(errorCode = 401, message = message, cause = cause)
+
 class DataException(
     message: String = "Data error",
     cause: Throwable? = null

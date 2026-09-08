@@ -52,7 +52,7 @@ fun AuthScreen(
                 value = username,
                 onValueChange = { username = it },
                 label = { Text("Логин") },
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Показать пароль") },
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Иконка пользователя") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = uiState !is AuthUiState.Loading,

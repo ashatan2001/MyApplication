@@ -47,7 +47,6 @@ class AuthViewModel @Inject constructor(
                 is Result.Success -> {
                     _uiState.value = AuthUiState.Success(result.data.fullname)
                     _events.trySend(AuthEvent.LoginSuccess)
-                    _uiState.value = AuthUiState.Idle
                 }
                 is Result.Failure -> {
                     val message: String = when (val error = result.error) {
@@ -70,8 +69,11 @@ class AuthViewModel @Inject constructor(
             _uiState.value = AuthUiState.Loading
             try {
                 logoutUseCase()
-            } catch (_: Exception) { }
-            _uiState.value = AuthUiState.Idle
+            } catch (e: Exception) {
+                android.util.Log.w("AuthViewModel", "Ошибка сетевого логаута, выполняем локальный выход", e)
+            } finally {
+                _uiState.value = AuthUiState.Idle
+            }
         }
     }
 }

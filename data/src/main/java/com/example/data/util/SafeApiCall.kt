@@ -21,9 +21,8 @@ suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
 }
 
 fun mapHttpError(code: Int, cause: Throwable? = null): DataLayerException = when (code) {
-    401, 403 -> DataLayerException(message = "Unauthorized", cause = cause)
+    401, 403 -> UnauthorizedException(cause = cause) // Важно: выбрасываем специфичное исключение
     404 -> DataLayerException(message = "Resource not found", cause = cause)
-    in 500..599 -> DataLayerException(message = "Server error: $code", cause = cause)
-    // ИСПРАВЛЕНО: Явное указание имен параметров
+    in 500..599 -> ServerException(httpCode = code, cause = cause)
     else -> DataLayerException(message = "HTTP error: $code", cause = cause)
 }

@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel // ✅ Этот импорт обязателен
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -15,10 +16,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.domain.model.AuthState
-import com.example.domain.usecase.ObserveAuthStateUseCase
 import com.example.myapplication.presentation.ui.AuthScreen
 import com.example.myapplication.presentation.ui.HomeScreen
 import com.example.myapplication.presentation.ui.UserScreen
+import com.example.myapplication.presentation.viewmodel.SessionViewModel
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
@@ -30,14 +31,15 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun NavGraph(observeAuthStateUseCase: ObserveAuthStateUseCase) {
+fun NavGraph(
+    // ✅ Правильный способ получения ViewModel в Compose
+    viewModel: SessionViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
-    val authState by observeAuthStateUseCase().collectAsStateWithLifecycle(initialValue = AuthState.Loading)
+    val authState by viewModel.authState.collectAsStateWithLifecycle()
 
-    // ИСПРАВЛЕНО: Стартовый экран всегда Splash
     NavHost(navController = navController, startDestination = Screen.Splash.route) {
 
-        // Splash-экран с индикатором загрузки
         composable(Screen.Splash.route) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -46,7 +48,6 @@ fun NavGraph(observeAuthStateUseCase: ObserveAuthStateUseCase) {
                 CircularProgressIndicator()
             }
 
-            // ИСПРАВЛЕНО: Навигация происходит только после определения состояния
             LaunchedEffect(authState) {
                 when (authState) {
                     is AuthState.Authenticated -> {
@@ -64,7 +65,6 @@ fun NavGraph(observeAuthStateUseCase: ObserveAuthStateUseCase) {
             }
         }
 
-        // Экран авторизации
         composable(Screen.UserAuth.route) {
             AuthScreen(onLoginSuccess = {
                 navController.navigate(Screen.Home.route) {
@@ -73,7 +73,6 @@ fun NavGraph(observeAuthStateUseCase: ObserveAuthStateUseCase) {
             })
         }
 
-        // Главный экран
         composable(Screen.Home.route) {
             HomeScreen(
                 onOpenUser = { userId ->
@@ -87,7 +86,6 @@ fun NavGraph(observeAuthStateUseCase: ObserveAuthStateUseCase) {
             )
         }
 
-        // Экран информации о пользователе
         composable(
             route = Screen.UserInfo.route,
             arguments = listOf(navArgument("userId") { type = NavType.IntType })

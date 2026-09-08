@@ -1,8 +1,10 @@
 package com.example.data.network
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.example.data.local.AuthLocalDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -13,42 +15,38 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val Context.authDataStore: androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>
-        by androidx.datastore.preferences.preferencesDataStore(name = "auth_cookies_store")
+    by androidx.datastore.preferences.preferencesDataStore(name = "auth_cookies_store")
 
 @Singleton
-class CustomCookieJar @Inject constructor(
-    @ApplicationContext private val context: Context
-) : CookieJar {
-    private val cookieCache = mutableMapOf<String, MutableSet<String>>()
+class CustomCookieJar
+    @Inject
+    constructor() : CookieJar {
+        // Храним куки в памяти для быстрого доступа
+        private val cookieStore = mutableMapOf<String, List<Cookie>>()
 
-    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-        val host = url.host
-        val cookieStrings = cookies.map { it.toString() }.toMutableSet()
-        synchronized(cookieCache) { cookieCache[host] = cookieStrings }
-        runBlocking {
-            context.authDataStore.edit {
-                it[stringSetPreferencesKey(host)] = cookieStrings
+        override fun saveFromResponse(
+            url: HttpUrl,
+            cookies: List<Cookie>,
+        ) {
+            // Сохраняем все куки, пришедшие от сервера
+            cookieStore[url.host] = cookies
+
+            // Для отладки — смотрим, что пришло
+            cookies.forEach { cookie ->
+                Log.d("CookieJar", "Сохранена кука: ${cookie.name} = ${cookie.value.take(20)}...")
             }
         }
-    }
 
-    override fun loadForRequest(url: HttpUrl): List<Cookie> {
-        val host = url.host
-        synchronized(cookieCache) {
-            cookieCache[host]?.let { return parseCookies(url, it) }
+        override fun loadForRequest(url: HttpUrl): List<Cookie> {
+            val cookies = cookieStore[url.host] ?: return emptyList()
+
+            // Фильтруем только нужные куки (опционально, можно отдавать все)
+            return cookies.filter {
+                it.name == "lexACCToken" || it.name == "lexRefreshToken"
+            }
         }
-        val cookieStrings = runBlocking {
-            context.authDataStore.data.first()[stringSetPreferencesKey(host)] ?: emptySet()
+
+        fun clear() {
+            cookieStore.clear()
         }
-        synchronized(cookieCache) { cookieCache[host] = cookieStrings.toMutableSet() }
-        return parseCookies(url, cookieStrings)
     }
-
-    fun clear() {
-        synchronized(cookieCache) { cookieCache.clear() }
-        runBlocking { context.authDataStore.edit { it.clear() } }
-    }
-
-    private fun parseCookies(url: HttpUrl, strings: Set<String>): List<Cookie> =
-        strings.mapNotNull { Cookie.parse(url, it) }
-}

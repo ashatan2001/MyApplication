@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import android.util.Log
 import com.example.data.local.AuthLocalDataSource
 import com.example.data.mapper.AuthMapper
 import com.example.data.mapper.UserMapper
@@ -25,7 +26,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun login(username: String, password: String): AuthSuccess {
         val dto = remoteDataSource.login(username, password)
-        localDataSource.saveAuthState(true)
+        localDataSource.saveAuthState(true) // Сохраняем состояние при успешном входе
         return authMapper.toDomain(dto)
     }
 
@@ -35,15 +36,16 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun logout() {
         try {
+            // Пытаемся уведомить сервер о выходе (не критично, если сеть недоступна)
             remoteDataSource.logout()
         } catch (e: Exception) {
-            android.util.Log.e("AuthRepository", "Network error during logout", e)
+            Log.w("AuthRepository", "Network error during logout, proceeding with local cleanup", e)
+        } finally {
+            // Гарантированная очистка локальных данных в любом сценарии
+            cookieJar.clear()
+            localDataSource.clearSession() // Это триггерит обновление UI через Flow
+            userRepository.clearCache()
         }
-
-        cookieJar.clear()
-        localDataSource.clearSession()
-
-        userRepository.clearCache()
     }
 
     override suspend fun getCurrentUser(): UserModel {
