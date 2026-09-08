@@ -49,8 +49,6 @@ class AuthViewModel @Inject constructor(
                 is Result.Failure -> {
                     val message: String = when (val error = result.error) {
                         is AuthenticationException -> "Неверный логин или пароль"
-                        is NetworkException -> "Нет соединения с интернетом"
-                        is ServerException -> "Ошибка сервера: ${error.message ?: "неизвестно"}"
                         else -> {
                             android.util.Log.e("AuthViewModel", "Ошибка входа", error)
                             error.message ?: "Неизвестная ошибка"
