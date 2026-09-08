@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.exception.NetworkException
 import com.example.domain.exception.UserNotFoundException
-import com.example.domain.repository.AuthRepository
 import com.example.domain.usecase.GetUserUseCase
+import com.example.domain.usecase.LogoutUseCase
 import com.example.domain.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.util.Log
+import com.example.domain.usecase.GetCurrentUserUseCase
 
 sealed class HomeUiState {
     data object Loading : HomeUiState()
@@ -23,7 +25,8 @@ sealed class HomeUiState {
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getUser: GetUserUseCase,
-    private val authRepository: AuthRepository
+    private val getCurrentUser: GetCurrentUserUseCase,
+    private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -33,26 +36,47 @@ class HomeViewModel @Inject constructor(
     fun loadUserData() {
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
-            try {
-                val currentUser = authRepository.getCurrentUser()
-                when (val result = getUser(currentUser.id)) {
-                    is Result.Success -> {
-                        _uiState.value = HomeUiState.Success(
-                            userName = result.data.fullname,
-                            userId = result.data.id
-                        )
-                    }
-                    is Result.Failure -> {
-                        val message = when (result.error) {
-                            is UserNotFoundException -> "Пользователь не найден"
-                            is NetworkException -> "Нет соединения с интернетом"
-                            else -> result.error.message ?: "Неизвестная ошибка"
+
+            // 1. Получаем текущего пользователя через use case
+            when (val currentUserResult = getCurrentUser()) {
+                is Result.Failure -> {
+                    _uiState.value = HomeUiState.Error(
+                        currentUserResult.error.message ?: "Не удалось получить пользователя"
+                    )
+                    return@launch
+                }
+                is Result.Success -> {
+                    // 2. Загружаем полные данные пользователя
+                    when (val result = getUser(currentUserResult.data.id)) {
+                        is Result.Success -> {
+                            _uiState.value = HomeUiState.Success(
+                                userName = result.data.fullname,
+                                userId = result.data.id
+                            )
                         }
-                        _uiState.value = HomeUiState.Error(message)
+                        is Result.Failure -> {
+                            val message = when (result.error) {
+                                is UserNotFoundException -> "Пользователь не найден"
+                                is NetworkException -> "Нет соединения с интернетом"
+                                else -> result.error.message ?: "Неизвестная ошибка"
+                            }
+                            _uiState.value = HomeUiState.Error(message)
+                        }
                     }
                 }
+            }
+        }
+    }
+
+    fun logout(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                logoutUseCase()
+                onSuccess()
             } catch (e: Exception) {
-                _uiState.value = HomeUiState.Error(e.message ?: "Ошибка")
+                Log.e("HomeViewModel", "Logout failed", e)
+                // Даже при ошибке считаем пользователя разлогиненным
+                onSuccess()
             }
         }
     }

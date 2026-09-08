@@ -1,5 +1,7 @@
 package com.example.data.di
 
+import com.example.data.network.AuthEventBus
+import com.example.data.network.AuthEventBusImpl
 import com.example.data.repository.AuthRepositoryImpl
 import com.example.data.repository.UserRepositoryImpl
 import com.example.domain.repository.AuthRepository
@@ -16,4 +18,6 @@ abstract class RepositoryModule {
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
     @Binds
     abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+    @Binds
+    abstract fun bindAuthEventBus(impl: AuthEventBusImpl): AuthEventBus
 }

@@ -13,14 +13,12 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@Singleton // Убедитесь, что репозиторий Singleton, чтобы кэш работал
+@Singleton
 class UserRepositoryImpl @Inject constructor(
     private val remoteDataSource: UserRemoteDataSource,
     private val localDataSource: UserLocalDataSource,
     private val mapper: UserMapper
 ) : UserRepository {
-
-    // ✅ Используем ConcurrentHashMap для потокобезопасности
     private val userCache = ConcurrentHashMap<Int, UserModel>()
 
     override suspend fun getUser(id: Int): UserModel {
@@ -60,6 +58,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override fun clearCache() {
-        TODO("Not yet implemented")
+        userCache.clear()
+        Log.d("UserRepository", "User cache cleared")
     }
 }

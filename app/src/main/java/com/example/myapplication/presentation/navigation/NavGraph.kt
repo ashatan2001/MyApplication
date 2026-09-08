@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.data.network.AuthEventBus
 import com.example.domain.model.AuthState
 import com.example.myapplication.presentation.ui.AuthScreen
 import com.example.myapplication.presentation.ui.HomeScreen
@@ -32,11 +33,34 @@ sealed class Screen(val route: String) {
 
 @Composable
 fun NavGraph(
-    // ✅ Правильный способ получения ViewModel в Compose
     viewModel: SessionViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
     val authState by viewModel.authState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.logoutEvents.collect {
+            navController.navigate(Screen.UserAuth.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Authenticated -> {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.Splash.route) { inclusive = true }
+                }
+            }
+            is AuthState.Unauthenticated -> {
+                navController.navigate(Screen.UserAuth.route) {
+                    popUpTo(Screen.Splash.route) { inclusive = true }
+                }
+            }
+            else -> {} // Остается на Splash во время Loading
+        }
+    }
 
     NavHost(navController = navController, startDestination = Screen.Splash.route) {
 
@@ -47,30 +71,17 @@ fun NavGraph(
             ) {
                 CircularProgressIndicator()
             }
-
-            LaunchedEffect(authState) {
-                when (authState) {
-                    is AuthState.Authenticated -> {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Splash.route) { inclusive = true }
-                        }
-                    }
-                    is AuthState.Unauthenticated -> {
-                        navController.navigate(Screen.UserAuth.route) {
-                            popUpTo(Screen.Splash.route) { inclusive = true }
-                        }
-                    }
-                    else -> {} // Остается на Splash во время Loading
-                }
-            }
         }
 
         composable(Screen.UserAuth.route) {
-            AuthScreen(onLoginSuccess = {
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.UserAuth.route) { inclusive = true }
-                }
-            })
+            AuthScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.UserAuth.route) { inclusive = true }
+                    }
+                },
+                viewModel = hiltViewModel()
+            )
         }
 
         composable(Screen.Home.route) {

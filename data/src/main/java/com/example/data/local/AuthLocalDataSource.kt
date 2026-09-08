@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.authDataStore: DataStore<Preferences> by preferencesDataStore(name = "auth_preferences")
+private val Context.authDataStore: DataStore<Preferences> by preferencesDataStore(name = "auth_data")
 
 @Singleton
 class AuthLocalDataSource @Inject constructor(

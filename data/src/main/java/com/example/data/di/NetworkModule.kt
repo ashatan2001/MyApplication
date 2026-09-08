@@ -1,7 +1,6 @@
 package com.example.data.di
 
 import com.example.data.BuildConfig
-import com.example.data.local.AuthLocalDataSource
 import com.example.data.network.AuthInterceptor
 import com.example.data.network.CustomCookieJar
 import com.example.data.remote.AuthApi
@@ -16,7 +15,6 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
-import javax.inject.Provider
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -50,18 +48,6 @@ object NetworkModule {
         encodeDefaults = true
     }
 
-    @Provides
-    @Singleton
-    fun provideCustomCookieJar(): CustomCookieJar = CustomCookieJar()
-
-    @Provides
-    @Singleton
-    fun provideAuthInterceptor(
-        localDataSource: AuthLocalDataSource,
-        cookieJar: CustomCookieJar,
-        authApiProvider: Provider<AuthApi> // Разрывает циклическую зависимость
-    ): AuthInterceptor = AuthInterceptor(localDataSource, cookieJar, authApiProvider)
-
     // 2. Базовый клиент (без интерсептора авторизации)
     @Provides
     @Singleton
@@ -71,7 +57,6 @@ object NetworkModule {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    // 3. ✅ Клиент для авторизации (с AuthInterceptor)
     @Provides
     @Singleton
     @AuthOkHttp
@@ -85,7 +70,6 @@ object NetworkModule {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    // 4. Базовый Retrofit
     @Provides
     @Singleton
     @BaseRetrofit
@@ -98,7 +82,6 @@ object NetworkModule {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 
-    // 5. ✅ Авторизационный Retrofit (использует @AuthOkHttp клиент)
     @Provides
     @Singleton
     @AuthRetrofit

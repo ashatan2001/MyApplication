@@ -40,7 +40,11 @@ fun HomeScreen(
             DrawerContent(
                 onCloseDrawer = { scope.launch { drawerState.close() } },
                 onOpenUser = onOpenUser,
-                onLogout = onLogout,
+                onLogout = {
+                    viewModel.logout {
+                        onLogout()
+                    }
+                },
                 currentUserId = currentUserId
             )
         },

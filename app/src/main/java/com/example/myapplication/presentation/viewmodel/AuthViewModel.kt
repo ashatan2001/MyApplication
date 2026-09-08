@@ -2,8 +2,6 @@ package com.example.myapplication.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.exception.NetworkException
-import com.example.data.exception.ServerException
 import com.example.domain.exception.AuthenticationException
 import com.example.domain.usecase.LoginUseCase
 import com.example.domain.usecase.LogoutUseCase
