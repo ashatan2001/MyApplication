@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import android.util.Log
 import com.example.data.exception.DataException
+import com.example.data.exception.DataLayerException
 import com.example.data.exception.NetworkException
 import com.example.data.local.UserLocalDataSource
 import com.example.data.mapper.UserMapper
@@ -28,27 +29,29 @@ class UserRepositoryImpl @Inject constructor(
             val dto = remoteDataSource.getUser(id)
             mapper.toModel(dto).also { userCache[id] = it }
 
-        } catch (e: UserNotFoundException) {
-            throw e
-
-        } catch (e: NetworkException) {
-            Log.w("UserRepository", "Network error, trying local cache for user $id", e)
-            try {
-                val dto = localDataSource.getUserFromAssets("user$id.json")
-                mapper.toModel(dto).also { userCache[id] = it }
-            } catch (localEx: UserNotFoundException) {
+        }  catch (e: DataLayerException) {
+            if (e.errorCode == 404) {
                 throw UserNotFoundException(
                     userId = id,
-                    message = "Пользователь не найден в сети и локальном кэше",
-                    cause = localEx
+                    message = "Пользователь не найден на сервере"
                 )
-            } catch (localEx: Exception) {
-                Log.e("UserRepository", "Local cache parsing failed for user $id", localEx)
-                throw DataException(
-                    message = "Ошибка чтения локальных данных для пользователя $id",
-                    cause = localEx
-                )
+            } else {
+                Log.w("UserRepository", "Data layer error (code: ${e.errorCode}), trying local cache for user $id", e)
+                try {
+                    val dto = localDataSource.getUserFromAssets("user$id.json")
+                    mapper.toModel(dto).also { userCache[id] = it }
+                } catch (localEx: Exception) {
+                    Log.e("UserRepository", "Local cache parsing failed for user $id", localEx)
+                    throw UserNotFoundException(
+                        userId = id,
+                        message = "Пользователь не найден в сети и локальном кэше",
+                        cause = localEx
+                    )
+                }
             }
+
+        } catch (e: UserNotFoundException) {
+            throw e
         } catch (e: Exception) {
             throw DataException(
                 message = "Неожиданная ошибка при получении пользователя $id: ${e.message}",

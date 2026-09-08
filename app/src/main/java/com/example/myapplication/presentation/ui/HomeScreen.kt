@@ -106,8 +106,6 @@ fun DrawerContent(
             onCloseDrawer()
             if (currentUserId > 0) onOpenUser(currentUserId)
         }
-        DrawerItem(Icons.Default.Settings, "Настройки") { onCloseDrawer() }
-        Spacer(Modifier.weight(1f))
         DrawerItem(Icons.Default.ExitToApp, "Выйти") {
             onCloseDrawer()
             onLogout()
