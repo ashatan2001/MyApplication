@@ -21,3 +21,14 @@ local.properties
 # Временные файлы
 *.tmp
 *.temp
+
+# Ключи подписи (чтобы случайно не закоммитить keystore)
+*.jks
+*.keystore
+
+# Дампы памяти и профилировщики Android Studio
+*.hprof
+captures/
+
+# Если будете использовать Firebase
+google-services.json
