@@ -1,31 +1,30 @@
 package com.example.domain.usecase
 
 import com.example.domain.exception.AppException
-import com.example.domain.exception.AuthenticationException
 import com.example.domain.exception.ValidationException
 import com.example.domain.model.AuthSuccess
 import com.example.domain.repository.AuthRepository
-import com.example.domain.util.Result
+import com.example.domain.util.CustomResult
 import javax.inject.Inject
 
 class LoginUseCase @Inject constructor(
     private val repository: AuthRepository
 ) {
-    suspend operator fun invoke(login: String, password: String): Result<AuthSuccess> {
+    suspend operator fun invoke(login: String, password: String): CustomResult<AuthSuccess> {
+        println("DEBUG [UseCase] 1. Вызов repository.login...")
         return try {
             validateCredentials(login, password)
 
             val result = repository.login(login, password)
-            Result.Success(result)
-
-        } catch (e: AuthenticationException) {
-            Result.Failure(e)
+            println("DEBUG [UseCase] 2. Repository вернул Успех: $result")
+            CustomResult.Success(result)
         } catch (e: ValidationException) {
-            Result.Failure(e)
+            CustomResult.Error(e)
         } catch (e: AppException) {
-            Result.Failure(e)
+            CustomResult.Error(e)
         } catch (e: Exception) {
-            Result.Failure(AppException(message = "Unexpected error", cause = e))
+            println("DEBUG [UseCase] 3. Repository выбросил ОШИБКУ: ${e::class.simpleName} | ${e.message}")
+            CustomResult.Error(AppException(message = "Unexpected error", cause = e))
         }
     }
 

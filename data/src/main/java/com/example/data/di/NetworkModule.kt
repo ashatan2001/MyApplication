@@ -12,6 +12,7 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
@@ -63,12 +64,20 @@ object NetworkModule {
     fun provideAuthOkHttpClient(
         cookieJar: CustomCookieJar,
         authInterceptor: AuthInterceptor
-    ): OkHttpClient = OkHttpClient.Builder()
-        .cookieJar(cookieJar)
-        .addInterceptor(authInterceptor)
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .build()
+    ): OkHttpClient {
+        // Временный интерсептор для просмотра реальных ответов сервера в Logcat
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        return OkHttpClient.Builder()
+            .cookieJar(cookieJar)
+            .addInterceptor(loggingInterceptor) // <-- Добавлено для диагностики
+            .addInterceptor(authInterceptor)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .build()
+    }
 
     @Provides
     @Singleton

@@ -6,7 +6,7 @@ import com.example.data.exception.NetworkException
 import com.example.domain.exception.UserNotFoundException
 import com.example.domain.model.UserModel
 import com.example.domain.usecase.GetUserUseCase
-import com.example.domain.util.Result
+import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,16 +46,16 @@ class UserViewModel @Inject constructor(
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             when (val result = getUserUseCase(userId)) {
-                is Result.Success -> _userState.value = UserUiState.Success(result.data)
-                is Result.Failure -> {
-                    val message = when (result.error) {
+                is CustomResult.Success -> _userState.value = UserUiState.Success(result.data)
+                is CustomResult.Error -> {
+                    val message = when (val error = result.exception) {
                         is UserNotFoundException -> "Пользователь не найден"
                         is NetworkException -> "Нет соединения с интернетом"
-                        else -> result.error.message ?: "Неизвестная ошибка"
+                        else -> result.exception.message ?: "Неизвестная ошибка"
                     }
                     _userState.value = UserUiState.Error(
                         message = message,
-                        isNetworkError = result.error is NetworkException
+                        isNetworkError = result.exception is NetworkException
                     )
                 }
             }

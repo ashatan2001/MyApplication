@@ -7,17 +7,11 @@ open class AppException(
     cause: Throwable? = null
 ) : Exception(message, cause)
 
-// Исключения бизнес-логики (домена)
 sealed class DomainException(
     errorCode: Int? = null,
     message: String,
     cause: Throwable? = null
 ) : AppException(errorCode, message, cause)
-
-class AuthenticationException(
-    message: String = "Authentication failed",
-    cause: Throwable? = null
-) : DomainException(errorCode = 2001, message = message, cause = cause)
 
 class UserNotFoundException(
     val userId: Int? = null,

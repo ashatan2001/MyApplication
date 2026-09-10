@@ -19,6 +19,12 @@ class ServerException(
     cause: Throwable? = null
 ) : DataLayerException(errorCode = httpCode, message = message, cause = cause)
 
+class ApiException(
+    val errorNumber: Int,
+    message: String,
+    cause: Throwable? = null
+) : DataLayerException(errorCode = errorNumber, message = message, cause = cause)
+
 class DataParsingException(
     message: String = "Data parsing error",
     cause: Throwable? = null

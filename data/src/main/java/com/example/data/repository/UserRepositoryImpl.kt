@@ -3,7 +3,6 @@ package com.example.data.repository
 import android.util.Log
 import com.example.data.exception.DataException
 import com.example.data.exception.DataLayerException
-import com.example.data.exception.NetworkException
 import com.example.data.local.UserLocalDataSource
 import com.example.data.mapper.UserMapper
 import com.example.data.remote.UserRemoteDataSource

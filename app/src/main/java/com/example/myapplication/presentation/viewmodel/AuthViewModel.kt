@@ -2,10 +2,12 @@ package com.example.myapplication.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.domain.exception.AuthenticationException
+import com.example.data.exception.ApiException
+import com.example.data.exception.NetworkException
+import com.example.data.exception.ServerException
 import com.example.domain.usecase.LoginUseCase
 import com.example.domain.usecase.LogoutUseCase
-import com.example.domain.util.Result
+import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,22 +42,37 @@ class AuthViewModel @Inject constructor(
 
     fun login(username: String, password: String) {
         viewModelScope.launch {
+            android.util.Log.d("LOGIN_DEBUG", "1. Начало загрузки")
             _uiState.value = AuthUiState.Loading
-            when (val result = loginUseCase(username, password)) {
-                is Result.Success -> {
-                    _uiState.value = AuthUiState.Success(result.data.fullname)
-                    _events.trySend(AuthEvent.LoginSuccess)
-                }
-                is Result.Failure -> {
-                    val message: String = when (val error = result.error) {
-                        is AuthenticationException -> "Неверный логин или пароль"
-                        else -> {
-                            android.util.Log.e("AuthViewModel", "Ошибка входа", error)
-                            error.message ?: "Неизвестная ошибка"
-                        }
+
+            try {
+                android.util.Log.d("LOGIN_DEBUG", "2. Вызов loginUseCase...")
+                val result = loginUseCase(username, password)
+                android.util.Log.d("LOGIN_DEBUG", "3. UseCase вернул результат: ${result::class.simpleName}")
+
+                when (result) {
+                    is CustomResult.Success -> {
+                        android.util.Log.d("LOGIN_DEBUG", "4. Успех: ${result.data.fullname}")
+                        _uiState.value = AuthUiState.Success(result.data.fullname)
+                        _events.trySend(AuthEvent.LoginSuccess)
                     }
-                    _uiState.value = AuthUiState.Error(message)
+                    is CustomResult.Error -> {
+                        val e = result.exception
+                        android.util.Log.e("LOGIN_DEBUG", "4. Ошибка! Тип: ${e?.javaClass?.simpleName}, Сообщение: ${e?.message}", e)
+
+                        // ИСПРАВЛЕНИЕ ЗДЕСЬ: добавляем ?: "Текст по умолчанию"
+                        val message: String = when (e) {
+                            is ApiException -> e.message ?: "Ошибка авторизации"
+                            is NetworkException -> "Нет подключения к интернету"
+                            is ServerException -> "Ошибка сервера, попробуйте позже"
+                            else -> e?.message ?: "Неизвестная ошибка"
+                        }
+                        _uiState.value = AuthUiState.Error(message)
+                    }
                 }
+            } catch (t: Throwable) {
+                android.util.Log.e("LOGIN_DEBUG", "5. НЕОБРАБОТАННЫЙ КРАШ В VIEWMODEL", t)
+                _uiState.value = AuthUiState.Error(t.message ?: "Критическая ошибка")
             }
         }
     }

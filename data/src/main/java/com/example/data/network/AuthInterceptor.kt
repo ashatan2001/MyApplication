@@ -25,9 +25,17 @@ class AuthInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
-        var response = chain.proceed(request)
+        val response = chain.proceed(request)
 
         if (response.code != 401) return response
+
+        // ⚠️ ИСПРАВЛЕНИЕ ДЕДЛОКА:
+        // Если 401 пришел на эндпоинты логина или рефреша,
+        // не пытаемся рефрешить токен. Просто возвращаем ответ в SafeApiCall.
+        val path = request.url.encodedPath
+        if (path.contains("auth/sign-in") || path.contains("auth/get-token")) {
+            return response
+        }
 
         response.close()
 
