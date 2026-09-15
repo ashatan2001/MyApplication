@@ -1,14 +1,12 @@
 package com.example.myapplication.presentation.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,35 +14,71 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.UserModel
-import com.example.myapplication.presentation.viewmodel.UserUiState
 import com.example.myapplication.presentation.viewmodel.UserViewModel
 
+sealed class UserUiState {
+    object Loading : UserUiState()
+    data class Success(val user: UserModel) : UserUiState()
+    data class Error(val message: String) : UserUiState()
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserScreen(
-    userId: Int,
-    viewModel: UserViewModel = hiltViewModel(),
+    onBack: () -> Unit,
+    viewModel: UserViewModel = hiltViewModel()
 ) {
-    val userState by viewModel.userState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(userId) {
-        viewModel.loadUser(userId)
-    }
-
-    when (val state = userState) {
-        is UserUiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        }
-        is UserUiState.Success -> {
-            UserContent(user = state.user)
-        }
-        is UserUiState.Error -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "Error: ${state.message}",
-                    color = MaterialTheme.colorScheme.error
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Профиль") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
+            )
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
+        ) {
+            when (val state = uiState) {
+                is UserUiState.Loading -> CircularProgressIndicator()
+                is UserUiState.Success -> UserContent(user = state.user)
+                is UserUiState.Error -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            state.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Button(onClick = { viewModel.loadUserData() }) {
+                            Text("Повторить")
+                        }
+                    }
+                }
+                else -> Unit
             }
         }
     }
@@ -52,12 +86,61 @@ fun UserScreen(
 
 @Composable
 private fun UserContent(user: UserModel) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(text = "ID: ${user.id}", style = MaterialTheme.typography.bodyLarge)
-        Text(text = "FIO: ${user.fullname}", style = MaterialTheme.typography.bodyLarge)
-        Text(text = "Position: ${user.position}", style = MaterialTheme.typography.bodyMedium)
-        Text(text = "PositionId: ${user.positionId}", style = MaterialTheme.typography.bodyMedium)
-        Text(text = "isEmployee: ${user.isEmployee}", style = MaterialTheme.typography.bodyMedium)
-        Text(text = "isActive: ${user.isActive}", style = MaterialTheme.typography.bodyMedium)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            Icons.Default.Person,
+            contentDescription = null,
+            modifier = Modifier.size(100.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+
+        Text(
+            user.fullname,
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                InfoRow("ID", user.id.toString())
+                InfoRow("FIO", user.fullname)
+                InfoRow("Position", user.position)
+                InfoRow("PositionId", user.positionId.toString())
+                InfoRow("isEmployee", user.isEmployee.toString())
+                InfoRow("isActive", user.isActive.toString())
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

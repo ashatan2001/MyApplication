@@ -3,12 +3,11 @@ package com.example.data.repository
 import android.util.Log
 import com.example.data.local.AuthLocalDataSource
 import com.example.data.mapper.AuthMapper
-import com.example.data.mapper.UserMapper
 import com.example.data.network.CustomCookieJar
 import com.example.data.remote.AuthRemoteDataSource
+import com.example.data.util.JwtParser
 import com.example.domain.model.AuthState
 import com.example.domain.model.AuthSuccess
-import com.example.domain.model.UserModel
 import com.example.domain.repository.AuthRepository
 import com.example.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
@@ -21,14 +20,30 @@ class AuthRepositoryImpl @Inject constructor(
     private val cookieJar: CustomCookieJar,
     private val userRepository: UserRepository,
     private val authMapper: AuthMapper,
-    private val userMapper: UserMapper
+    private val jwtParser: JwtParser
 ) : AuthRepository {
+
 
     override suspend fun login(username: String, password: String): AuthSuccess {
         val dto = remoteDataSource.login(username, password)
+
+        val token = cookieJar.getAccessToken()
+
+        // 3. Парсим токен и сохраняем userId
+        token?.let { jwt ->
+            val userId = jwtParser.getUserIdFromToken(jwt)
+            if (userId != null) {
+                localDataSource.saveUserId(userId)
+                Log.d("AuthRepo", "UserId $userId извлечен из JWT и сохранен")
+            } else {
+                Log.w("AuthRepo", "Не удалось извлечь userId из токена")
+            }
+        }
+
         localDataSource.saveAuthState(true) // Сохраняем состояние при успешном входе
         return authMapper.toDomain(dto)
     }
+
 
     override suspend fun refreshToken() {
         remoteDataSource.refreshToken()
@@ -46,11 +61,6 @@ class AuthRepositoryImpl @Inject constructor(
             localDataSource.clearSession() // Это триггерит обновление UI через Flow
             userRepository.clearCache()
         }
-    }
-
-    override suspend fun getCurrentUser(): UserModel {
-        val dto = remoteDataSource.getCurrentUser()
-        return userMapper.toModel(dto)
     }
 
     override fun getAuthState(): Flow<AuthState> =

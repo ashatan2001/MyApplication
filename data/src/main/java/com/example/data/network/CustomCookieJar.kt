@@ -2,7 +2,6 @@ package com.example.data.network
 
 import android.content.Context
 import android.util.Log
-import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -12,7 +11,7 @@ import okhttp3.HttpUrl
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.cookieDataStore by preferencesDataStore(name = "auth_data")
+//private val Context.cookieDataStore by preferencesDataStore(name = "auth_data")
 
 @Singleton
 class CustomCookieJar @Inject constructor(
@@ -23,6 +22,8 @@ class CustomCookieJar @Inject constructor(
     private val cookieStore = mutableMapOf<String, List<Cookie>>()
     private val prefs = context.getSharedPreferences("auth_cookies", Context.MODE_PRIVATE)
 
+    var userId: Int? = null
+
     init {
         // Загружаем куки при инициализации
         loadFromStorage()
@@ -31,7 +32,7 @@ class CustomCookieJar @Inject constructor(
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         cookieStore[url.host] = cookies
         cookies.forEach { cookie ->
-            Log.d("CookieJar", "Сохранена кука: ${cookie.name} = ${cookie.value.take(20)}...")
+            Log.d("CookieJar", "Сохранена кука: ${cookie.name} = ${cookie.value}...")
         }
         saveToStorage()
     }
@@ -78,5 +79,10 @@ class CustomCookieJar @Inject constructor(
         } catch (e: Exception) {
             Log.e("CustomCookieJar", "Failed to load cookies", e)
         }
+    }
+
+
+    fun getAccessToken(): String? {
+        return cookieStore.values.flatten().find { it.name == "lexACCToken" }?.value
     }
 }

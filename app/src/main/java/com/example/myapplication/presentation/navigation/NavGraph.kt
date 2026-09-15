@@ -10,11 +10,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.domain.model.AuthState
 import com.example.myapplication.presentation.ui.AuthScreen
 import com.example.myapplication.presentation.ui.HomeScreen
@@ -24,8 +22,7 @@ import com.example.myapplication.presentation.viewmodel.SessionViewModel
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
     data object Home : Screen("home")
-    data object UserInfo : Screen("user_info/{userId}") {
-        fun createRoute(userId: Int) = "user_info/$userId"
+    data object UserInfo : Screen("user_info") {
     }
     data object UserAuth : Screen("user_auth")
 }
@@ -85,8 +82,8 @@ fun NavGraph(
 
         composable(Screen.Home.route) {
             HomeScreen(
-                onOpenUser = { userId ->
-                    navController.navigate(Screen.UserInfo.createRoute(userId))
+                onOpenUser = {
+                    navController.navigate(Screen.UserInfo.route)
                 },
                 onLogout = {
                     navController.navigate(Screen.UserAuth.route) {
@@ -96,12 +93,13 @@ fun NavGraph(
             )
         }
 
-        composable(
-            route = Screen.UserInfo.route,
-            arguments = listOf(navArgument("userId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getInt("userId") ?: 0
-            UserScreen(userId = userId)
+        composable(Screen.UserInfo.route) {
+            UserScreen(
+                onBack = {
+                    navController.navigate(Screen.Home.route)
+                },
+                viewModel = hiltViewModel()
+            )
         }
     }
 }

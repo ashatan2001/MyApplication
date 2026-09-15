@@ -5,10 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.exception.NetworkException
 import com.example.domain.exception.UserNotFoundException
 import com.example.domain.model.UserModel
-import com.example.domain.usecase.GetUserUseCase
+import com.example.domain.usecase.GetUserInfoUseCase
 import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,40 +22,27 @@ sealed class UserUiState {
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val getUserUseCase: GetUserUseCase
+    private val getUserInfoUseCase: GetUserInfoUseCase
 ) : ViewModel() {
-    private val _userState = MutableStateFlow<UserUiState>(UserUiState.Loading)
-    val userState: StateFlow<UserUiState> = _userState.asStateFlow()
+    private val _uiState = MutableStateFlow<UserUiState>(UserUiState.Loading)
+    val uiState: StateFlow<UserUiState> = _uiState.asStateFlow()
 
-    private var currentUserId: Int? = null
-    private var loadJob: Job? = null
+    fun loadUserData() {
+        viewModelScope.launch {
+            _uiState.value = UserUiState.Loading
 
-    fun loadUser(userId: Int) {
-        if (currentUserId == userId && _userState.value is UserUiState.Success) return
-        currentUserId = userId
-        doLoad(userId)
-    }
-
-    fun retry() {
-        currentUserId?.let { doLoad(it) }
-    }
-
-    private fun doLoad(userId: Int) {
-        _userState.value = UserUiState.Loading
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            when (val result = getUserUseCase(userId)) {
-                is CustomResult.Success -> _userState.value = UserUiState.Success(result.data)
+            when (val result = getUserInfoUseCase()) {
+                is CustomResult.Success -> {
+                    val user = result.data
+                    _uiState.value = UserUiState.Success(user)
+                }
                 is CustomResult.Error -> {
-                    val message = when (val error = result.exception) {
+                    val message = when (result.exception) {
                         is UserNotFoundException -> "Пользователь не найден"
                         is NetworkException -> "Нет соединения с интернетом"
                         else -> result.exception.message ?: "Неизвестная ошибка"
                     }
-                    _userState.value = UserUiState.Error(
-                        message = message,
-                        isNetworkError = result.exception is NetworkException
-                    )
+                    _uiState.value = UserUiState.Error(message)
                 }
             }
         }
