@@ -15,26 +15,18 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.myapplication.presentation.viewmodel.AuthEvent
 import com.example.myapplication.presentation.viewmodel.AuthUiState
 import com.example.myapplication.presentation.viewmodel.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
-    onLoginSuccess: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        viewModel.events.collect { event ->
-            if (event is AuthEvent.LoginSuccess) onLoginSuccess()
-        }
-    }
 
     Scaffold { innerPadding ->
         Column(
@@ -45,8 +37,11 @@ fun AuthScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Авторизация", style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 32.dp))
+            Text(
+                text = "Авторизация",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
 
             OutlinedTextField(
                 value = username,
@@ -69,13 +64,12 @@ fun AuthScreen(
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null
+                            imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (passwordVisible) "Скрыть пароль" else "Показать пароль"
                         )
                     }
                 },
-                visualTransformation = if (passwordVisible) VisualTransformation.None
-                else PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = uiState !is AuthUiState.Loading,
@@ -91,9 +85,13 @@ fun AuthScreen(
                         username.isNotBlank() && password.isNotBlank()
             ) {
                 if (uiState is AuthUiState.Loading) {
-                    CircularProgressIndicator(Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary)
-                } else Text("Войти")
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Войти")
+                }
             }
 
             if (uiState is AuthUiState.Error) {

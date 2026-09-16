@@ -67,14 +67,7 @@ fun NavGraph(
         }
 
         composable(Routers.UserAuth.route) {
-            AuthScreen(
-                onLoginSuccess = {
-                    navController.navigate(Routers.Home.route) {
-                        popUpTo(Routers.UserAuth.route) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-            )
+            AuthScreen()
         }
 
         composable(Routers.Home.route) {

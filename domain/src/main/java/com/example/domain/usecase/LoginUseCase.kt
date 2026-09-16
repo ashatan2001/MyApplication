@@ -18,6 +18,7 @@ class LoginUseCase @Inject constructor(
             val result = repository.login(login, password)
             println("DEBUG [UseCase] 2. Repository вернул Успех: $result")
             CustomResult.Success(result)
+
         } catch (e: ValidationException) {
             CustomResult.Error(e)
         } catch (e: AppException) {

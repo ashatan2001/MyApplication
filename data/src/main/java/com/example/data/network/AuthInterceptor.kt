@@ -32,6 +32,7 @@ class AuthInterceptor @Inject constructor(
 
         val path = request.url.encodedPath
         if (path.contains("auth/sign-in", ignoreCase = true) ||
+            path.contains("auth/refresh", ignoreCase = true) ||
             path.contains("auth/get-token", ignoreCase = true) ||
             path.contains("auth/logout", ignoreCase = true)) {
             return response
