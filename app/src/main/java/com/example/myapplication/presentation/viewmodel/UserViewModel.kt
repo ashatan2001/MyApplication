@@ -3,6 +3,7 @@ package com.example.myapplication.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.exception.NetworkException
+import com.example.data.network.AuthEventBus
 import com.example.domain.exception.UserNotFoundException
 import com.example.domain.model.UserModel
 import com.example.domain.usecase.GetUserInfoUseCase
@@ -22,19 +23,28 @@ sealed class UserUiState {
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val getUserInfoUseCase: GetUserInfoUseCase
+    private val getUserInfoUseCase: GetUserInfoUseCase,
+    private val authEventBus: AuthEventBus
 ) : ViewModel() {
+
     private val _uiState = MutableStateFlow<UserUiState>(UserUiState.Loading)
     val uiState: StateFlow<UserUiState> = _uiState.asStateFlow()
+
+    init {
+
+        viewModelScope.launch {
+            authEventBus.logoutEvents.collect {
+                _uiState.value = UserUiState.Loading
+            }
+        }
+    }
 
     fun loadUserData() {
         viewModelScope.launch {
             _uiState.value = UserUiState.Loading
-
             when (val result = getUserInfoUseCase()) {
                 is CustomResult.Success -> {
-                    val user = result.data
-                    _uiState.value = UserUiState.Success(user)
+                    _uiState.value = UserUiState.Success(result.data)
                 }
                 is CustomResult.Error -> {
                     val message = when (result.exception) {

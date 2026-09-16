@@ -2,7 +2,7 @@ package com.example.myapplication.presentation.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -14,13 +14,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.UserModel
+import com.example.myapplication.presentation.viewmodel.UserUiState
 import com.example.myapplication.presentation.viewmodel.UserViewModel
-
-sealed class UserUiState {
-    object Loading : UserUiState()
-    data class Success(val user: UserModel) : UserUiState()
-    data class Error(val message: String) : UserUiState()
-}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,7 +32,7 @@ fun UserScreen(
                 title = { Text("Профиль") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -78,7 +73,6 @@ fun UserScreen(
                         }
                     }
                 }
-                else -> Unit
             }
         }
     }

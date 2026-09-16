@@ -10,57 +10,54 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.domain.model.AuthState
 import com.example.myapplication.presentation.ui.AuthScreen
 import com.example.myapplication.presentation.ui.HomeScreen
 import com.example.myapplication.presentation.ui.UserScreen
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
 
-sealed class Screen(val route: String) {
-    data object Splash : Screen("splash")
-    data object Home : Screen("home")
-    data object UserInfo : Screen("user_info") {
-    }
-    data object UserAuth : Screen("user_auth")
-}
-
 @Composable
 fun NavGraph(
+    navController: NavHostController,
+    onLogout: () -> Unit,
     viewModel: SessionViewModel = hiltViewModel()
 ) {
-    val navController = rememberNavController()
     val authState by viewModel.authState.collectAsStateWithLifecycle()
 
+    // Глобальный слушатель событий логаута из SessionViewModel (если используется)
     LaunchedEffect(Unit) {
         viewModel.logoutEvents.collect {
-            navController.navigate(Screen.UserAuth.route) {
-                popUpTo(0) { inclusive = true }
-            }
+            onLogout() // Вызываем колбэк из MainActivity для полной очистки стека
         }
     }
 
+    // Автоматическая навигация при изменении состояния авторизации
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Splash.route) { inclusive = true }
+                navController.navigate(Routers.Home.route) {
+                    popUpTo(Routers.Splash.route) { inclusive = true }
+                    launchSingleTop = true
                 }
             }
             is AuthState.Unauthenticated -> {
-                navController.navigate(Screen.UserAuth.route) {
-                    popUpTo(Screen.Splash.route) { inclusive = true }
+                navController.navigate(Routers.UserAuth.route) {
+                    popUpTo(Routers.Splash.route) { inclusive = true }
+                    launchSingleTop = true
                 }
             }
             else -> {} // Остается на Splash во время Loading
         }
     }
 
-    NavHost(navController = navController, startDestination = Screen.Splash.route) {
-
-        composable(Screen.Splash.route) {
+    NavHost(
+        navController = navController,
+        startDestination = Routers.Splash.route
+    ) {
+        composable(Routers.Splash.route) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -69,34 +66,30 @@ fun NavGraph(
             }
         }
 
-        composable(Screen.UserAuth.route) {
+        composable(Routers.UserAuth.route) {
             AuthScreen(
                 onLoginSuccess = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.UserAuth.route) { inclusive = true }
-                    }
-                },
-                viewModel = hiltViewModel()
-            )
-        }
-
-        composable(Screen.Home.route) {
-            HomeScreen(
-                onOpenUser = {
-                    navController.navigate(Screen.UserInfo.route)
-                },
-                onLogout = {
-                    navController.navigate(Screen.UserAuth.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
+                    navController.navigate(Routers.Home.route) {
+                        popUpTo(Routers.UserAuth.route) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
         }
 
-        composable(Screen.UserInfo.route) {
+        composable(Routers.Home.route) {
+            HomeScreen(
+                onOpenUser = {
+                    navController.navigate(Routers.UserInfo.route)
+                },
+                onLogout = onLogout // Пробрасываем колбэк полной очистки стека из MainActivity
+            )
+        }
+
+        composable(Routers.UserInfo.route) {
             UserScreen(
                 onBack = {
-                    navController.navigate(Screen.Home.route)
+                    navController.popBackStack() // Простой возврат назад, так как Home есть в стеке
                 },
                 viewModel = hiltViewModel()
             )

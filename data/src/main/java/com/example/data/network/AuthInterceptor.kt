@@ -18,7 +18,8 @@ import javax.inject.Singleton
 class AuthInterceptor @Inject constructor(
     private val localDataSource: AuthLocalDataSource,
     private val cookieJar: CustomCookieJar,
-    private val authApiProvider: Provider<AuthApi>
+    private val authApiProvider: Provider<AuthApi>,
+    private val authEventBus: AuthEventBus
 ) : Interceptor {
 
     private val mutex = Mutex()
@@ -29,12 +30,11 @@ class AuthInterceptor @Inject constructor(
 
         if (response.code != 401) return response
 
-        // ⚠️ ИСПРАВЛЕНИЕ ДЕДЛОКА:
-        // Если 401 пришел на эндпоинты логина или рефреша,
-        // не пытаемся рефрешить токен. Просто возвращаем ответ в SafeApiCall.
         val path = request.url.encodedPath
-        if (path.contains("auth/sign-in") || path.contains("auth/get-token")) {
-            return response
+        if (path.contains("auth/sign-in", ignoreCase = true) ||
+                    path.contains("auth/get-token", ignoreCase = true) ||
+                    path.contains("auth/logout", ignoreCase = true)) {
+                    return response
         }
 
         response.close()
@@ -62,8 +62,10 @@ class AuthInterceptor @Inject constructor(
     }
 
     private suspend fun handleAuthFailure() {
+        Log.w("[AuthInterceptor]", "Ошибка аутентификации: очистка сеанса и UI интерфейса")
         cookieJar.clear()
         localDataSource.clearSession()
+        authEventBus.notifyLogout()
     }
 
     private fun createErrorResponse(

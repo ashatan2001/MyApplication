@@ -3,7 +3,7 @@ package com.example.myapplication.presentation.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
@@ -170,7 +170,7 @@ private fun DrawerContent(
             Spacer(modifier = Modifier.weight(1f))
 
             DrawerItem(
-                icon = Icons.Default.ExitToApp,
+                icon = Icons.AutoMirrored.Filled.ExitToApp,
                 text = "Выйти",
                 onClick = onLogout
             )

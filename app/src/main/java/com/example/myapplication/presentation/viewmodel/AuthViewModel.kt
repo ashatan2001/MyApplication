@@ -60,7 +60,6 @@ class AuthViewModel @Inject constructor(
                         val e = result.exception
                         android.util.Log.e("LOGIN_DEBUG", "4. Ошибка! Тип: ${e?.javaClass?.simpleName}, Сообщение: ${e?.message}", e)
 
-                        // ИСПРАВЛЕНИЕ ЗДЕСЬ: добавляем ?: "Текст по умолчанию"
                         val message: String = when (e) {
                             is ApiException -> e.message ?: "Ошибка авторизации"
                             is NetworkException -> "Нет подключения к интернету"

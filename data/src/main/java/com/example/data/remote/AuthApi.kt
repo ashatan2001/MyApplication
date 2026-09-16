@@ -2,7 +2,6 @@ package com.example.data.remote
 
 import com.example.data.dto.LoginRequestDto
 import com.example.data.dto.LoginResponseDto
-import com.example.data.dto.UserDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -17,7 +16,4 @@ interface AuthApi {
 
     @POST("auth/logout")
     suspend fun logout(): Response<Unit>
-
-    @GET("auth/profile")
-    suspend fun getCurrentUser(): Response<UserDto>
 }

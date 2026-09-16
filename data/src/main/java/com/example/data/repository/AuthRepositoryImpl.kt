@@ -40,6 +40,9 @@ class AuthRepositoryImpl @Inject constructor(
             }
         }
 
+        val fullname = dto.fullname
+        localDataSource.saveUserName(fullname)
+        Log.d("AuthRepo", "Fullname $fullname сохранено")
         localDataSource.saveAuthState(true) // Сохраняем состояние при успешном входе
         return authMapper.toDomain(dto)
     }

@@ -2,7 +2,6 @@ package com.example.data.remote
 
 import com.example.data.dto.LoginRequestDto
 import com.example.data.dto.LoginResponseDto
-import com.example.data.dto.UserDto
 import com.example.data.util.safeApiCall
 import javax.inject.Inject
 
@@ -21,6 +20,4 @@ class AuthRemoteDataSource @Inject constructor(
     suspend fun logout() {
         safeApiCall<Unit> { api.logout() }
     }
-
-    suspend fun getCurrentUser(): UserDto = safeApiCall { api.getCurrentUser() }
 }

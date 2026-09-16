@@ -38,7 +38,10 @@ class HomeViewModel @Inject constructor(
                     _uiState.value = HomeUiState.Success(userName = result.data)
                 }
                 is CustomResult.Error -> {
-                    _uiState.value = HomeUiState.Error("Неизвестная ошибка")
+                    Log.e("HomeViewModel", "Ошибка загрузки", result.exception)
+                    _uiState.value = HomeUiState.Error(
+                        result.exception.message ?: "Неизвестная ошибка"
+                    )
                 }
             }
         }
