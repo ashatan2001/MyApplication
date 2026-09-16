@@ -52,6 +52,16 @@ class AuthRepositoryImpl @Inject constructor(
         remoteDataSource.refreshToken()
     }
 
+    override suspend fun tryRefreshToken(): Boolean {
+        val success = remoteDataSource.tryRefreshToken()
+
+        if (!success) {
+            Log.w("AuthRepository", "Refresh token failed. Clearing session.")
+            clearSession()
+        }
+        return success
+    }
+
     override suspend fun logout() {
         try {
             // Пытаемся уведомить сервер о выходе (не критично, если сеть недоступна)
@@ -63,6 +73,7 @@ class AuthRepositoryImpl @Inject constructor(
             cookieJar.clear()
             localDataSource.clearSession() // Это триггерит обновление UI через Flow
             userRepository.clearCache()
+            Log.d("AuthRepository", "Session fully cleared")
         }
     }
 
@@ -70,4 +81,11 @@ class AuthRepositoryImpl @Inject constructor(
         localDataSource.getAuthState().map { isAuthenticated ->
             if (isAuthenticated) AuthState.Authenticated else AuthState.Unauthenticated
         }
+
+    private suspend fun clearSession() {
+        cookieJar.clear()
+        localDataSource.clearSession()
+        userRepository.clearCache()
+        Log.d("AuthRepository", "Session fully cleared")
+    }
 }

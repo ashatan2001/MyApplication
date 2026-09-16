@@ -1,7 +1,7 @@
 package com.example.data.di
 
 import com.example.data.BuildConfig
-import com.example.data.network.AuthInterceptor
+import com.example.data.network.HeadersInterceptor
 import com.example.data.network.CustomCookieJar
 import com.example.data.remote.AuthApi
 import com.example.data.remote.UserApi
@@ -49,11 +49,13 @@ object NetworkModule {
         encodeDefaults = true
     }
 
-    // 2. Базовый клиент (без интерсептора авторизации)
     @Provides
     @Singleton
     @BaseOkHttp
-    fun provideBaseOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+    fun provideBaseOkHttpClient(
+        headersInterceptor: HeadersInterceptor
+    ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(headersInterceptor)
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
@@ -63,17 +65,17 @@ object NetworkModule {
     @AuthOkHttp
     fun provideAuthOkHttpClient(
         cookieJar: CustomCookieJar,
-        authInterceptor: AuthInterceptor
+        headersInterceptor: HeadersInterceptor
     ): OkHttpClient {
-        // Временный интерсептор для просмотра реальных ответов сервера в Logcat
         val loggingInterceptor = HttpLoggingInterceptor().apply {
+            // В продакшене лучше сменить на Level.BASIC или Level.NONE
             level = HttpLoggingInterceptor.Level.BODY
         }
 
         return OkHttpClient.Builder()
             .cookieJar(cookieJar)
-            .addInterceptor(loggingInterceptor) // <-- Добавлено для диагностики
-            .addInterceptor(authInterceptor)
+            .addInterceptor(headersInterceptor)
+            .addInterceptor(loggingInterceptor)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .build()
@@ -83,11 +85,11 @@ object NetworkModule {
     @Singleton
     @BaseRetrofit
     fun provideBaseRetrofit(
-        @BaseOkHttp client: OkHttpClient,
+        @BaseOkHttp okHttpClient: OkHttpClient,
         json: Json
     ): Retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.BASE_URL)
-        .client(client)
+        .client(okHttpClient)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 

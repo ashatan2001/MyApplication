@@ -43,8 +43,27 @@ private fun parseErrorBody(body: String?, httpCode: Int): DataLayerException {
 }
 
 fun mapHttpError(code: Int, cause: Throwable? = null): DataLayerException = when (code) {
-    401, 403 -> UnauthorizedException(cause = cause) // Важно: выбрасываем специфичное исключение
+    401, 403, 419 -> UnauthorizedException(cause = cause) // Важно: выбрасываем специфичное исключение
     404 -> DataLayerException(message = "Resource not found", cause = cause)
     in 500..599 -> ServerException(httpCode = code, cause = cause)
     else -> DataLayerException(message = "HTTP error: $code", cause = cause)
+}
+
+suspend fun <T> safeApiCallWithRetry(
+    block: suspend () -> T,
+    onRefreshToken: suspend () -> Boolean
+): T {
+    return try {
+        block()
+    } catch (e: UnauthorizedException) {
+        android.util.Log.d("LOGIN_DEBUG", "[SafeApiCallWithRetry] Получен 401/419, пробуем обновить токен")
+        val refreshed = onRefreshToken()
+        if (refreshed) {
+            android.util.Log.d("LOGIN_DEBUG", "[SafeApiCallWithRetry] Токен обновлен, повторяем запрос")
+            block()
+        } else {
+            android.util.Log.e("LOGIN_DEBUG", "[SafeApiCallWithRetry] Не удалось обновить токен")
+            throw e
+        }
+    }
 }

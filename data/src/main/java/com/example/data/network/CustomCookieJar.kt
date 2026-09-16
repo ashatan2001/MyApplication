@@ -32,13 +32,14 @@ class CustomCookieJar @Inject constructor(
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         cookieStore[url.host] = cookies
         cookies.forEach { cookie ->
-            Log.d("CookieJar", "Сохранена кука: ${cookie.name} = ${cookie.value}...")
+            Log.d("CookieJar", "Сохранена кука от \$url: \${cookies.map { it.name }}")
         }
         saveToStorage()
     }
 
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
         val cookies = cookieStore[url.host] ?: return emptyList()
+        Log.d("CookieJar", "Загрузка cookies для $url: ${cookies.size} шт.")
         return cookies.filter {
             it.name == "lexACCToken" || it.name == "lexRefreshToken"
         }

@@ -7,9 +7,12 @@ import com.example.data.local.AuthLocalDataSource
 import com.example.data.mapper.UserMapper
 import com.example.data.network.AuthEventBus
 import com.example.data.remote.UserRemoteDataSource
+import com.example.data.util.safeApiCallWithRetry
 import com.example.domain.exception.UserNotFoundException
 import com.example.domain.model.UserModel
+import com.example.domain.repository.AuthRepository
 import com.example.domain.repository.UserRepository
+import dagger.internal.Provider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,12 +26,13 @@ class UserRepositoryImpl @Inject constructor(
     private val remoteDataSource: UserRemoteDataSource,
     private val localDataSource: AuthLocalDataSource,
     private val mapper: UserMapper,
-    private val authEventBus: AuthEventBus
+    private val authEventBus: AuthEventBus,
+    private val authRepositoryProvider: Provider<AuthRepository>
 ) : UserRepository {
 
     private val userCache = ConcurrentHashMap<Int, UserModel>()
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     init {
         scope.launch {
@@ -49,7 +53,11 @@ class UserRepositoryImpl @Inject constructor(
         userCache[userId]?.let { return it }
 
         return try {
-            val dto = remoteDataSource.getUserInfo(userId)
+            val dto = safeApiCallWithRetry(
+                block = { remoteDataSource.getUserInfo(userId) },
+                onRefreshToken = { authRepositoryProvider.get().tryRefreshToken() }
+            )
+
             mapper.toModel(dto).also { userCache[userId] = it }
         } catch (e: DataLayerException) {
             if (e.errorCode == 404) {
@@ -76,4 +84,5 @@ class UserRepositoryImpl @Inject constructor(
         userCache.clear()
         Log.d("UserRepository", "User cache cleared")
     }
+
 }
