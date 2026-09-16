@@ -44,7 +44,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUserInfo(): UserModel {
         val userId = getUserId()
-            ?: throw IllegalStateException("Пользователь не авторизирован")
+            ?: throw UserNotFoundException(userId = null, message = "Пользователь не авторизирован")
 
         userCache[userId]?.let { return it }
 

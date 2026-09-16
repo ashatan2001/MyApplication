@@ -28,13 +28,13 @@ class AuthInterceptor @Inject constructor(
         val request = chain.request()
         val response = chain.proceed(request)
 
-        if (response.code != 401) return response
+        if (response.code != 401 && response.code != 419) return response
 
         val path = request.url.encodedPath
         if (path.contains("auth/sign-in", ignoreCase = true) ||
-                    path.contains("auth/get-token", ignoreCase = true) ||
-                    path.contains("auth/logout", ignoreCase = true)) {
-                    return response
+            path.contains("auth/get-token", ignoreCase = true) ||
+            path.contains("auth/logout", ignoreCase = true)) {
+            return response
         }
 
         response.close()

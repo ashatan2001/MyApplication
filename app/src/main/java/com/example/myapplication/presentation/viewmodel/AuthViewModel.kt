@@ -21,7 +21,7 @@ import javax.inject.Inject
 sealed class AuthUiState {
     data object Idle : AuthUiState()
     data object Loading : AuthUiState()
-    data class Success(val fullname: String) : AuthUiState()
+    data class Success(val userName: String) : AuthUiState()
     data class Error(val message: String) : AuthUiState()
 }
 
@@ -52,8 +52,8 @@ class AuthViewModel @Inject constructor(
 
                 when (result) {
                     is CustomResult.Success -> {
-                        android.util.Log.d("LOGIN_DEBUG", "4. Успех: ${result.data.fullname}")
-                        _uiState.value = AuthUiState.Success(result.data.fullname)
+                        android.util.Log.d("LOGIN_DEBUG", "4. Успех: ${result.data.userName}")
+                        _uiState.value = AuthUiState.Success(result.data.userName)
                         _events.trySend(AuthEvent.LoginSuccess)
                     }
                     is CustomResult.Error -> {

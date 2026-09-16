@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,11 @@ fun UserScreen(
     viewModel: UserViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadUserData()
+    }
+
 
     Scaffold(
         topBar = {
@@ -95,7 +101,7 @@ private fun UserContent(user: UserModel) {
         )
 
         Text(
-            user.fullname,
+            user.userName,
             style = MaterialTheme.typography.headlineMedium
         )
 
@@ -110,7 +116,7 @@ private fun UserContent(user: UserModel) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 InfoRow("ID", user.id.toString())
-                InfoRow("FIO", user.fullname)
+                InfoRow("FIO", user.userName)
                 InfoRow("Position", user.position)
                 InfoRow("PositionId", user.positionId.toString())
                 InfoRow("isEmployee", user.isEmployee.toString())

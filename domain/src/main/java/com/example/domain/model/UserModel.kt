@@ -3,7 +3,7 @@ package com.example.domain.model
 data class UserModel (
     val id: Int,
     // val login: String,
-    val fullname: String,
+    val userName: String,
     val position: String,
     val positionId: Int,
     val isEmployee: Boolean,

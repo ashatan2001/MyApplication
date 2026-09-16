@@ -1,6 +1,6 @@
 package com.example.domain.model
 
 data class AuthSuccess (
-    val fullname: String,
+    val userName: String,
     val message: String
 )

@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class LoginResponseDto(
     @SerialName("fio")
-    val fullname: String,
+    val userName: String,
     val message: String
 ) {
 }

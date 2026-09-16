@@ -10,7 +10,7 @@ class UserMapper
         fun toModel(dto: UserDto): UserModel =
             UserModel(
                 id = dto.id,
-                fullname = dto.fullname,
+                userName = dto.userName,
                 position = dto.position,
                 positionId = dto.positionId,
                 isEmployee = dto.isEmployee,
@@ -20,7 +20,7 @@ class UserMapper
         fun toDto(model: UserModel): UserDto =
             UserDto(
                 id = model.id,
-                fullname = model.fullname,
+                userName = model.userName,
                 position = model.position,
                 positionId = model.positionId,
                 isEmployee = model.isEmployee,
