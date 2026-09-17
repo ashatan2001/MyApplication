@@ -1,10 +1,10 @@
 package com.example.data.network
 
+import com.example.data.BuildConfig
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.example.data.BuildConfig
 
 @Singleton
 class HeadersInterceptor @Inject constructor() : Interceptor {

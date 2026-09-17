@@ -1,6 +1,5 @@
 package com.example.data.remote
 
-import android.util.Log
 import com.example.data.dto.LoginRequestDto
 import com.example.data.dto.LoginResponseDto
 import com.example.data.util.safeApiCall

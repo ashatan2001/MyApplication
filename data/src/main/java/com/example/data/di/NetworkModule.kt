@@ -1,8 +1,8 @@
 package com.example.data.di
 
 import com.example.data.BuildConfig
-import com.example.data.network.HeadersInterceptor
 import com.example.data.network.CustomCookieJar
+import com.example.data.network.HeadersInterceptor
 import com.example.data.network.TokenAuthenticator
 import com.example.data.remote.AuthApi
 import com.example.data.remote.UserApi
@@ -11,7 +11,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
-import okhttp3.Authenticator
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor

@@ -1,11 +1,7 @@
 package com.example.data.network
 
 import android.util.Log
-import okhttp3.Authenticator
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.Route
+import okhttp3.*
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,7 +9,8 @@ import javax.inject.Singleton
 
 @Singleton
 class TokenAuthenticator @Inject constructor(
-    private val cookieJar: CustomCookieJar
+    private val cookieJar: CustomCookieJar,
+    private val headersInterceptor: HeadersInterceptor
 ) : Authenticator {
 
     companion object {
@@ -23,6 +20,7 @@ class TokenAuthenticator @Inject constructor(
     private val refreshClient by lazy {
         OkHttpClient.Builder()
             .cookieJar(cookieJar)
+            .addInterceptor(headersInterceptor)
             .build()
     }
 
@@ -40,6 +38,12 @@ class TokenAuthenticator @Inject constructor(
         // Защита от бесконечного цикла при попытке обновить сам refresh-токен
         if (originalUrl.encodedPath.contains("/auth/get-token")) {
             Log.w(TAG, "Сам запрос обновления токена вернул ошибку. Очищаем сессию.")
+            cookieJar.clear()
+            return null
+        }
+
+        if (response.priorResponse != null) {
+            Log.w(TAG, "Повторный 401/419 после refresh. Очищаем сессию.")
             cookieJar.clear()
             return null
         }
@@ -67,7 +71,6 @@ class TokenAuthenticator @Inject constructor(
                 response.request.newBuilder().build()
             } else {
                 Log.w(TAG, "Не удалось обновить токен (код $refreshCode). Выход из системы.")
-                val errorBody = refreshResponse.body?.string()
                 cookieJar.clear()
                 null
             }

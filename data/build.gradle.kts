@@ -37,6 +37,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
@@ -49,6 +53,7 @@ dependencies {
 
     // Hilt для Android
     implementation("com.google.dagger:hilt-android:2.58")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.14.0")
     ksp("com.google.dagger:hilt-compiler:2.58")
 
     // Сеть и сериализация
@@ -64,7 +69,10 @@ dependencies {
 
     // Тесты
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 }

@@ -9,7 +9,6 @@ import com.example.data.util.JwtParser
 import com.example.domain.model.AuthState
 import com.example.domain.model.AuthSuccess
 import com.example.domain.repository.AuthRepository
-import com.example.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
