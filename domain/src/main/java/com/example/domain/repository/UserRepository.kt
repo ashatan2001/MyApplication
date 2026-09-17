@@ -7,5 +7,5 @@ interface UserRepository {
     suspend fun getUserInfo(): UserModel
     suspend fun getUserId(): Int?
     suspend fun getUserName(): String?
-    fun clearCache()
+    //fun clearCache()
 }

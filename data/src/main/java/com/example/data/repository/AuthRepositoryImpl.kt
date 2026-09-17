@@ -18,7 +18,6 @@ class AuthRepositoryImpl @Inject constructor(
     private val remoteDataSource: AuthRemoteDataSource,
     private val localDataSource: AuthLocalDataSource,
     private val cookieJar: CustomCookieJar,
-    private val userRepository: UserRepository,
     private val authMapper: AuthMapper,
     private val jwtParser: JwtParser
 ) : AuthRepository {
@@ -52,16 +51,6 @@ class AuthRepositoryImpl @Inject constructor(
         remoteDataSource.refreshToken()
     }
 
-    override suspend fun tryRefreshToken(): Boolean {
-        val success = remoteDataSource.tryRefreshToken()
-
-        if (!success) {
-            Log.w("AuthRepository", "Refresh token failed. Clearing session.")
-            clearSession()
-        }
-        return success
-    }
-
     override suspend fun logout() {
         try {
             // Пытаемся уведомить сервер о выходе (не критично, если сеть недоступна)
@@ -72,7 +61,6 @@ class AuthRepositoryImpl @Inject constructor(
             // Гарантированная очистка локальных данных в любом сценарии
             cookieJar.clear()
             localDataSource.clearSession() // Это триггерит обновление UI через Flow
-            userRepository.clearCache()
             Log.d("AuthRepository", "Session fully cleared")
         }
     }
@@ -85,7 +73,6 @@ class AuthRepositoryImpl @Inject constructor(
     private suspend fun clearSession() {
         cookieJar.clear()
         localDataSource.clearSession()
-        userRepository.clearCache()
         Log.d("AuthRepository", "Session fully cleared")
     }
 }

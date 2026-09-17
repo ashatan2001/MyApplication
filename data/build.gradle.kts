@@ -20,11 +20,11 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "API_VERSION", "\"1.1.0-dev\"")
-            buildConfigField("String", "BASE_URL", "\"https://dev-api.example.com/\"")
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3080/\"")
         }
         release {
             buildConfigField("String", "API_VERSION", "\"1.0.0\"")
-            buildConfigField("String", "BASE_URL", "\"https://api.example.com/\"")
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3080/\"")
         }
     }
 

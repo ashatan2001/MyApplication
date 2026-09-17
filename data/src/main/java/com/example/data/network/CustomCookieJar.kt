@@ -32,7 +32,7 @@ class CustomCookieJar @Inject constructor(
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         cookieStore[url.host] = cookies
         cookies.forEach { cookie ->
-            Log.d("CookieJar", "Сохранена кука от \$url: \${cookies.map { it.name }}")
+            Log.d("CookieJar", "Сохранена кука: ${cookie.name} = ${cookie.value}...")
         }
         saveToStorage()
     }

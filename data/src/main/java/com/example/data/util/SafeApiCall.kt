@@ -21,8 +21,8 @@ suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
         }
     } catch (e: ApiException) {
         throw e
-    } catch (e: HttpException) {
-        throw parseErrorBody(e.response()?.errorBody()?.string(), e.code())
+    } catch (e: UnauthorizedException) {
+        throw e
     } catch (e: IOException) {
         android.util.Log.e("LOGIN_DEBUG", "[SafeApiCall] Ошибка сети (IO)", e)
         throw NetworkException(cause = e)
@@ -33,11 +33,14 @@ suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
 }
 
 private fun parseErrorBody(body: String?, httpCode: Int): DataLayerException {
+    android.util.Log.d("LOGIN_DEBUG", "[parseErrorBody] code=$httpCode, body=$body")
     if (body.isNullOrBlank()) return mapHttpError(httpCode)
     return try {
         val dto = json.decodeFromString<ErrorResponseDto>(body)
+        android.util.Log.d("LOGIN_DEBUG", "[parseErrorBody] parsed dto=$dto")
         ApiException(errorNumber = dto.errorNumber, message = dto.message)
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        android.util.Log.e("LOGIN_DEBUG", "[parseErrorBody] parse failed", e)
         mapHttpError(httpCode)
     }
 }
@@ -47,23 +50,4 @@ fun mapHttpError(code: Int, cause: Throwable? = null): DataLayerException = when
     404 -> DataLayerException(message = "Resource not found", cause = cause)
     in 500..599 -> ServerException(httpCode = code, cause = cause)
     else -> DataLayerException(message = "HTTP error: $code", cause = cause)
-}
-
-suspend fun <T> safeApiCallWithRetry(
-    block: suspend () -> T,
-    onRefreshToken: suspend () -> Boolean
-): T {
-    return try {
-        block()
-    } catch (e: UnauthorizedException) {
-        android.util.Log.d("LOGIN_DEBUG", "[SafeApiCallWithRetry] Получен 401/419, пробуем обновить токен")
-        val refreshed = onRefreshToken()
-        if (refreshed) {
-            android.util.Log.d("LOGIN_DEBUG", "[SafeApiCallWithRetry] Токен обновлен, повторяем запрос")
-            block()
-        } else {
-            android.util.Log.e("LOGIN_DEBUG", "[SafeApiCallWithRetry] Не удалось обновить токен")
-            throw e
-        }
-    }
 }

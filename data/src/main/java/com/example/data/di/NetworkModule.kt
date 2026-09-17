@@ -3,6 +3,7 @@ package com.example.data.di
 import com.example.data.BuildConfig
 import com.example.data.network.HeadersInterceptor
 import com.example.data.network.CustomCookieJar
+import com.example.data.network.TokenAuthenticator
 import com.example.data.remote.AuthApi
 import com.example.data.remote.UserApi
 import dagger.Module
@@ -10,6 +11,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.Authenticator
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -65,7 +67,8 @@ object NetworkModule {
     @AuthOkHttp
     fun provideAuthOkHttpClient(
         cookieJar: CustomCookieJar,
-        headersInterceptor: HeadersInterceptor
+        headersInterceptor: HeadersInterceptor,
+        tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             // В продакшене лучше сменить на Level.BASIC или Level.NONE
@@ -74,6 +77,7 @@ object NetworkModule {
 
         return OkHttpClient.Builder()
             .cookieJar(cookieJar)
+            .authenticator(tokenAuthenticator)
             .addInterceptor(headersInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(15, TimeUnit.SECONDS)
