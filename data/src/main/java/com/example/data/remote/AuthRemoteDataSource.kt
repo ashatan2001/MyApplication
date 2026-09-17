@@ -21,13 +21,4 @@ class AuthRemoteDataSource @Inject constructor(
     suspend fun logout() {
         safeApiCall<Unit> { api.logout() }
     }
-    suspend fun tryRefreshToken(): Boolean {
-        return try {
-            safeApiCall<Unit> { api.refreshToken() }
-            true
-        } catch (e: Exception) {
-            Log.w("AuthRemoteDataSource", "Refresh token failed", e)
-            false
-        }
-    }
 }

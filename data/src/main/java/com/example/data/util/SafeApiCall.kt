@@ -1,19 +1,27 @@
 package com.example.data.util
 
 import com.example.data.dto.ErrorResponseDto
-import com.example.data.exception.*
+import com.example.data.exception.ApiException
+import com.example.data.exception.DataLayerException
+import com.example.data.exception.DataParsingException
+import com.example.data.exception.NetworkException
+import com.example.data.exception.ServerException
+import com.example.data.exception.UnauthorizedException
 import kotlinx.serialization.json.Json
-import retrofit2.HttpException
 import retrofit2.Response
 import java.io.IOException
 
-private val json = Json {ignoreUnknownKeys = true}
+private val json = Json {
+    ignoreUnknownKeys = true
+    coerceInputValues = true
+}
 
 suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
     android.util.Log.d("LOGIN_DEBUG", "[SafeApiCall] Начало выполнения запроса...")
     return try {
         val response = block()
         android.util.Log.d("LOGIN_DEBUG", "[SafeApiCall] Запрос завершен. Успех: ${response.isSuccessful}, Код: ${response.code()}")
+
         if (response.isSuccessful) {
             response.body() ?: throw DataParsingException("Empty response body")
         } else {
@@ -27,27 +35,41 @@ suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
         android.util.Log.e("LOGIN_DEBUG", "[SafeApiCall] Ошибка сети (IO)", e)
         throw NetworkException(cause = e)
     } catch (e: Exception) {
-        android.util.Log.e("LOGIN_DEBUG", "[SafeApiCall] Неожиданная ошибка парсинга", e)
-        throw DataParsingException(cause = e)
+        android.util.Log.e("LOGIN_DEBUG", "[SafeApiCall] Неожиданная ошибка", e)
+        throw DataParsingException(message = e.message ?: "Неизвестная ошибка", cause = e)
     }
 }
 
 private fun parseErrorBody(body: String?, httpCode: Int): DataLayerException {
     android.util.Log.d("LOGIN_DEBUG", "[parseErrorBody] code=$httpCode, body=$body")
-    if (body.isNullOrBlank()) return mapHttpError(httpCode)
+
+    if (body.isNullOrBlank()) {
+        return mapHttpError(httpCode)
+    }
+
     return try {
         val dto = json.decodeFromString<ErrorResponseDto>(body)
         android.util.Log.d("LOGIN_DEBUG", "[parseErrorBody] parsed dto=$dto")
-        ApiException(errorNumber = dto.errorNumber, message = dto.message)
+
+        val errorNum = dto.errorNumber ?: 0
+        val errorMessage = dto.message ?: "Ошибка сервера (код ${dto.errorNumber})"
+
+        ApiException(errorNumber = errorNum, message = errorMessage)
+
     } catch (e: Exception) {
-        android.util.Log.e("LOGIN_DEBUG", "[parseErrorBody] parse failed", e)
-        mapHttpError(httpCode)
+        android.util.Log.w("LOGIN_DEBUG", "[parseErrorBody] Не удалось распарсить JSON, используем raw body. Причина: ${e.message}")
+
+        if (httpCode == 401 || httpCode == 403 || httpCode == 419) {
+            UnauthorizedException(message = body, cause = e)
+        } else {
+            DataLayerException(message = body, cause = e)
+        }
     }
 }
 
 fun mapHttpError(code: Int, cause: Throwable? = null): DataLayerException = when (code) {
-    401, 403, 419 -> UnauthorizedException(cause = cause) // Важно: выбрасываем специфичное исключение
-    404 -> DataLayerException(message = "Resource not found", cause = cause)
-    in 500..599 -> ServerException(httpCode = code, cause = cause)
-    else -> DataLayerException(message = "HTTP error: $code", cause = cause)
+    401, 403, 419 -> UnauthorizedException(message = "Требуется авторизация", cause = cause)
+    404 -> DataLayerException(message = "Ресурс не найден", cause = cause)
+    in 500..599 -> ServerException(httpCode = code, message = "Ошибка сервера: $code", cause = cause)
+    else -> DataLayerException(message = "HTTP ошибка: $code", cause = cause)
 }

@@ -2,6 +2,7 @@ package com.example.data.network
 
 import android.content.Context
 import android.util.Log
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -10,8 +11,6 @@ import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import javax.inject.Inject
 import javax.inject.Singleton
-
-//private val Context.cookieDataStore by preferencesDataStore(name = "auth_data")
 
 @Singleton
 class CustomCookieJar @Inject constructor(
@@ -38,16 +37,12 @@ class CustomCookieJar @Inject constructor(
     }
 
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
-        val cookies = cookieStore[url.host] ?: return emptyList()
-        Log.d("CookieJar", "Загрузка cookies для $url: ${cookies.size} шт.")
-        return cookies.filter {
-            it.name == "lexACCToken" || it.name == "lexRefreshToken"
-        }
+        return cookieStore.values.flatten().filter { it.matches(url) }
     }
 
     fun clear() {
         cookieStore.clear()
-        prefs.edit().clear().apply()
+        prefs.edit { clear() }
         Log.d("CookieJar", "Cookie store cleared")
     }
 
@@ -60,7 +55,7 @@ class CustomCookieJar @Inject constructor(
                 "path" to cookie.path
             )
         }})
-        prefs.edit().putString("cookies", jsonStr).apply()
+        prefs.edit { putString("cookies", jsonStr) }
     }
 
     private fun loadFromStorage() {

@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ErrorResponseDto(
     @SerialName("ErrorNo")
-    val errorNumber: Int,
+    val errorNumber: Int? = null,
     @SerialName("Message")
-    val message: String,
+    val message: String? = null
 )

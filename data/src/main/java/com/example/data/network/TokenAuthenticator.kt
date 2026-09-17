@@ -1,5 +1,6 @@
 package com.example.data.network
 
+import android.util.Log
 import okhttp3.Authenticator
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -14,6 +15,11 @@ import javax.inject.Singleton
 class TokenAuthenticator @Inject constructor(
     private val cookieJar: CustomCookieJar
 ) : Authenticator {
+
+    companion object {
+        private const val TAG = "TokenAuthenticator"
+    }
+
     private val refreshClient by lazy {
         OkHttpClient.Builder()
             .cookieJar(cookieJar)
@@ -21,15 +27,28 @@ class TokenAuthenticator @Inject constructor(
     }
 
     override fun authenticate(route: Route?, response: Response): Request? {
-        if (response.code != 401 && response.code != 419) return null
+        val originalUrl = response.request.url
+        val responseCode = response.code
 
-        if (response.request.url.encodedPath.contains("/auth/get-token")) {
+        Log.d(TAG, "Обнаружен код $responseCode для запроса: $originalUrl")
+
+        if (responseCode != 401 && responseCode != 419) {
+            Log.d(TAG, "Игнорируем: код $responseCode не требует обновления токена")
+            return null
+        }
+
+        // Защита от бесконечного цикла при попытке обновить сам refresh-токен
+        if (originalUrl.encodedPath.contains("/auth/get-token")) {
+            Log.w(TAG, "Сам запрос обновления токена вернул ошибку. Очищаем сессию.")
             cookieJar.clear()
             return null
         }
 
-        val originalUrl = response.request.url
-        val refreshUrl = "${originalUrl.scheme}://${originalUrl.host}:${originalUrl.port}/auth/get-token"
+        val refreshUrl = originalUrl.newBuilder()
+            .encodedPath("/auth/get-token")
+            .build()
+
+        Log.d(TAG, "Пытаемся обновить токен по адресу: $refreshUrl")
 
         val refreshRequest = Request.Builder()
             .url(refreshUrl)
@@ -38,14 +57,27 @@ class TokenAuthenticator @Inject constructor(
 
         return try {
             val refreshResponse = refreshClient.newCall(refreshRequest).execute()
+            val refreshCode = refreshResponse.code
+
+            Log.d(TAG, "Ответ от сервера обновления токена: $refreshCode")
 
             if (refreshResponse.isSuccessful) {
+                Log.d(TAG, "Токен успешно обновлен. Повторяем исходный запрос.")
+                // Важно: при успешном ответе CookieJar уже сохранил новые куки из ответа
                 response.request.newBuilder().build()
             } else {
+                Log.w(TAG, "Не удалось обновить токен (код $refreshCode). Выход из системы.")
+                val errorBody = refreshResponse.body?.string()
                 cookieJar.clear()
                 null
             }
         } catch (e: IOException) {
+            Log.e(TAG, "Сетевая ошибка при обновлении токена", e)
+            cookieJar.clear()
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "Неизвестная ошибка при обновлении токена", e)
+            cookieJar.clear()
             null
         }
     }
