@@ -1,6 +1,12 @@
 package com.example.data.di
 
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import com.example.data.BuildConfig
+import com.example.data.network.AuthEventBus
+import com.example.data.network.AuthEventBusImpl
 import com.example.data.network.CustomCookieJar
 import com.example.data.network.HeadersInterceptor
 import com.example.data.network.TokenAuthenticator
@@ -9,6 +15,7 @@ import com.example.data.remote.UserApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -37,17 +44,24 @@ annotation class BaseRetrofit
 @Retention(AnnotationRetention.BINARY)
 annotation class AuthRetrofit
 
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "auth_cookies")
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    // 1. Единый экземпляр Json для всего приложения (используется и в Retrofit, и в DataStore)
     @Provides
     @Singleton
     fun provideJson(): Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = true
+    }
+
+    @Provides
+    @Singleton
+    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
+        return context.dataStore
     }
 
     @Provides
@@ -70,8 +84,10 @@ object NetworkModule {
         tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            // В продакшене лучше сменить на Level.BASIC или Level.NONE
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG)
+                HttpLoggingInterceptor.Level.BODY
+            else
+                HttpLoggingInterceptor.Level.NONE
         }
 
         return OkHttpClient.Builder()
@@ -108,7 +124,6 @@ object NetworkModule {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 
-    // 6. Создание API интерфейсов
     @Provides
     @Singleton
     fun provideAuthApi(@AuthRetrofit retrofit: Retrofit): AuthApi =

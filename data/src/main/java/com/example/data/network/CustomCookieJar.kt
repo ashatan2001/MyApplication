@@ -1,39 +1,69 @@
 package com.example.data.network
 
+import CookieData
 import android.content.Context
 import android.util.Log
-import androidx.core.content.edit
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class CustomCookieJar @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val json: Json
+    private val json: Json,
+    private val dataStore: DataStore<Preferences>,
+    private val authEventBus: AuthEventBus
 ) : CookieJar {
 
-    private val cookieStore = mutableMapOf<String, List<Cookie>>()
-    private val prefs = context.getSharedPreferences("auth_cookies", Context.MODE_PRIVATE)
-
-    var userId: Int? = null
+    private val cookieStore = ConcurrentHashMap<String, List<Cookie>>()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val cookiesKey = stringPreferencesKey("cookies")
 
     init {
-        // Загружаем куки при инициализации
-        loadFromStorage()
+        scope.launch {
+            loadFromStorage()
+        }
     }
 
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-        cookieStore[url.host] = cookies
+        val host = url.host
+        val existingCookies = cookieStore[host].orEmpty().toMutableList()
+        val currentTime = System.currentTimeMillis()
+
+        // Удаляем старые версии кук, которые обновляются в этом ответе
+        existingCookies.removeAll { existing ->
+            cookies.any { new -> new.name == existing.name && new.path == existing.path }
+        }
+
+        // Добавляем новые/обновленные куки и сразу фильтруем протухшие (Max-Age=0 и т.д.)
+        val validCookies = (existingCookies + cookies).filter {
+            it.expiresAt == -1L || it.expiresAt > currentTime
+        }
+
+        cookieStore[host] = validCookies
+
         cookies.forEach { cookie ->
             Log.d("CookieJar", "Сохранена кука: ${cookie.name} = ${cookie.value}...")
         }
-        saveToStorage()
+
+        scope.launch {
+            saveToStorage()
+        }
     }
 
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
@@ -42,36 +72,60 @@ class CustomCookieJar @Inject constructor(
 
     fun clear() {
         cookieStore.clear()
-        prefs.edit { clear() }
-        Log.d("CookieJar", "Cookie store cleared")
+        CoroutineScope(Dispatchers.Main).launch {
+            dataStore.edit { preferences ->
+                preferences.clear()
+            }
+            Log.d("CookieJar", "Cookie store cleared")
+            // Уведомляем о выходе из системы
+            authEventBus.notifyLogout()
+        }
     }
 
-    private fun saveToStorage() {
-        val jsonStr = json.encodeToString(cookieStore.mapValues { it.value.map { cookie ->
-            mapOf(
-                "name" to cookie.name,
-                "value" to cookie.value,
-                "domain" to cookie.domain,
-                "path" to cookie.path
-            )
-        }})
-        prefs.edit { putString("cookies", jsonStr) }
+    private suspend fun saveToStorage() {
+        val jsonStr = json.encodeToString(cookieStore.mapValues { (_, cookies) ->
+            cookies.map { cookie ->
+                CookieData(
+                    name = cookie.name,
+                    value = cookie.value,
+                    domain = cookie.domain,
+                    path = cookie.path,
+                    expiresAt = cookie.expiresAt,
+                    secure = cookie.secure,
+                    httpOnly = cookie.httpOnly,
+                    hostOnly = cookie.hostOnly
+                )
+            }
+        })
+
+        dataStore.edit { preferences ->
+            preferences[cookiesKey] = jsonStr
+        }
     }
 
-    private fun loadFromStorage() {
-        val jsonStr = prefs.getString("cookies", null) ?: return
+    private suspend fun loadFromStorage() {
         try {
-            val map = json.decodeFromString<Map<String, List<Map<String, String>>>>(jsonStr)
+            val preferences = dataStore.data.first()
+            val jsonStr = preferences[cookiesKey] ?: return
+
+            val map = json.decodeFromString<Map<String, List<CookieData>>>(jsonStr)
             cookieStore.putAll(map.mapValues { (_, cookies) ->
-                cookies.map { cookieMap ->
+                cookies.map { cookieData ->
                     Cookie.Builder()
-                        .name(cookieMap["name"] ?: "")
-                        .value(cookieMap["value"] ?: "")
-                        .domain(cookieMap["domain"] ?: "")
-                        .path(cookieMap["path"] ?: "/")
+                        .name(cookieData.name)
+                        .value(cookieData.value)
+                        .domain(cookieData.domain)
+                        .path(cookieData.path)
+                        .expiresAt(cookieData.expiresAt)
+                        .apply {
+                            if (cookieData.secure) secure()
+                            if (cookieData.httpOnly) httpOnly()
+                            if (cookieData.hostOnly) hostOnlyDomain(cookieData.domain)
+                        }
                         .build()
                 }
             })
+            Log.d("CookieJar", "Загружено ${cookieStore.size} хостов с куками")
         } catch (e: Exception) {
             Log.e("CustomCookieJar", "Failed to load cookies", e)
         }
@@ -79,6 +133,10 @@ class CustomCookieJar @Inject constructor(
 
 
     fun getAccessToken(): String? {
-        return cookieStore.values.flatten().find { it.name == "lexACCToken" }?.value
+        val currentTime = System.currentTimeMillis()
+        return cookieStore.values.flatten().firstOrNull {
+            it.name == "lexACCToken" && (it.expiresAt == -1L || it.expiresAt > currentTime)
+        }?.value
     }
 }
+

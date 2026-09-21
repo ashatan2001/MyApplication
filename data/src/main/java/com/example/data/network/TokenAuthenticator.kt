@@ -30,7 +30,7 @@ class TokenAuthenticator @Inject constructor(
 
         Log.d(TAG, "Обнаружен код $responseCode для запроса: $originalUrl")
 
-        if (responseCode != 401 && responseCode != 419) {
+        if (responseCode != 401) {
             Log.d(TAG, "Игнорируем: код $responseCode не требует обновления токена")
             return null
         }
@@ -43,7 +43,7 @@ class TokenAuthenticator @Inject constructor(
         }
 
         if (response.priorResponse != null) {
-            Log.w(TAG, "Повторный 401/419 после refresh. Очищаем сессию.")
+            Log.w(TAG, "Повторный 401 после refresh. Очищаем сессию.")
             cookieJar.clear()
             return null
         }
@@ -60,19 +60,18 @@ class TokenAuthenticator @Inject constructor(
             .build()
 
         return try {
-            val refreshResponse = refreshClient.newCall(refreshRequest).execute()
-            val refreshCode = refreshResponse.code
+            refreshClient.newCall(refreshRequest).execute().use { refreshResponse ->
+                val refreshCode = refreshResponse.code
+                Log.d(TAG, "Ответ от сервера обновления токена: $refreshCode")
 
-            Log.d(TAG, "Ответ от сервера обновления токена: $refreshCode")
-
-            if (refreshResponse.isSuccessful) {
-                Log.d(TAG, "Токен успешно обновлен. Повторяем исходный запрос.")
-                // Важно: при успешном ответе CookieJar уже сохранил новые куки из ответа
-                response.request.newBuilder().build()
-            } else {
-                Log.w(TAG, "Не удалось обновить токен (код $refreshCode). Выход из системы.")
-                cookieJar.clear()
-                null
+                if (refreshResponse.isSuccessful) {
+                    Log.d(TAG, "Токен успешно обновлен. Повторяем исходный запрос.")
+                    response.request.newBuilder().build()
+                } else {
+                    Log.w(TAG, "Не удалось обновить токен (код $refreshCode). Выход из системы.")
+                    cookieJar.clear()
+                    null
+                }
             }
         } catch (e: IOException) {
             Log.e(TAG, "Сетевая ошибка при обновлении токена", e)
