@@ -18,7 +18,10 @@ suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
         android.util.Log.d("LOGIN_DEBUG", "[SafeApiCall] Запрос завершен. Успех: ${response.isSuccessful}, Код: ${response.code()}")
 
         if (response.isSuccessful) {
-            response.body() ?: throw DataParsingException("Empty response body")
+            response.body() ?: run {
+                @Suppress("UNCHECKED_CAST")
+                Unit as T
+            }
         } else {
             throw parseErrorBody(response.errorBody()?.string(), response.code())
         }
@@ -54,7 +57,7 @@ private fun parseErrorBody(body: String?, httpCode: Int): DataLayerException {
     } catch (e: Exception) {
         android.util.Log.w("LOGIN_DEBUG", "[parseErrorBody] Не удалось распарсить JSON, используем raw body. Причина: ${e.message}")
 
-        if (httpCode == 401 || httpCode == 403 || httpCode == 419) {
+        if (httpCode == 401 || httpCode == 403) {
             UnauthorizedException(message = body, cause = e)
         } else {
             DataLayerException(message = body, cause = e)
@@ -63,7 +66,9 @@ private fun parseErrorBody(body: String?, httpCode: Int): DataLayerException {
 }
 
 fun mapHttpError(code: Int, cause: Throwable? = null): DataLayerException = when (code) {
-    401, 403, 419 -> UnauthorizedException(message = "Требуется авторизация", cause = cause)
+    401 -> UnauthorizedException(message = "Сессия истекла. Войдите снова.", cause = cause)
+    403 -> UnauthorizedException(message = "Доступ запрещен", cause = cause)
+    //419 -> UnauthorizedException(message = "Сессия истекла. Войдите снова.", cause = cause)
     404 -> DataLayerException(message = "Ресурс не найден", cause = cause)
     in 500..599 -> ServerException(httpCode = code, message = "Ошибка сервера: $code", cause = cause)
     else -> DataLayerException(message = "HTTP ошибка: $code", cause = cause)

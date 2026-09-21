@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.myapplication.presentation.viewmodel.HomeEvent
 import com.example.myapplication.presentation.viewmodel.HomeUiState
 import com.example.myapplication.presentation.viewmodel.HomeViewModel
 import kotlinx.coroutines.launch
@@ -35,6 +36,14 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadHomeData()
+
+        viewModel.events.collect { event ->
+            when (event) {
+                is HomeEvent.NavigateToLogin -> {
+                    onLogout()
+                }
+            }
+        }
     }
 
     ModalNavigationDrawer(
@@ -46,9 +55,7 @@ fun HomeScreen(
                 onOpenUser = onOpenUser,
                 onLogout = {
                     scope.launch { drawerState.close() }
-                    viewModel.logout {
-                        onLogout()
-                    }
+                    viewModel.logout { }
                 }
             )
         },

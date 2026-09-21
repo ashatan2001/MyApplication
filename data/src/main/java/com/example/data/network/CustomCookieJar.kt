@@ -1,18 +1,16 @@
 package com.example.data.network
 
-import CookieData
-import android.content.Context
 import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -72,7 +70,7 @@ class CustomCookieJar @Inject constructor(
 
     fun clear() {
         cookieStore.clear()
-        CoroutineScope(Dispatchers.Main).launch {
+        scope.launch {
             dataStore.edit { preferences ->
                 preferences.clear()
             }
@@ -139,4 +137,17 @@ class CustomCookieJar @Inject constructor(
         }?.value
     }
 }
+
+@OptIn(InternalSerializationApi::class)
+@Serializable
+data class CookieData(
+    val name: String,
+    val value: String,
+    val domain: String,
+    val path: String,
+    val expiresAt: Long,
+    val secure: Boolean,
+    val httpOnly: Boolean,
+    val hostOnly: Boolean
+)
 

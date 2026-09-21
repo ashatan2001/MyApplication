@@ -7,13 +7,13 @@ import io.mockk.mockkStatic
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import java.util.concurrent.TimeUnit
 
 class TokenAuthenticatorTest {
@@ -46,55 +46,36 @@ class TokenAuthenticatorTest {
         mockServer.shutdown()
     }
 
+    // TokenAuthenticatorTest.kt
     @Test
-    fun `should refresh token on 401 and retry request`() = runTest {
-        // 1. Arrange: Готовим очередь ответов от сервера
-        // Ответ 1: Исходный запрос получает 419
-        mockServer.enqueue(MockResponse().setResponseCode(401))
+    fun `should refresh token on 419 (mapped to 401) and retry request`() = runTest {
+        // Arrange
+        mockServer.enqueue(MockResponse().setResponseCode(419))
+        mockServer.enqueue(MockResponse().setResponseCode(200).addHeader("Set-Cookie", "lexACCToken=new_valid_token; Path=/"))
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody("""{"PersonID":"2","FIO":"Test User"}"""))
 
-        // Ответ 2: Запрос на обновление токена успешен, сервер возвращает новую куку
-        mockServer.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .addHeader("Set-Cookie", "lexACCToken=new_valid_token; Path=/")
-                .setBody("""{"status":"ok"}""")
-        )
+        // Создаем интерцептор без зависимостей
+        val sessionInterceptor = SessionExpiredInterceptor()
 
-        // Ответ 3: Повторный исходный запрос теперь успешен
-        mockServer.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody("""{"PersonID":"2","FIO":"Test User"}""")
-        )
-
-        // 2. Собираем клиент с нашим аутентификатором
         val client = OkHttpClient.Builder()
             .cookieJar(cookieJar)
-            .authenticator(authenticator)
+            .addInterceptor(sessionInterceptor)   // <-- ДО authenticator
             .addInterceptor(headersInterceptor)
+            .authenticator(authenticator)         // <-- ПОСЛЕ interceptor'ов
             .readTimeout(5, TimeUnit.SECONDS)
             .build()
 
-        val request = Request.Builder()
-            .url(mockServer.url("/api/persons/2"))
-            .build()
+        val request = Request.Builder().url(mockServer.url("/api/persons/2")).build()
 
-        // 3. Act: Выполняем запрос
+        // Act
         val response = client.newCall(request).execute()
 
-        // 4. Assert: Проверяем результаты с понятными сообщениями об ошибках
+        // Assert
+        assertTrue("Ожидался 200, получен: ${response.code}", response.isSuccessful)
+        assertEquals(3, mockServer.requestCount)
 
-        // Если тест упадет здесь, мы увидим реальный код ответа в консоли
-        assertTrue("Ожидался успешный ответ (200), но получен код: ${response.code}. Body: ${response.body?.string()}", response.isSuccessful)
-        assertEquals(200, response.code)
-
-        // Проверяем, что было сделано ровно 3 запроса:
-        // 1. Исходный (419) -> 2. Обновление токена (200) -> 3. Повтор исходного (200)
-        assertEquals("Должно быть выполнено ровно 3 запроса", 3, mockServer.requestCount)
-
-        // Дополнительно проверим, что второй запрос был именно на эндпоинт обновления
-        val refreshRequest = mockServer.takeRequest() // Забираем 1-й запрос (419)
-        val tokenRequest = mockServer.takeRequest()   // Забираем 2-й запрос (обновление)
-        assertTrue("Второй запрос должен быть на /auth/get-token", tokenRequest.path?.contains("/auth/get-token") == true)
+        mockServer.takeRequest() // Исходный (419 → 401)
+        val tokenRequest = mockServer.takeRequest() // Refresh
+        assertTrue(tokenRequest.path?.contains("/auth/get-token") == true)
     }
 }

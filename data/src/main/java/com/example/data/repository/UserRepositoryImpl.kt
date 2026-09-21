@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import com.example.data.exception.DataException
 import com.example.data.exception.DataLayerException
+import com.example.data.exception.UnauthorizedException
 import com.example.data.local.AuthLocalDataSource
 import com.example.data.mapper.UserMapper
 import com.example.data.remote.UserRemoteDataSource
@@ -31,6 +32,12 @@ class UserRepositoryImpl @Inject constructor(
 
             mapper.toModel(dto)
 
+        }
+        catch (e: UnauthorizedException) { // 1. Ловим именно проблему авторизации
+            // Принудительно очищаем локальную сессию, так как токен точно недействителен
+            localDataSource.clearSession()
+            // Пробрасываем исключение выше, чтобы ViewModel знала, что нужно перенаправить на экран логина
+            throw e
         } catch (e: DataLayerException) {
             if (e.errorCode == 404) {
                 throw UserNotFoundException(

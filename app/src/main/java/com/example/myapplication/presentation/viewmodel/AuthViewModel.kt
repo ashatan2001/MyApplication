@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.exception.ApiException
 import com.example.data.exception.NetworkException
 import com.example.data.exception.ServerException
+import com.example.data.exception.UnauthorizedException
 import com.example.domain.usecase.LoginUseCase
 import com.example.domain.usecase.LogoutUseCase
 import com.example.domain.util.CustomResult
@@ -27,6 +28,7 @@ sealed class AuthUiState {
 
 sealed class AuthEvent {
     data object LoginSuccess : AuthEvent()
+    data object logoutSuccess: AuthEvent()
 }
 
 @HiltViewModel
@@ -61,6 +63,7 @@ class AuthViewModel @Inject constructor(
                         android.util.Log.e("LOGIN_DEBUG", "4. Ошибка! Тип: ${e?.javaClass?.simpleName}, Сообщение: ${e?.message}", e)
 
                         val message: String = when (e) {
+                            is UnauthorizedException -> e.message ?: "Сессия истекла. Пожалуйста, войдите снова."
                             is ApiException -> e.message ?: "Ошибка авторизации"
                             is NetworkException -> "Нет подключения к интернету"
                             is ServerException -> "Ошибка сервера, попробуйте позже"
@@ -81,8 +84,10 @@ class AuthViewModel @Inject constructor(
             _uiState.value = AuthUiState.Loading
             try {
                 logoutUseCase()
+                _events.trySend(AuthEvent.logoutSuccess)
             } catch (e: Exception) {
                 android.util.Log.w("AuthViewModel", "Ошибка сетевого логаута, выполняем локальный выход", e)
+                _events.trySend(AuthEvent.logoutSuccess)
             } finally {
                 _uiState.value = AuthUiState.Idle
             }

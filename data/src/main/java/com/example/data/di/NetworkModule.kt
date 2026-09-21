@@ -5,8 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.data.BuildConfig
-import com.example.data.network.AuthEventBus
-import com.example.data.network.AuthEventBusImpl
 import com.example.data.network.CustomCookieJar
 import com.example.data.network.HeadersInterceptor
 import com.example.data.network.TokenAuthenticator
@@ -81,7 +79,7 @@ object NetworkModule {
     fun provideAuthOkHttpClient(
         cookieJar: CustomCookieJar,
         headersInterceptor: HeadersInterceptor,
-        tokenAuthenticator: TokenAuthenticator
+        sessionInterceptor: SessionExpiredInterceptor
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG)
@@ -89,10 +87,10 @@ object NetworkModule {
             else
                 HttpLoggingInterceptor.Level.NONE
         }
-
+        android.util.Log.d("LOGIN_DEBUG", "[NetworkModule] provideAuthOkHttpClient")
         return OkHttpClient.Builder()
             .cookieJar(cookieJar)
-            .authenticator(tokenAuthenticator)
+            .addInterceptor(sessionInterceptor)
             .addInterceptor(headersInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(15, TimeUnit.SECONDS)
