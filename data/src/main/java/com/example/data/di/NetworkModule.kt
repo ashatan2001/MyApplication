@@ -1,13 +1,14 @@
 package com.example.data.di
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.data.BuildConfig
 import com.example.data.network.CustomCookieJar
 import com.example.data.network.HeadersInterceptor
-import com.example.data.network.TokenAuthenticator
+import com.example.data.network.TokenInterceptor
 import com.example.data.remote.AuthApi
 import com.example.data.remote.UserApi
 import dagger.Module
@@ -79,7 +80,7 @@ object NetworkModule {
     fun provideAuthOkHttpClient(
         cookieJar: CustomCookieJar,
         headersInterceptor: HeadersInterceptor,
-        tokenAuthenticator: TokenAuthenticator
+        tokenInterceptor: TokenInterceptor
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG)
@@ -87,12 +88,14 @@ object NetworkModule {
             else
                 HttpLoggingInterceptor.Level.NONE
         }
-        android.util.Log.d("LOGIN_DEBUG", "[NetworkModule] provideAuthOkHttpClient")
+
+        Log.d("LOGIN_DEBUG", "[NetworkModule] provideAuthOkHttpClient")
+
         return OkHttpClient.Builder()
             .cookieJar(cookieJar)
             .addInterceptor(headersInterceptor)
+            .addInterceptor(tokenInterceptor)
             .addInterceptor(loggingInterceptor)
-            .authenticator(tokenAuthenticator)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .build()
