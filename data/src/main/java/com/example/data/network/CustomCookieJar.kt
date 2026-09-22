@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.data.local.AuthLocalDataSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,16 +26,19 @@ import javax.inject.Singleton
 class CustomCookieJar @Inject constructor(
     private val json: Json,
     private val dataStore: DataStore<Preferences>,
-    private val authEventBus: AuthEventBus
+    private val authEventBus: AuthEventBus,
+    private val authLocalDataSource: AuthLocalDataSource
 ) : CookieJar {
 
     private val cookieStore = ConcurrentHashMap<String, List<Cookie>>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val cookiesKey = stringPreferencesKey("cookies")
+    private val isLoaded = java.util.concurrent.atomic.AtomicBoolean(false)
 
     init {
         scope.launch {
             loadFromStorage()
+            isLoaded.set(true)
         }
     }
 
@@ -56,7 +60,7 @@ class CustomCookieJar @Inject constructor(
         cookieStore[host] = validCookies
 
         cookies.forEach { cookie ->
-            Log.d("CookieJar", "Сохранена кука: ${cookie.name} = ${cookie.value}...")
+            Log.d("CookieJar", "Сохранена кука: ${cookie.name} = ${cookie.value}")
         }
 
         scope.launch {
@@ -74,8 +78,8 @@ class CustomCookieJar @Inject constructor(
             dataStore.edit { preferences ->
                 preferences.clear()
             }
-            Log.d("CookieJar", "Cookie store cleared")
-            // Уведомляем о выходе из системы
+            authLocalDataSource.clearSession()
+            Log.d("CookieJar", "Cookie store and auth session fully cleared")
             authEventBus.notifyLogout()
         }
     }

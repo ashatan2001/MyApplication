@@ -3,6 +3,7 @@ package com.example.myapplication.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.exception.NetworkException
+import com.example.data.exception.SessionExpiredException
 import com.example.data.network.AuthEventBus
 import com.example.domain.exception.UserNotFoundException
 import com.example.domain.model.UserModel
@@ -48,6 +49,9 @@ class UserViewModel @Inject constructor(
                 }
                 is CustomResult.Error -> {
                     val message = when (result.exception) {
+                        is SessionExpiredException -> {
+                            return@launch
+                        }
                         is UserNotFoundException -> "Пользователь не найден"
                         is NetworkException -> "Нет соединения с интернетом"
                         else -> result.exception.message ?: "Неизвестная ошибка"

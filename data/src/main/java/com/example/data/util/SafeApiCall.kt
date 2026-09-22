@@ -25,6 +25,8 @@ suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
         } else {
             throw parseErrorBody(response.errorBody()?.string(), response.code())
         }
+    } catch (e: SessionExpiredException) {
+        throw e
     } catch (e: ApiException) {
         throw e
     } catch (e: UnauthorizedException) {

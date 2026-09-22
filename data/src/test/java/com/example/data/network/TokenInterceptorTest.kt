@@ -37,7 +37,7 @@ class TokenInterceptorTest {
     fun `при ошибке 419 должен обновить токен и повторить запрос`() {
         // 1. Сценарий ответов сервера
         // Запрос 1: Исходный запрос падает с 419
-        mockWebServer.enqueue(MockResponse().setResponseCode(401))
+        mockWebServer.enqueue(MockResponse().setResponseCode(419))
         // Запрос 2: Запрос на обновление токена успешен и возвращает новую куку
         mockWebServer.enqueue(
             MockResponse()

@@ -27,14 +27,9 @@ fun NavGraph(
 ) {
     val authState by viewModel.authState.collectAsStateWithLifecycle()
 
-    // Глобальный слушатель событий логаута из SessionViewModel (если используется)
-    LaunchedEffect(Unit) {
-        viewModel.logoutEvents.collect {
-            onLogout() // Вызываем колбэк из MainActivity для полной очистки стека
-        }
-    }
-
     // Автоматическая навигация при изменении состояния авторизации
+    // Когда CustomCookieJar.clear() очищает сессию, authState станет Unauthenticated,
+    // и этот блок автоматически перенаправит пользователя на экран входа.
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
@@ -82,14 +77,14 @@ fun NavGraph(
                 onOpenUser = {
                     navController.navigate(Routers.UserInfo.route)
                 },
-                onLogout = onLogout // Пробрасываем колбэк полной очистки стека из MainActivity
+                onLogout = onLogout // Используется для кнопки "Выход" в UI
             )
         }
 
         composable(Routers.UserInfo.route) {
             UserScreen(
                 onBack = {
-                    navController.popBackStack() // Простой возврат назад, так как Home есть в стеке
+                    navController.popBackStack()
                 },
                 viewModel = hiltViewModel()
             )

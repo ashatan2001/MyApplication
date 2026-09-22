@@ -1,5 +1,6 @@
 package com.example.data.network
 
+import com.example.data.exception.SessionExpiredException
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -32,6 +33,7 @@ class TokenInterceptor @Inject constructor(
 
         // Защита от бесконечного цикла, если сам refresh-запрос вернул ошибку
         if (request.url.encodedPath.contains("/auth/get-token")) {
+            response.close()
             cookieJar.clear()
             return response
         }
@@ -43,15 +45,13 @@ class TokenInterceptor @Inject constructor(
                 .build()
 
             try {
-                val refreshResponse = refreshClient.newCall(refreshRequest).execute()
-                if (refreshResponse.isSuccessful) {
-                    refreshResponse.close()
-                    response.close() // Закрываем старый ответ с 419
-                    // Повторяем исходный запрос (cookieJar уже подхватит новые куки)
-                    return chain.proceed(request)
-                } else {
-                    refreshResponse.close()
-                    cookieJar.clear() // Refresh не удался -> выходим
+                refreshClient.newCall(refreshRequest).execute().use { refreshResponse ->
+                    if (refreshResponse.isSuccessful) {
+                        response.close() // Закрываем старый ответ с 419
+                        return chain.proceed(request) // Повторяем исходный запрос с новыми куками
+                    } else {
+                        cookieJar.clear() // Refresh не удался (токены протухли полностью)
+                    }
                 }
             } catch (e: Exception) {
                 cookieJar.clear()

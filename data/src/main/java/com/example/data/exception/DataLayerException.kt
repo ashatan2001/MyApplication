@@ -1,6 +1,7 @@
 package com.example.data.exception
 
 import com.example.domain.exception.AppException
+import java.io.IOException
 
 open class DataLayerException(
     errorCode: Int? = null,
@@ -44,3 +45,8 @@ class DataException(
     message: String = "Data error",
     cause: Throwable? = null
 ) : DataLayerException(errorCode = 1004, message = message, cause = cause)
+
+class SessionExpiredException(
+    message: String = "Сессия истекла. Выполняется перенаправление на экран входа.",
+    cause: Throwable? = null
+) : DataLayerException(message = message, cause = cause)

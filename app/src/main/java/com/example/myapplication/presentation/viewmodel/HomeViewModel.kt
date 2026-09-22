@@ -3,7 +3,10 @@ package com.example.myapplication.presentation.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.exception.NetworkException
+import com.example.data.exception.SessionExpiredException
 import com.example.data.exception.UnauthorizedException
+import com.example.domain.exception.UserNotFoundException
 import com.example.domain.usecase.GetUserNameUseCase
 import com.example.domain.usecase.LogoutUseCase
 import com.example.domain.util.CustomResult
@@ -48,7 +51,15 @@ class HomeViewModel @Inject constructor(
                 }
 
                 is CustomResult.Error -> {
-                    Log.e("HomeViewModel", "Ошибка загрузки", result.exception)
+                    if (result.exception is SessionExpiredException) {
+                        return@launch // Тихо игнорируем, редирект уже идет
+                    }
+
+                    val message = when (result.exception) {
+                        is UserNotFoundException -> "Пользователь не найден"
+                        is NetworkException -> "Нет соединения с интернетом"
+                        else -> result.exception.message ?: "Неизвестная ошибка"
+                    }
                     _uiState.value = HomeUiState.Error(
                         result.exception.message ?: "Неизвестная ошибка"
                     )
@@ -65,14 +76,18 @@ class HomeViewModel @Inject constructor(
                 // Успешный выход
                 _events.trySend(HomeEvent.NavigateToLogin)
                 onLogout()
-            } catch (e: UnauthorizedException) {
-                // 419 или 401 ошибка - сессия истекла
-                android.util.Log.w("HomeViewModel", "Сессия истекла: ${e.message}", e)
+            } catch (e: SessionExpiredException) {
+                Log.w("HomeViewModel", "Сессия истекла: ${e.message}", e)
                 _events.trySend(HomeEvent.NavigateToLogin)
                 onLogout()
+            } catch (e: UnauthorizedException) {
+                    // 419 или 401 ошибка - сессия истекла
+                    Log.w("HomeViewModel", "Сессия истекла: ${e.message}", e)
+                    _events.trySend(HomeEvent.NavigateToLogin)
+                    onLogout()
             } catch (e: Exception) {
                 // Другие ошибки - всё равно очищаем локально
-                android.util.Log.w("HomeViewModel", "Ошибка логаута: ${e.message}", e)
+                Log.w("HomeViewModel", "Ошибка логаута: ${e.message}", e)
                 _events.trySend(HomeEvent.NavigateToLogin)
                 onLogout()
             }
