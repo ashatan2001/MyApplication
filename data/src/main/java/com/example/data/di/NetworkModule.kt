@@ -79,7 +79,7 @@ object NetworkModule {
     fun provideAuthOkHttpClient(
         cookieJar: CustomCookieJar,
         headersInterceptor: HeadersInterceptor,
-        sessionInterceptor: SessionExpiredInterceptor
+        tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG)
@@ -90,9 +90,9 @@ object NetworkModule {
         android.util.Log.d("LOGIN_DEBUG", "[NetworkModule] provideAuthOkHttpClient")
         return OkHttpClient.Builder()
             .cookieJar(cookieJar)
-            .addInterceptor(sessionInterceptor)
             .addInterceptor(headersInterceptor)
             .addInterceptor(loggingInterceptor)
+            .authenticator(tokenAuthenticator)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .build()
