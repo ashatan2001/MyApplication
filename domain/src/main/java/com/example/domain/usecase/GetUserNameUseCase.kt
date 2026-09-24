@@ -5,6 +5,14 @@ import com.example.domain.repository.UserRepository
 import com.example.domain.util.CustomResult
 import javax.inject.Inject
 
+/**
+ * Use-case для получения имени текущего авторизованного пользователя.
+ *
+ * Предоставляет упрощенный доступ только к имени пользователя, скрывая остальную
+ * информацию профиля. Обрабатывает случаи, когда имя отсутствует или пользователь не авторизован.
+ *
+ * @param repository Репозиторий для работы с данными пользователя.
+ */
 class GetUserNameUseCase @Inject constructor(
     private val repository: UserRepository
 ) {

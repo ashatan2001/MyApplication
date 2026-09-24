@@ -49,11 +49,6 @@ class LoginUseCase @Inject constructor(
         }
     }
 
-    /**
-     * Проверяет корректность введенных учетных данных.
-     *
-     * @throws ValidationException если логин или пароль не соответствуют требованиям безопасности.
-     */
     private fun validateCredentials(login: String, password: String) {
         if (login.isBlank()) throw ValidationException("login", "Логин не может быть пустым")
         if (password.isBlank()) throw ValidationException("password", "Пароль не может быть пустым")
