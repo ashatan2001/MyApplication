@@ -2,10 +2,7 @@ package com.example.myapplication.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.exception.ApiException
-import com.example.data.exception.NetworkException
-import com.example.data.exception.ServerException
-import com.example.data.exception.UnauthorizedException
+import com.example.domain.exception.*
 import com.example.domain.usecase.LoginUseCase
 import com.example.domain.usecase.LogoutUseCase
 import com.example.domain.util.CustomResult
@@ -80,11 +77,12 @@ class AuthViewModel @Inject constructor(
                         val e = result.exception
                         Timber.e(e, "Ошибка авторизации. Тип: ${e?.javaClass?.simpleName}")
 
-                        val message = when (e) {
-                            is UnauthorizedException -> e.message ?: "Сессия истекла. Пожалуйста, войдите снова."
-                            is ApiException -> e.message ?: "Ошибка авторизации"
-                            is NetworkException -> "Нет подключения к интернету"
-                            is ServerException -> "Ошибка сервера, попробуйте позже"
+                        val message: String = when (e) {
+                            is AuthenticationFailedException -> e.message ?: "Сессия истекла. Пожалуйста, войдите снова."
+                            is ServerApiException -> e.message ?: "Ошибка авторизации"
+                            is NetworkConnectionException -> "Нет подключения к интернету"
+                            is ServerUnavailableException -> "Ошибка сервера, попробуйте позже"
+                            is SessionExpiredDomainException -> e.message ?: "Сессия истекла"
                             else -> e?.message ?: "Неизвестная ошибка"
                         }
                         _uiState.value = AuthUiState.Error(message)

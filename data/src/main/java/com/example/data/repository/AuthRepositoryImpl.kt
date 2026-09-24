@@ -1,16 +1,19 @@
 package com.example.data.repository
 
 import android.util.Log
+import com.example.data.exception.*
 import com.example.data.local.AuthLocalDataSource
 import com.example.data.mapper.AuthMapper
 import com.example.data.network.CustomCookieJar
 import com.example.data.remote.AuthRemoteDataSource
 import com.example.data.util.JwtParser
+import com.example.domain.exception.*
 import com.example.domain.model.AuthState
 import com.example.domain.model.AuthSuccess
 import com.example.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
@@ -21,30 +24,42 @@ class AuthRepositoryImpl @Inject constructor(
     private val jwtParser: JwtParser
 ) : AuthRepository {
 
-
     override suspend fun login(username: String, password: String): AuthSuccess {
-        val dto = remoteDataSource.login(username, password)
+        val dto = try {
+            remoteDataSource.login(username, password)
+        } catch (e: NetworkException) {
+            throw NetworkConnectionException(message = e.message ?: "Нет подключения к интернету", cause = e)
+        } catch (e: ServerException) {
+            throw ServerUnavailableException(message = e.message ?: "Ошибка сервера", cause = e)
+        } catch (e: ApiException) {
+            throw ServerApiException(errorNumber = e.errorNumber, message = e.message ?: "Ошибка API", cause = e)
+        } catch (e: UnauthorizedException) {
+            throw AuthenticationFailedException(message = e.message ?: "Неверные учетные данные", cause = e)
+        } catch (e: SessionExpiredException) {
+            throw SessionExpiredDomainException(message = e.message ?: "Сессия истекла", cause = e)
+        } catch (e: DataLayerException) {
+            throw AppException(message = e.message ?: "Неизвестная ошибка", cause = e)
+        }
 
         val token = cookieJar.getAccessToken()
 
-        // 3. Парсим токен и сохраняем userId
+        // Парсим токен и сохраняем userId
         token?.let { jwt ->
             val userId = jwtParser.getUserIdFromToken(jwt)
             if (userId != null) {
                 localDataSource.saveUserId(userId)
-                Log.d("AuthRepo", "UserId $userId извлечен из JWT и сохранен")
+                Timber.d("UserId $userId извлечен из JWT и сохранен")
             } else {
-                Log.w("AuthRepo", "Не удалось извлечь userId из токена")
+                Timber.w("Не удалось извлечь userId из токена")
             }
         }
 
         val userName = dto.userName
         localDataSource.saveUserName(userName)
-        Log.d("AuthRepo", "FIO $userName сохранено")
-        localDataSource.saveAuthState(true) // Сохраняем состояние при успешном входе
+        Timber.d("FIO $userName сохранено")
+        localDataSource.saveAuthState(true)
         return authMapper.toDomain(dto)
     }
-
 
     override suspend fun refreshToken() {
         remoteDataSource.refreshToken()
@@ -52,15 +67,13 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun logout() {
         try {
-            // Пытаемся уведомить сервер о выходе (не критично, если сеть недоступна)
             remoteDataSource.logout()
         } catch (e: Exception) {
-            Log.w("AuthRepository", "Network error during logout, proceeding with local cleanup", e)
+            Timber.w(e, "Network error during logout, proceeding with local cleanup")
         } finally {
-            // Гарантированная очистка локальных данных в любом сценарии
             cookieJar.clear()
-            localDataSource.clearSession() // Это триггерит обновление UI через Flow
-            Log.d("AuthRepository", "Session fully cleared")
+            localDataSource.clearSession()
+            Timber.d("Session fully cleared")
         }
     }
 
@@ -72,6 +85,6 @@ class AuthRepositoryImpl @Inject constructor(
     private suspend fun clearSession() {
         cookieJar.clear()
         localDataSource.clearSession()
-        Log.d("AuthRepository", "Session fully cleared")
+        Timber.d("Session fully cleared")
     }
 }

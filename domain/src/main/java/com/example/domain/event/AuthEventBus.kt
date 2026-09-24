@@ -1,14 +1,9 @@
-package com.example.data.network
+package com.example.domain.event
 
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import javax.inject.Inject
 import javax.inject.Singleton
-
-interface AuthEventBus {
-    val logoutEvents: SharedFlow<Unit>
-    suspend fun notifyLogout()
-}
 
 @Singleton
 class AuthEventBusImpl @Inject constructor() : AuthEventBus {
@@ -18,4 +13,8 @@ class AuthEventBusImpl @Inject constructor() : AuthEventBus {
     override suspend fun notifyLogout() {
         _logoutEvents.emit(Unit)
     }
+}
+interface AuthEventBus {
+    val logoutEvents: SharedFlow<Unit>
+    suspend fun notifyLogout()
 }

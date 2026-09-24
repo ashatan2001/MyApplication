@@ -2,10 +2,8 @@ package com.example.myapplication.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.exception.NetworkException
-import com.example.data.exception.SessionExpiredException
-import com.example.data.network.AuthEventBus
-import com.example.domain.exception.UserNotFoundException
+import com.example.domain.event.AuthEventBus
+import com.example.domain.exception.*
 import com.example.domain.model.UserModel
 import com.example.domain.usecase.GetUserInfoUseCase
 import com.example.domain.util.CustomResult
@@ -71,9 +69,7 @@ class UserViewModel @Inject constructor(
                 }
                 is CustomResult.Error -> {
                     val message = when (result.exception) {
-                        // Пропускаем обработку: SessionExpiredException обрабатывается глобально
-                        // в TokenInterceptor (автоматический retry) и через authEventBus (сброс UI).
-                        is SessionExpiredException -> {
+                        is SessionExpiredDomainException -> {
                             Timber.w("Сессия истекла, пропуск обработки")
                             return@launch
                         }
@@ -81,7 +77,7 @@ class UserViewModel @Inject constructor(
                             Timber.w("Пользователь не найден")
                             "Пользователь не найден"
                         }
-                        is NetworkException -> {
+                        is NetworkConnectionException -> {
                             Timber.w("Ошибка сети при загрузке данных пользователя")
                             "Нет соединения с интернетом"
                         }

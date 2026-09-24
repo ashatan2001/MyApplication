@@ -2,7 +2,7 @@ package com.example.myapplication.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.network.AuthEventBus
+import com.example.domain.event.AuthEventBus
 import com.example.domain.model.AuthState
 import com.example.domain.usecase.ObserveAuthStateUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
