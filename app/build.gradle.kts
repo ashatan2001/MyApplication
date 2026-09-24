@@ -83,6 +83,11 @@ dependencies {
     ksp("com.google.dagger:hilt-compiler:2.58")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
+    // Timber
+    implementation("com.jakewharton.timber:timber:5.0.1")
+    // Firebase Crashlytics
+    implementation("com.google.firebase:firebase-crashlytics-ktx:19.0.0")
+
     // Network (Retrofit + OkHttp + Serialization)
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-kotlinx-serialization:2.11.0")
@@ -96,7 +101,6 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

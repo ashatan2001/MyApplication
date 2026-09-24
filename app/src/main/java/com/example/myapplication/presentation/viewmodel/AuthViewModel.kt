@@ -16,9 +16,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
-
+/**
+ * Представляет состояние экрана авторизации.
+ */
 sealed class AuthUiState {
     data object Idle : AuthUiState()
     data object Loading : AuthUiState()
@@ -26,43 +29,58 @@ sealed class AuthUiState {
     data class Error(val message: String) : AuthUiState()
 }
 
+/**
+ * Одноразовые события экрана авторизации для навигации или показа Snackbar.
+ */
 sealed class AuthEvent {
     data object LoginSuccess : AuthEvent()
-    data object logoutSuccess: AuthEvent()
+    data object LogoutSuccess : AuthEvent()
 }
 
+/**
+ * ViewModel для управления состоянием и бизнес-логикой экрана авторизации.
+ *
+ * @param loginUseCase UseCase для выполнения входа в систему.
+ * @param logoutUseCase UseCase для выполнения выхода из системы.
+ */
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
+
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<AuthEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
+    /**
+     * Инициирует процесс авторизации пользователя.
+     *
+     * @param username Имя пользователя.
+     * @param password Пароль пользователя.
+     */
     fun login(username: String, password: String) {
         viewModelScope.launch {
-            android.util.Log.d("LOGIN_DEBUG", "1. Начало загрузки")
+            Timber.d("Начало процесса авторизации для пользователя: $username")
             _uiState.value = AuthUiState.Loading
 
             try {
-                android.util.Log.d("LOGIN_DEBUG", "2. Вызов loginUseCase...")
                 val result = loginUseCase(username, password)
-                android.util.Log.d("LOGIN_DEBUG", "3. UseCase вернул результат: ${result::class.simpleName}")
+                Timber.d("UseCase вернул результат: ${result::class.simpleName}")
 
                 when (result) {
                     is CustomResult.Success -> {
-                        android.util.Log.d("LOGIN_DEBUG", "4. Успех: ${result.data.userName}")
+                        Timber.d("Авторизация успешна: ${result.data.userName}")
                         _uiState.value = AuthUiState.Success(result.data.userName)
                         _events.trySend(AuthEvent.LoginSuccess)
                     }
                     is CustomResult.Error -> {
                         val e = result.exception
-                        android.util.Log.e("LOGIN_DEBUG", "4. Ошибка! Тип: ${e?.javaClass?.simpleName}, Сообщение: ${e?.message}", e)
+                        Timber.e(e, "Ошибка авторизации. Тип: ${e?.javaClass?.simpleName}")
 
-                        val message: String = when (e) {
+                        val message = when (e) {
                             is UnauthorizedException -> e.message ?: "Сессия истекла. Пожалуйста, войдите снова."
                             is ApiException -> e.message ?: "Ошибка авторизации"
                             is NetworkException -> "Нет подключения к интернету"
@@ -73,21 +91,25 @@ class AuthViewModel @Inject constructor(
                     }
                 }
             } catch (t: Throwable) {
-                android.util.Log.e("LOGIN_DEBUG", "5. НЕОБРАБОТАННЫЙ КРАШ В VIEWMODEL", t)
+                Timber.e(t, "Необработанный сбой в AuthViewModel")
                 _uiState.value = AuthUiState.Error(t.message ?: "Критическая ошибка")
             }
         }
     }
 
+    /**
+     * Инициирует процесс выхода пользователя из системы.
+     */
     fun logout() {
         viewModelScope.launch {
+            Timber.d("Начало процесса выхода из системы")
             _uiState.value = AuthUiState.Loading
             try {
                 logoutUseCase()
-                _events.trySend(AuthEvent.logoutSuccess)
+                _events.trySend(AuthEvent.LogoutSuccess)
             } catch (e: Exception) {
-                android.util.Log.w("AuthViewModel", "Ошибка сетевого логаута, выполняем локальный выход", e)
-                _events.trySend(AuthEvent.logoutSuccess)
+                Timber.w(e, "Ошибка сетевого логаута, выполняем локальный выход")
+                _events.trySend(AuthEvent.LogoutSuccess)
             } finally {
                 _uiState.value = AuthUiState.Idle
             }

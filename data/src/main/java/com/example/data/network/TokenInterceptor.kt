@@ -1,21 +1,34 @@
 package com.example.data.network
 
-import com.example.data.exception.SessionExpiredException
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Перехватчик HTTP-запросов для автоматического обновления токена аутентификации.
+ *
+ * Перехватывает ответы с кодами 401 (Unauthorized) и 419 (Session Expired).
+ * При получении такого кода выполняет синхронный запрос на обновление токена.
+ * В случае успеха повторяет исходный запрос с обновленными куки.
+ *
+ * @param cookieJar Реализация [CustomCookieJar] для управления хранением и очисткой кук.
+ */
 @Singleton
 class TokenInterceptor @Inject constructor(
     private val cookieJar: CustomCookieJar
 ) : Interceptor {
 
-    private val lock = Any() // Блокировка для предотвращения параллельного обновления
+    // Блокировка для предотвращения race condition при параллельных попытках обновления токена
+    private val lock = Any()
 
-    // Клиент ТОЛЬКО для обновления. БЕЗ этого интерсептора, чтобы избежать рекурсии.
+    /**
+     * Отдельный клиент OkHttp для выполнения запроса на обновление токена.
+     * Инициализируется лениво (lazy) БЕЗ этого интерсептора, чтобы избежать бесконечной рекурсии.
+     */
     private val refreshClient by lazy {
         OkHttpClient.Builder()
             .cookieJar(cookieJar)
@@ -26,19 +39,24 @@ class TokenInterceptor @Inject constructor(
         val request = chain.request()
         val response = chain.proceed(request)
 
-        // Перехватываем 419 (и 401 на всякий случай)
         if (response.code != 419 && response.code != 401) {
             return response
         }
 
-        // Защита от бесконечного цикла, если сам refresh-запрос вернул ошибку
-        if (request.url.encodedPath.contains("/auth/get-token")) {
+        Timber.w("Перехвачен код ответа ${response.code} для ${request.url.encodedPath}")
+
+        // Защита от бесконечного цикла: игнорируем ошибки самого запроса на обновление токена.
+        // Используем endsWith для точности, чтобы не задеть другие пути, содержащие эту подстроку.
+        if (request.url.encodedPath.endsWith("/auth/get-token")) {
+            Timber.e("Ошибка обновления токена: бесконечный цикл предотвращен")
             response.close()
             cookieJar.clear()
             return response
         }
 
+        // Гарантируем, что только один поток выполнит обновление
         synchronized(lock) {
+            Timber.d("Попытка обновления токена...")
             val refreshRequest = Request.Builder()
                 .url(request.url.newBuilder().encodedPath("/auth/get-token").build())
                 .get()
@@ -47,14 +65,17 @@ class TokenInterceptor @Inject constructor(
             try {
                 refreshClient.newCall(refreshRequest).execute().use { refreshResponse ->
                     if (refreshResponse.isSuccessful) {
-                        response.close() // Закрываем старый ответ с 419
-                        return chain.proceed(request) // Повторяем исходный запрос с новыми куками
+                        Timber.d("Токен успешно обновлен. Повтор исходного запроса.")
+                        response.close() // Закрываем исходный ответ с ошибкой 419/401
+                        return chain.proceed(request) // Повтор с обновленным CookieJar
                     } else {
+                        Timber.w("Не удалось обновить токен. Код ответа: ${refreshResponse.code}")
                         cookieJar.clear() // Refresh не удался (токены протухли полностью)
                     }
                 }
             } catch (e: Exception) {
-                cookieJar.clear()
+                Timber.e(e, "Исключение при попытке обновления токена")
+                cookieJar.clear()  // Очистка при сетевой ошибке во время обновления
             }
         }
 

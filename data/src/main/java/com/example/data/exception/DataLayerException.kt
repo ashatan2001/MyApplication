@@ -1,7 +1,6 @@
 package com.example.data.exception
 
 import com.example.domain.exception.AppException
-import java.io.IOException
 
 open class DataLayerException(
     errorCode: Int? = null,

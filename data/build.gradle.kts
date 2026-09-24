@@ -56,6 +56,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.14.0")
     ksp("com.google.dagger:hilt-compiler:2.58")
 
+    // Timber
+    implementation("com.jakewharton.timber:timber:5.0.1")
+
     // Сеть и сериализация
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-kotlinx-serialization:2.11.0")
