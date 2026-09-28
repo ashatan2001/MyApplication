@@ -19,6 +19,17 @@ import com.example.myapplication.presentation.ui.HomeScreen
 import com.example.myapplication.presentation.ui.UserScreen
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
 
+/**
+ * Корневой граф навигации приложения.
+ *
+ * Автоматически перенаправляет пользователя в зависимости от [AuthState]:
+ * - [AuthState.Authenticated] → [Routers.Home]
+ * - [AuthState.Unauthenticated] → [Routers.UserAuth]
+ *
+ * @param navController Контроллер навигации из [androidx.navigation.compose.rememberNavController].
+ * @param onLogout Колбэк для выхода (вызывается из бокового меню HomeScreen).
+ * @param viewModel [SessionViewModel] для наблюдения за состоянием сессии.
+ */
 @Composable
 fun NavGraph(
     navController: NavHostController,
@@ -27,24 +38,20 @@ fun NavGraph(
 ) {
     val authState by viewModel.authState.collectAsStateWithLifecycle()
 
-    // Автоматическая навигация при изменении состояния авторизации
-    // Когда CustomCookieJar.clear() очищает сессию, authState станет Unauthenticated,
-    // и этот блок автоматически перенаправит пользователя на экран входа.
+    // Реактивная навигация при изменении состояния сессии.
+    // Когда CustomCookieJar.clear() очищает сессию, поток эмитит
+    // AuthState.Unauthenticated, и пользователь автоматически
+    // перенаправляется на экран входа без ручного вызова навигации.
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                navController.navigate(Routers.Home.route) {
-                    popUpTo(Routers.Splash.route) { inclusive = true }
-                    launchSingleTop = true
-                }
+                navController.navigateClearingBackStack(Routers.Home.route)
             }
             is AuthState.Unauthenticated -> {
-                navController.navigate(Routers.UserAuth.route) {
-                    popUpTo(Routers.Splash.route) { inclusive = true }
-                    launchSingleTop = true
-                }
+                navController.navigateClearingBackStack(Routers.UserAuth.route)
             }
-            else -> {} // Остается на Splash во время Loading
+            // Loading и Error: остаёмся на Splash, пока состояние не станет определённым
+            else -> {}
         }
     }
 
@@ -64,10 +71,7 @@ fun NavGraph(
         composable(Routers.UserAuth.route) {
             AuthScreen(
                 onNavigateToHome = {
-                    navController.navigate(Routers.Home.route) {
-                        popUpTo(Routers.Splash.route) { inclusive = true }
-                        launchSingleTop = true
-                    }
+                    navController.navigateClearingBackStack(Routers.Home.route)
                 }
             )
         }
@@ -77,7 +81,7 @@ fun NavGraph(
                 onOpenUser = {
                     navController.navigate(Routers.UserInfo.route)
                 },
-                onLogout = onLogout // Используется для кнопки "Выход" в UI
+                onLogout = onLogout
             )
         }
 

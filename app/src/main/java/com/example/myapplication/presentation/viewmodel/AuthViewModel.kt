@@ -97,6 +97,8 @@ class AuthViewModel @Inject constructor(
 
     /**
      * Инициирует процесс выхода пользователя из системы.
+     *
+     * При сетевой ошибке всё равно выполняет локальный выход.
      */
     fun logout() {
         viewModelScope.launch {
@@ -106,6 +108,7 @@ class AuthViewModel @Inject constructor(
                 logoutUseCase()
                 _events.trySend(AuthEvent.LogoutSuccess)
             } catch (e: Exception) {
+                // Сетевая ошибка не блокирует выход — очистка всё равно выполняется
                 Timber.w(e, "Ошибка сетевого логаута, выполняем локальный выход")
                 _events.trySend(AuthEvent.LogoutSuccess)
             } finally {

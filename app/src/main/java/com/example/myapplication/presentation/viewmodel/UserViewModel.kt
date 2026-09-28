@@ -48,7 +48,7 @@ class UserViewModel @Inject constructor(
     val uiState: StateFlow<UserUiState> = _uiState.asStateFlow()
 
     init {
-        Timber.d("UserViewModel initialized")
+        Timber.d("UserViewModel инициализирован")
         viewModelScope.launch {
             authEventBus.logoutEvents.collect {
                 Timber.d("Получено событие выхода, сброс состояния на Loading")
@@ -57,7 +57,12 @@ class UserViewModel @Inject constructor(
         }
     }
 
-
+    /**
+     * Загружает данные пользователя из репозитория.
+     *
+     * При истёкшей сессии ничего не делает — [TokenInterceptor] уже обработал редирект на логин.
+     * При других ошибках отображает сообщение пользователю.
+     */
     fun loadUserData() {
         Timber.d("Начало загрузки данных пользователя")
         viewModelScope.launch {
@@ -70,6 +75,7 @@ class UserViewModel @Inject constructor(
                 is CustomResult.Error -> {
                     val message = when (result.exception) {
                         is SessionExpiredDomainException -> {
+                            // TokenInterceptor уже обработал редирект на логин
                             Timber.w("Сессия истекла, пропуск обработки")
                             return@launch
                         }

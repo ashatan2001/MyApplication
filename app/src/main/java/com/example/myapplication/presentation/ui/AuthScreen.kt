@@ -19,6 +19,12 @@ import com.example.myapplication.presentation.viewmodel.AuthEvent
 import com.example.myapplication.presentation.viewmodel.AuthUiState
 import com.example.myapplication.presentation.viewmodel.AuthViewModel
 
+/**
+ * Экран авторизации с формой логина и пароля.
+ *
+ * @param onNavigateToHome Вызывается после успешного входа для перехода на главный экран.
+ * @param viewModel [AuthViewModel] для управления состоянием и обработки событий.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
@@ -30,6 +36,11 @@ fun AuthScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    /**
+     * Собираем одноразовые события (навигация) через Channel.
+     * LaunchedEffect(Unit) гарантирует, что событие обработается один раз,
+     * даже при пересоздании композиции (например, при повороте экрана).
+     */
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             if (event is AuthEvent.LoginSuccess) {

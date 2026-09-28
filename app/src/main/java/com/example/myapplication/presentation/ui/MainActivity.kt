@@ -14,11 +14,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.presentation.navigation.NavGraph
 import com.example.myapplication.presentation.navigation.Routers
+import com.example.myapplication.presentation.navigation.navigateClearingBackStack
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+/**
+ * Точка входа в приложение.
+ *
+ * Инициализирует тему, навигацию и глобальный [SessionViewModel]
+ * для отслеживания событий выхода из системы.
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +35,10 @@ class MainActivity : ComponentActivity() {
                 val viewModel: SessionViewModel = hiltViewModel()
                 val snackbarHostState = remember { SnackbarHostState() }
                 val scope = rememberCoroutineScope()
+                /**
+                 * Показ Snackbar при принудительном выходе (истечение сессии, логаут).
+                 * LaunchedEffect(Unit) гарантирует, что подписка активна на всё время жизни активности.
+                 */
                 LaunchedEffect(Unit) {
                     viewModel.logoutEvents.collect {
                         scope.launch {
@@ -52,12 +63,8 @@ class MainActivity : ComponentActivity() {
                         NavGraph(
                             navController = navController,
                             onLogout = {
-                                navController.navigate(Routers.UserAuth.route) {
-                                    popUpTo(0) {
-                                        inclusive = true
-                                    }
-                                    launchSingleTop = true
-                                }
+                                // Выход из системы: полная очистка стека и переход на экран авторизации
+                                navController.navigateClearingBackStack(Routers.UserAuth.route)
                             }
                         )
                     }

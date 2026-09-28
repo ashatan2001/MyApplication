@@ -4,6 +4,12 @@ import com.example.data.dto.UserDto
 import com.example.domain.model.UserModel
 import javax.inject.Inject
 
+/**
+ * Маппер пользователя между DTO и доменной моделью.
+ *
+ * Двунаправленный: используется как для чтения данных (сервер → домен),
+ * так и для записи в кэш (домен → DTO).
+ */
 class UserMapper
     @Inject
     constructor() {

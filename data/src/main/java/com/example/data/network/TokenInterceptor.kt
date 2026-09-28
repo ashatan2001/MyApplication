@@ -54,7 +54,7 @@ class TokenInterceptor @Inject constructor(
             return response
         }
 
-        // Гарантируем, что только один поток выполнит обновление
+        // Только один поток выполняет обновление при одновременных 401 от нескольких запросов
         synchronized(lock) {
             Timber.d("Попытка обновления токена...")
             val refreshRequest = Request.Builder()

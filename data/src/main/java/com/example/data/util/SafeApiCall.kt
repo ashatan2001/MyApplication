@@ -6,11 +6,30 @@ import kotlinx.serialization.json.Json
 import retrofit2.Response
 import java.io.IOException
 
+/**
+ * Конфигурация JSON для парсинга тел ошибок.
+ * [coerceInputValues] позволяет обрабатывать некорректные значения
+ * (например, число вместо строки) без падения.
+ */
 private val json = Json {
     ignoreUnknownKeys = true
     coerceInputValues = true
 }
 
+/**
+ * Безопасная обёртка для выполнения сетевых запросов.
+ *
+ * Централизует обработку ошибок: парсит тело ошибки сервера в [ErrorResponseDto]
+ * и преобразует в соответствующее исключение дата-слоя.
+ * Позволяет не дублировать обработку ошибок в каждом DataSource.
+ *
+ * @param block Лямбда, выполняющая запрос и возвращающая [Response].
+ * @return Десериализованное тело ответа при успехе.
+ * @throws NetworkException при ошибке соединения.
+ * @throws ApiException при бизнес-ошибке от сервера.
+ * @throws UnauthorizedException при 401/403/419.
+ * @throws DataParsingException при ошибке парсинга ответа.
+ */
 suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
     android.util.Log.d("LOGIN_DEBUG", "[SafeApiCall] Начало выполнения запроса...")
     return try {
@@ -19,6 +38,8 @@ suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
 
         if (response.isSuccessful) {
             response.body() ?: run {
+                // Body может быть null для ответов 204 No Content.
+                // Приводим к Unit для совместимости с общим типом возврата.
                 @Suppress("UNCHECKED_CAST")
                 Unit as T
             }
@@ -40,6 +61,17 @@ suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
     }
 }
 
+/**
+ * Парсит тело ошибки сервера в исключение дата-слоя.
+ *
+ * Приоритет:
+ * 1. Пытается распарсить [ErrorResponseDto] из тела ответа.
+ * 2. Если парсинг не удался — маппит по HTTP-коду.
+ *
+ * @param body Тело ошибки в формате JSON или текст.
+ * @param httpCode HTTP-статус ответа.
+ * @return Соответствующее исключение [DataLayerException].
+ */
 private fun parseErrorBody(body: String?, httpCode: Int): DataLayerException {
     android.util.Log.d("LOGIN_DEBUG", "[parseErrorBody] code=$httpCode, body=$body")
 
@@ -67,7 +99,13 @@ private fun parseErrorBody(body: String?, httpCode: Int): DataLayerException {
     }
 }
 
-fun mapHttpError(code: Int, cause: Throwable? = null): DataLayerException = when (code) {
+/**
+ * Маппит HTTP-код ошибки в соответствующее исключение дата-слоя.
+ * Используется когда тело ответа пустое или не содержит структурированной ошибки.
+ *
+ * @param code HTTP-статус ответа.
+ * @param cause Исходное исключение (опционально).
+ */fun mapHttpError(code: Int, cause: Throwable? = null): DataLayerException = when (code) {
     401 -> UnauthorizedException(message = "Сессия истекла. Войдите снова.", cause = cause)
     403 -> UnauthorizedException(message = "Доступ запрещен", cause = cause)
     419 -> UnauthorizedException(message = "Сессия истекла. Войдите снова.", cause = cause)

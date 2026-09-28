@@ -68,6 +68,7 @@ class UserRepositoryImpl @Inject constructor(
                 cause = e
             )
         } catch (e: UserNotFoundException) {
+            // Уже доменное исключение — пробрасываем без повторной обёртки
             throw e
         } catch (e: Exception) {
             throw AppException(

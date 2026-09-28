@@ -16,16 +16,35 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+/**
+ * Состояние UI для главного экрана.
+ *
+ * [Loading] — отображается спиннер во время загрузки имени пользователя
+ * [Success] — отображается приветствие с именем пользователя
+ * [Error] — отображается сообщение об ошибке
+ */
 sealed class HomeUiState {
     data object Loading : HomeUiState()
     data class Success(val userName: String) : HomeUiState()
     data class Error(val message: String) : HomeUiState()
 }
 
+/**
+ * Одноразовые события главного экрана для навигации.
+ */
 sealed class HomeEvent {
+    /** Переход на экран логина при истечении сессии или выходе. */
     data object NavigateToLogin : HomeEvent()
 }
 
+/**
+ * ViewModel главного экрана.
+ *
+ * Загружает имя пользователя для приветствия и обрабатывает выход из системы.
+ *
+ * @param getUserName UseCase для получения имени пользователя из кэша.
+ * @param logoutUseCase UseCase для выполнения выхода из системы.
+ */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getUserName: GetUserNameUseCase,
@@ -38,10 +57,9 @@ class HomeViewModel @Inject constructor(
     private val _events = Channel<HomeEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    init {
-        loadHomeData()
-    }
-
+    /**
+     * Загружает имя пользователя для приветствия.
+     */
     fun loadHomeData() {
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
@@ -56,12 +74,21 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Выполняет выход из системы.
+     *
+     * При сетевой ошибке всё равно выполняет локальный выход,
+     * чтобы пользователь не остался «заперт» в приложении.
+     *
+     * @param onLogout Колбэк, вызываемый после завершения выхода.
+     */
     fun logout(onLogout: () -> Unit) {
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
             try {
                 logoutUseCase()
             } catch (e: Exception) {
+                // Сетевая ошибка не блокирует выход — очистка всё равно выполняется
                 Timber.w(e, "Ошибка логаута, выполняем локальный выход")
             } finally {
                 _events.trySend(HomeEvent.NavigateToLogin)
@@ -70,6 +97,12 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Обрабатывает ошибки загрузки данных.
+     *
+     * При истечении сессии или невалидной аутентификации
+     * перенаправляет пользователя на экран логина.
+     */
     private fun handleError(exception: Throwable) {
         when (exception) {
             is SessionExpiredDomainException,
@@ -85,6 +118,9 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Маппит исключения в человекочитаемые сообщения для пользователя.
+     */
     private fun Throwable.toUserMessage(): String = when (this) {
         is UserNotFoundException -> "Пользователь не найден"
         is NetworkConnectionException -> "Нет соединения с интернетом"

@@ -18,7 +18,12 @@ import com.example.domain.model.UserModel
 import com.example.myapplication.presentation.viewmodel.UserUiState
 import com.example.myapplication.presentation.viewmodel.UserViewModel
 
-
+/**
+ * Экран профиля пользователя.
+ *
+ * @param onBack Навигация назад на предыдущий экран.
+ * @param viewModel [UserViewModel] для загрузки данных пользователя.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserScreen(
@@ -27,6 +32,7 @@ fun UserScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Загрузка при первом входе на экран
     LaunchedEffect(Unit) {
         viewModel.loadUserData()
     }
@@ -84,6 +90,9 @@ fun UserScreen(
     }
 }
 
+/**
+ * Основной контент экрана профиля: аватар, имя и карточка с данными.
+ */
 @Composable
 private fun UserContent(user: UserModel) {
     Column(
@@ -116,7 +125,6 @@ private fun UserContent(user: UserModel) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 InfoRow("ID", user.id.toString())
-                InfoRow("FIO", user.userName)
                 InfoRow("Position", user.position)
                 InfoRow("PositionId", user.positionId.toString())
                 InfoRow("isEmployee", user.isEmployee.toString())
@@ -126,6 +134,9 @@ private fun UserContent(user: UserModel) {
     }
 }
 
+/**
+ * Строка "ключ-значение" для отображения информации о пользователе.
+ */
 @Composable
 private fun InfoRow(label: String, value: String) {
     Row(

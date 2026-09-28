@@ -1,6 +1,5 @@
 package com.example.data.network
 
-import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -19,10 +18,22 @@ import kotlinx.serialization.json.Json
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
+import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Реализация [CookieJar] с персистентным хранением кук аутентификации.
+ *
+ * Архитектура:
+ * - [cookieStore] (ConcurrentHashMap) — быстрый доступ в памяти для синхронных запросов.
+ * - [DataStore] — персистентное хранение для восстановления сессии после перезапуска приложения.
+ *
+ * Куки автоматически фильтруются по сроку действия при сохранении и загрузке.
+ * При очистке ([clear]) удаляются как куки, так и сессия пользователя,
+ * после чего отправляется событие выхода через [AuthEventBus].
+ */
 @Singleton
 class CustomCookieJar @Inject constructor(
     private val json: Json,
@@ -31,9 +42,21 @@ class CustomCookieJar @Inject constructor(
     private val authLocalDataSource: AuthLocalDataSource
 ) : CookieJar {
 
+    private companion object {
+        /** Имя куки, содержащей access-токен. */
+        const val ACCESS_TOKEN_COOKIE_NAME = "lexACCToken"
+
+        /** Ключ для хранения сериализованных кук в DataStore. */
+        val COOKIES_KEY = stringPreferencesKey("cookies")
+    }
+
+    /** Потокобезопасное хранилище кук в памяти. Ключ — хост. */
     private val cookieStore = ConcurrentHashMap<String, List<Cookie>>()
+
+    /** Scope для фоновых операций с DataStore. */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val cookiesKey = stringPreferencesKey("cookies")
+
+    /** Флаг завершения начальной загрузки кук из хранилища. */
     private val isLoaded = java.util.concurrent.atomic.AtomicBoolean(false)
 
     init {
@@ -43,6 +66,10 @@ class CustomCookieJar @Inject constructor(
         }
     }
 
+    /**
+     * Вызывается OkHttp при получении ответа от сервера.
+     * Обновляет куки для хоста, удаляя старые версии и протухшие куки.
+     */
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         val host = url.host
         val existingCookies = cookieStore[host].orEmpty().toMutableList()
@@ -53,7 +80,7 @@ class CustomCookieJar @Inject constructor(
             cookies.any { new -> new.name == existing.name && new.path == existing.path }
         }
 
-        // Добавляем новые/обновленные куки и сразу фильтруем протухшие (Max-Age=0 и т.д.)
+        // Добавляем новые/обновлённые куки и сразу фильтруем протухшие (Max-Age=0 и т.д.)
         val validCookies = (existingCookies + cookies).filter {
             it.expiresAt == -1L || it.expiresAt > currentTime
         }
@@ -61,7 +88,7 @@ class CustomCookieJar @Inject constructor(
         cookieStore[host] = validCookies
 
         cookies.forEach { cookie ->
-            Log.d("CookieJar", "Сохранена кука: ${cookie.name} = ${cookie.value}")
+            Timber.d("Сохранена кука: ${cookie.name}")
         }
 
         scope.launch {
@@ -69,22 +96,44 @@ class CustomCookieJar @Inject constructor(
         }
     }
 
+    /**
+     * Вызывается OkHttp перед отправкой запроса.
+     * Возвращает все куки, подходящие для указанного URL.
+     */
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
         return cookieStore.values.flatten().filter { it.matches(url) }
     }
 
+    /**
+     * Полностью очищает куки, сессию и оповещает приложение о выходе.
+     * Вызывается при неудачном обновлении токена или выходе пользователя.
+     */
     fun clear() {
         cookieStore.clear()
+
         scope.launch {
             dataStore.edit { preferences ->
                 preferences.clear()
             }
             authLocalDataSource.clearSession()
-            Log.d("CookieJar", "Cookie store and auth session fully cleared")
+            Timber.d("Cookie store and auth session fully cleared")
             authEventBus.notifyLogout()
         }
     }
 
+    /**
+     * Возвращает текущий access-токен из кук.
+     *
+     * @return Значение токена или null, если кука не найдена или истекла.
+     */
+    fun getAccessToken(): String? {
+        val currentTime = System.currentTimeMillis()
+        return cookieStore.values.flatten().firstOrNull {
+            it.name == ACCESS_TOKEN_COOKIE_NAME && (it.expiresAt == -1L || it.expiresAt > currentTime)
+        }?.value
+    }
+
+    /** Сериализует куки и сохраняет в DataStore. */
     private suspend fun saveToStorage() {
         val jsonStr = json.encodeToString(cookieStore.mapValues { (_, cookies) ->
             cookies.map { cookie ->
@@ -102,16 +151,18 @@ class CustomCookieJar @Inject constructor(
         })
 
         dataStore.edit { preferences ->
-            preferences[cookiesKey] = jsonStr
+            preferences[COOKIES_KEY] = jsonStr
         }
     }
 
+    /** Загружает куки из DataStore при старте приложения. */
     private suspend fun loadFromStorage() {
         try {
             val preferences = dataStore.data.first()
-            val jsonStr = preferences[cookiesKey] ?: return
+            val jsonStr = preferences[COOKIES_KEY] ?: return
 
             val map = json.decodeFromString<Map<String, List<CookieData>>>(jsonStr)
+
             cookieStore.putAll(map.mapValues { (_, cookies) ->
                 cookies.map { cookieData ->
                     Cookie.Builder()
@@ -128,21 +179,18 @@ class CustomCookieJar @Inject constructor(
                         .build()
                 }
             })
-            Log.d("CookieJar", "Загружено ${cookieStore.size} хостов с куками")
+
+            Timber.d("Загружено ${cookieStore.size} хостов с куками")
         } catch (e: Exception) {
-            Log.e("CustomCookieJar", "Failed to load cookies", e)
+            Timber.e(e, "Failed to load cookies from storage")
         }
-    }
-
-
-    fun getAccessToken(): String? {
-        val currentTime = System.currentTimeMillis()
-        return cookieStore.values.flatten().firstOrNull {
-            it.name == "lexACCToken" && (it.expiresAt == -1L || it.expiresAt > currentTime)
-        }?.value
     }
 }
 
+/**
+ * Сериализуемое представление куки для хранения в DataStore.
+ * [Cookie] не реализует Serializable, поэтому используется этот DTO.
+ */
 @OptIn(InternalSerializationApi::class)
 @Serializable
 data class CookieData(
@@ -155,4 +203,3 @@ data class CookieData(
     val httpOnly: Boolean,
     val hostOnly: Boolean
 )
-

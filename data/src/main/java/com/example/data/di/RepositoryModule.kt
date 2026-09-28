@@ -11,6 +11,12 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 
+/**
+ * Связывает интерфейсы доменного слоя с реализациями из data-слоя.
+ *
+ * Используется [Binds] вместо [Provides], т.к. реализации не требуют
+ * дополнительной конфигурации при создании.
+ */
 @Module
 @InstallIn(SingletonComponent::class) // или ViewModelComponent::class
 abstract class RepositoryModule {

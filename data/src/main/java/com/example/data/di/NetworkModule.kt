@@ -26,7 +26,14 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
-// Квалификаторы для разделения клиентов
+// region Квалификаторы
+
+/**
+ * Квалификаторы разделяют два набора HTTP-клиентов:
+ * - [Base] — для публичных запросов без авторизации.
+ * - [Auth] — для запросов, требующих куки и автообновление токена.
+ */
+
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class BaseOkHttp
@@ -43,8 +50,21 @@ annotation class BaseRetrofit
 @Retention(AnnotationRetention.BINARY)
 annotation class AuthRetrofit
 
+// endregion
+
+/** Локальное хранилище кук аутентификации через DataStore. */
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "auth_cookies")
 
+/**
+ * Модуль сетевых зависимостей.
+ *
+ * Предоставляет два изолированных HTTP-стека:
+ * - **Base** — без кук и токен-интерсептора (регистрация, публичные эндпоинты).
+ * - **Auth** — с [CustomCookieJar] и [TokenInterceptor] для авторизованных запросов.
+ *
+ * Разделение необходимо, чтобы [TokenInterceptor] не перехватывал запросы на обновление токена,
+ * что привело бы к бесконечной рекурсии.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -63,6 +83,11 @@ object NetworkModule {
         return context.dataStore
     }
 
+
+    /**
+     * Базовый OkHttpClient без аутентификации.
+     * Используется для эндпоинтов, не требующих авторизации.
+     */
     @Provides
     @Singleton
     @BaseOkHttp
@@ -74,6 +99,15 @@ object NetworkModule {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
+    /**
+     * OkHttpClient с аутентификацией.
+     *
+     * Порядок интерсепторов важен:
+     * 1. [CustomCookieJar] — добавляет куки из хранилища.
+     * 2. [HeadersInterceptor] — добавляет общие заголовки.
+     * 3. [TokenInterceptor] — перехватывает 401/419 и обновляет токен.
+     * 4. [HttpLoggingInterceptor] — логирование (только в DEBUG).
+     */
     @Provides
     @Singleton
     @AuthOkHttp
@@ -101,6 +135,7 @@ object NetworkModule {
             .build()
     }
 
+    /** Retrofit для публичных API без аутентификации. */
     @Provides
     @Singleton
     @BaseRetrofit
@@ -113,6 +148,7 @@ object NetworkModule {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 
+    /** Retrofit для защищённых API с аутентификацией через куки. */
     @Provides
     @Singleton
     @AuthRetrofit
@@ -125,11 +161,13 @@ object NetworkModule {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 
+    /** API для операций аутентификации (логин, обновление токена). */
     @Provides
     @Singleton
     fun provideAuthApi(@AuthRetrofit retrofit: Retrofit): AuthApi =
         retrofit.create(AuthApi::class.java)
 
+    /** API для получения данных пользователя. */
     @Provides
     @Singleton
     fun provideUserApi(@AuthRetrofit retrofit: Retrofit): UserApi =

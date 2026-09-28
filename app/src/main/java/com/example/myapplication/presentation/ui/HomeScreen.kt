@@ -24,6 +24,13 @@ import com.example.myapplication.presentation.viewmodel.HomeUiState
 import com.example.myapplication.presentation.viewmodel.HomeViewModel
 import kotlinx.coroutines.launch
 
+/**
+ * Главный экран приложения с приветствием и боковым меню.
+ *
+ * @param onOpenUser Навигация к экрану профиля пользователя.
+ * @param onLogout Колбэк для выхода из системы (вызывается из бокового меню).
+ * @param viewModel [HomeViewModel] для управления данными пользователя.
+ */
 @Composable
 fun HomeScreen(
     onOpenUser: () -> Unit,
@@ -59,6 +66,8 @@ fun HomeScreen(
                 }
             )
         },
+        // Жесты для открытия меню доступны только в состоянии успеха.
+        // При загрузке или ошибке меню не содержит полезных действий.
         gesturesEnabled = uiState is HomeUiState.Success
     ) {
         Scaffold(
@@ -142,6 +151,11 @@ private fun HomeContent(
     }
 }
 
+/**
+ * Содержимое бокового меню.
+ *
+ * Пункт "Профиль" активен только при наличии данных пользователя.
+ */
 @Composable
 private fun DrawerContent(
     uiState: HomeUiState,
@@ -149,6 +163,7 @@ private fun DrawerContent(
     onOpenUser: () -> Unit,
     onLogout: () -> Unit
 ) {
+    // Безопасное приведение: имя доступно только в состоянии успеха
     val userName = (uiState as? HomeUiState.Success)?.userName
 
     ModalDrawerSheet {
@@ -185,6 +200,11 @@ private fun DrawerContent(
     }
 }
 
+/**
+ * Элемент бокового меню.
+ *
+ * @param enabled Если false — элемент визуально приглушён и не реагирует на нажатия.
+ */
 @Composable
 private fun DrawerItem(
     icon: ImageVector,

@@ -14,29 +14,41 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import javax.inject.Inject
 
+/**
+ * Локальный источник данных для чтения информации о пользователе из assets.
+ *
+ * Используется для оффлайн-режима, моков или начального состояния приложения,
+ * когда сетевой запрос еще не выполнен.
+ */
 class UserLocalDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
     private val json: Json
 ) {
+    /**
+     * Читает и десериализует данные пользователя из JSON-файла в папке assets.
+     *
+     * @param fileName Имя файла в assets (например, "user_mock.json").
+     * @return Десериализованный [UserDto].
+     * @throws UserNotFoundException если файл не найден в assets.
+     * @throws DataParsingException если JSON невалиден или не соответствует структуре [UserDto].
+     * @throws DataException при общих ошибках ввода-вывода.
+     */
     suspend fun getUserFromAssets(fileName: String): UserDto = withContext(Dispatchers.IO) {
         try {
             val jsonString = context.assets.open(fileName).bufferedReader().use { it.readText() }
             json.decodeFromString<UserDto>(jsonString)
         } catch (e: FileNotFoundException) {
-            // ✅ Используем UserNotFoundException, который уже есть в domain.exception
             throw UserNotFoundException(
                 userId = null,
                 message = "Файл не найден: $fileName",
                 cause = e
             )
         } catch (e: SerializationException) {
-            // ✅ Используем DataParsingException из domain.exception
             throw DataParsingException(
                 message = "Ошибка парсинга JSON из $fileName",
                 cause = e
             )
         } catch (e: IOException) {
-            // ✅ Используем DataException для общих ошибок ввода-вывода
             throw DataException(
                 message = "Ошибка ввода-вывода при чтении $fileName",
                 cause = e

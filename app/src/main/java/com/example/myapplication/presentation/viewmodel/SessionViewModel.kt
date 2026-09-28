@@ -15,7 +15,9 @@ import javax.inject.Inject
 
 /**
  * ViewModel для управления глобальным состоянием сессии.
+ *
  * Предоставляет реактивный поток состояния авторизации и событий выхода.
+ * Используется в [MainActivity] для навигации и показа Snackbar.
  *
  * @param observeAuthStateUseCase UseCase для наблюдения за изменениями состояния авторизации.
  * @param authEventBus Шина событий для получения уведомлений о выходе из системы.
@@ -32,7 +34,9 @@ class SessionViewModel @Inject constructor(
 
     /**
      * Состояние авторизации пользователя.
-     * Использует [SharingStarted.Lazily] для оптимизации ресурсов.
+     *
+     * Использует [SharingStarted.Lazily] для оптимизации ресурсов:
+     * подписка на источник создаётся только при первом коллекторе.
      */
     val authState: StateFlow<AuthState> = observeAuthStateUseCase()
         .stateIn(
@@ -43,7 +47,9 @@ class SessionViewModel @Inject constructor(
 
     /**
      * Поток событий выхода из системы.
-     * Используется для навигации на экран авторизации при завершении сессии.
+     *
+     * Используется для навигации на экран авторизации при завершении сессии
+     * и показа Snackbar в [MainActivity].
      */
     val logoutEvents: SharedFlow<Unit> = authEventBus.logoutEvents
 }

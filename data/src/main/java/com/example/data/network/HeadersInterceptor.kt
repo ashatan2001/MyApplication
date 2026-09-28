@@ -6,6 +6,12 @@ import okhttp3.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Интерсептор для добавления общих заголовков ко всем исходящим запросам.
+ *
+ * Устанавливает заголовок `Accept` с версией API,
+ * чтобы сервер возвращал данные в ожидаемом формате.
+ */
 @Singleton
 class HeadersInterceptor @Inject constructor() : Interceptor {
 
