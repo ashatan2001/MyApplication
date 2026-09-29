@@ -1,6 +1,5 @@
 package com.example.data.dto
 
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
 
 /**

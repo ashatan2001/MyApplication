@@ -1,7 +1,7 @@
 package com.example.domain.event
 
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 

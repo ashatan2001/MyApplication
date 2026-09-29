@@ -17,4 +17,10 @@ sealed class Routers(val route: String) {
 
     /** Экран профиля пользователя. */
     data object UserInfo : Routers("user_info")
+
+    /** Экран списка точек выгрузки бетона. */
+    data object DstPointsList : Routers("dst_points_list")
+
+    /** Экран точки выгрузки бетона. */
+    data object DstPoint : Routers("dst_point")
 }

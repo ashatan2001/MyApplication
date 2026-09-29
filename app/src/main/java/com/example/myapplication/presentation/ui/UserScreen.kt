@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.domain.model.UserModel
+import com.example.domain.model.User
 import com.example.myapplication.presentation.viewmodel.UserUiState
 import com.example.myapplication.presentation.viewmodel.UserViewModel
 
@@ -91,10 +91,10 @@ fun UserScreen(
 }
 
 /**
- * Основной контент экрана профиля: аватар, имя и карточка с данными.
+ * Основной контент экрана профиля
  */
 @Composable
-private fun UserContent(user: UserModel) {
+private fun UserContent(user: User) {
     Column(
         modifier = Modifier
             .fillMaxSize()

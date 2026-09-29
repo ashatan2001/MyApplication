@@ -17,7 +17,8 @@ import kotlinx.serialization.Serializable
  * @property positionId ID должности.
  * @property isEmployee Признак сотрудника организации.
  * @property isActive Признак активной учётной записи.
- */@OptIn(InternalSerializationApi::class) // <= kotlinx.serialization (1.6+)
+ */
+@OptIn(InternalSerializationApi::class)
 @Serializable
 data class UserDto(
     @SerialName("PersonID") val id: Int,

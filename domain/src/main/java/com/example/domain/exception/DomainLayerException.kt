@@ -40,6 +40,17 @@ class UserNotFoundException(
 ) : DomainException(errorCode = 2002, message = message, cause = cause)
 
 /**
+ * Пользователь не найден в системе.
+ *
+ * @param zoneId ID запрашиваемой точки загрузки бетона (для логирования).
+ */
+class DstPointNotFoundException(
+    val zoneId: Int? = null,
+    message: String = "DstPoint not found",
+    cause: Throwable? = null
+) : DomainException(errorCode = 2002, message = message, cause = cause)
+
+/**
  * Ошибка валидации пользовательского ввода.
  *
  * @param field Название поля, не прошедшего валидацию (например, "login", "password").

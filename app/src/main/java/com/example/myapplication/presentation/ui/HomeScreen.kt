@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     onOpenUser: () -> Unit,
+    onDstPointsList: () -> Unit,
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -60,6 +62,7 @@ fun HomeScreen(
                 uiState = uiState,
                 onCloseDrawer = { scope.launch { drawerState.close() } },
                 onOpenUser = onOpenUser,
+                onDstPointsList = onDstPointsList,
                 onLogout = {
                     scope.launch { drawerState.close() }
                     viewModel.logout { }
@@ -161,6 +164,7 @@ private fun DrawerContent(
     uiState: HomeUiState,
     onCloseDrawer: () -> Unit,
     onOpenUser: () -> Unit,
+    onDstPointsList: () -> Unit,
     onLogout: () -> Unit
 ) {
     // Безопасное приведение: имя доступно только в состоянии успеха
@@ -186,6 +190,15 @@ private fun DrawerContent(
                 onClick = {
                     onCloseDrawer()
                     onOpenUser()
+                }
+            )
+
+            DrawerItem(
+                icon = Icons.Default.Place,
+                text = "Точки выгрузки бетона",
+                onClick = {
+                    onCloseDrawer()
+                    onDstPointsList()
                 }
             )
 

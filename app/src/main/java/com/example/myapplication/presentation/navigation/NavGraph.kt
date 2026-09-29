@@ -15,6 +15,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.domain.model.AuthState
 import com.example.myapplication.presentation.ui.AuthScreen
+import com.example.myapplication.presentation.ui.DstPointListScreen
+import com.example.myapplication.presentation.ui.DstPointScreen
 import com.example.myapplication.presentation.ui.HomeScreen
 import com.example.myapplication.presentation.ui.UserScreen
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
@@ -81,12 +83,36 @@ fun NavGraph(
                 onOpenUser = {
                     navController.navigate(Routers.UserInfo.route)
                 },
+                onDstPointsList = {
+                    navController.navigate(Routers.DstPointsList.route)
+                },
                 onLogout = onLogout
             )
         }
 
         composable(Routers.UserInfo.route) {
             UserScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                viewModel = hiltViewModel()
+            )
+        }
+
+        composable(Routers.DstPointsList.route) {
+            DstPointListScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onDstPoint = {
+                    navController.navigate(Routers.DstPoint.route)
+                },
+                viewModel = hiltViewModel()
+            )
+        }
+
+        composable(Routers.DstPoint.route) {
+            DstPointScreen(
                 onBack = {
                     navController.popBackStack()
                 },

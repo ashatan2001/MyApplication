@@ -1,33 +1,22 @@
-// data/src/main/java/com/example/data/repository/UserRepositoryImpl.kt
 package com.example.data.repository
 
 import com.example.data.exception.*
 import com.example.data.local.AuthLocalDataSource
-import com.example.data.mapper.UserMapper
-import com.example.data.remote.UserRemoteDataSource
+import com.example.data.mapper.DstPointMapper
+import com.example.data.remote.DstPointRemoteDataSource
 import com.example.domain.exception.*
-import com.example.domain.model.User
-import com.example.domain.repository.UserRepository
-import javax.inject.Inject
-import javax.inject.Singleton
+import com.example.domain.model.DstPoint
+import com.example.domain.repository.DstPointRepository
 
-@Singleton
-class UserRepositoryImpl @Inject constructor(
-    private val remoteDataSource: UserRemoteDataSource,
+class DstPointRepositoryImpl (
+    private val remoteDataSource: DstPointRemoteDataSource,
     private val localDataSource: AuthLocalDataSource,
-    private val mapper: UserMapper
-) : UserRepository {
+    private val mapper: DstPointMapper
+) : DstPointRepository {
 
-    override suspend fun getUserId(): Int? = localDataSource.getUserId()
-
-    override suspend fun getUserName(): String? = localDataSource.getUserName()
-
-    override suspend fun getUserInfo(): User {
-        val userId = getUserId()
-            ?: throw UserNotFoundException(userId = null, message = "Пользователь не авторизирован")
-
+    override suspend fun getDstPoint(zoneId: Int): DstPoint {
         val dto = try {
-            remoteDataSource.getUserInfo(userId)
+            remoteDataSource.getDstPoint(zoneId)
         } catch (e: UnauthorizedException) {
             localDataSource.clearSession()
             throw AuthenticationFailedException(
@@ -58,21 +47,21 @@ class UserRepositoryImpl @Inject constructor(
             )
         } catch (e: DataLayerException) {
             if (e.errorCode == 404) {
-                throw UserNotFoundException(
-                    userId = userId,
-                    message = e.message ?: "Пользователь не найден на сервере"
+                throw DstPointNotFoundException(
+                    zoneId = zoneId,
+                    message = e.message ?: "Точка выгрузки бетона не найдена"
                 )
             }
             throw AppException(
-                message = "Ошибка сети при получении данных пользователя (код: ${e.errorCode})",
+                message = "Ошибка сети при получении данных точки выгрузки бетона (код: ${e.errorCode})",
                 cause = e
             )
-        } catch (e: UserNotFoundException) {
+        } catch (e: DstPointNotFoundException) {
             // Уже доменное исключение — пробрасываем без повторной обёртки
             throw e
         } catch (e: Exception) {
             throw AppException(
-                message = "Неожиданная ошибка при получении пользователя $userId: ${e.message ?: "неизвестная ошибка"}",
+                message = "Неожиданная ошибка при получении точки выгрузки бетона $zoneId: ${e.message ?: "неизвестная ошибка"}",
                 cause = e
             )
         }
