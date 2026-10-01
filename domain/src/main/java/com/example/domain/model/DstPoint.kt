@@ -13,5 +13,5 @@ data class DstPoint(
     val zoneId: Int,
     val zoneName: String,
     val departmentId: String,
-    val postId: Int?
+    val postId: String?
 )

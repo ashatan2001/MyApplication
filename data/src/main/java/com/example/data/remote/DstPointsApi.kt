@@ -29,7 +29,7 @@ interface DstPointsApi {
      * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
      * - 5xx — внутренняя ошибка получения информации о точках разгрузки
      */
-    @GET("/apb/dst-points/{zoneid}")
+    @GET("api/apb/dst-points/{zoneid}")
     suspend fun getDstPoint(@Path("zoneid") id: Int): Response<DstPointDto>
 
     /**
@@ -44,8 +44,8 @@ interface DstPointsApi {
      * - 401 — необходимо выполнить вход в систему
      * - 404 — точка выгрузки бетона не найдена в базе данных
      * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
-     * - 5xx — внутренняя ошибка получения информации о точках разгрузки
+     * - 500 — внутренняя ошибка получения информации о точках разгрузки
      */
-    @GET("/apb/dst-points")
+    @GET("api/apb/dst-points")
     suspend fun getDstPointsList(): Response<List<DstPointDto>>
 }

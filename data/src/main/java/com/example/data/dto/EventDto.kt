@@ -19,9 +19,9 @@ import kotlinx.serialization.Serializable
  */
 @OptIn(InternalSerializationApi::class)
 @Serializable
-data class DstPointDto (
+data class EventDto (
     @SerialName("ZoneNo") val zoneId: Int,
     @SerialName("ZoneName") val zoneName: String,
     @SerialName("DepartmentID") val departmentId: String,
     @SerialName("PostID") val postId: String? = null
-    )
+)

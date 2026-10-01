@@ -2,6 +2,7 @@ package com.example.myapplication.presentation.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -30,7 +31,22 @@ fun DstPointScreen(
         viewModel.loadDstPointData(zoneId)
     }
 
-    Scaffold { innerPadding ->
+    Scaffold (topBar = {
+        TopAppBar(
+            title = {
+                Text("Список точек выгрузки бетона")
+            },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Назад"
+                    )
+                }
+            }
+        )
+    }
+    ) { innerPadding ->
 
         Box(
             modifier = Modifier
@@ -111,20 +127,23 @@ private fun DstPointContent(dstPoint: DstPoint) {
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = "Код подразделения",
-                        style = MaterialTheme.typography.labelSmall
+                        text = dstPoint.zoneName,
+                        style = MaterialTheme.typography.bodyMedium
                     )
 
                     Text(
                         text = dstPoint.departmentId,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyMedium
                     )
+
+                    dstPoint.postId?.let { postId ->
+                        Text(
+                            text = postId,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
 
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null
-                )
             }
         }
     }

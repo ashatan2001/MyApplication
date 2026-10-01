@@ -20,5 +20,4 @@ dependencies {
     // Только корутины, если доменная логика асинхронная
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("javax.inject:javax.inject:1")
-    // implementation("javax.inject:javax.inject:1")
 }

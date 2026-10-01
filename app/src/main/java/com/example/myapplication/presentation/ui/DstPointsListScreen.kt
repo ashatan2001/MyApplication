@@ -13,6 +13,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -65,30 +68,33 @@ fun DstPointListScreen(
                 }
 
                 is DstPointsListUiState.Success -> {
-                    if (state.dstPointsList.isEmpty()) {
-                        Text(
-                            text = "Список точек пуст",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // Sticky header - остается видимым при прокрутке
+                        stickyHeader {
+                            TableHeader()
+                        }
+
+                        if (state.dstPointsList.isEmpty()) {
+                            item {
+                                Text(
+                                    text = "Список точек выгрузки бетона пуст",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else {
                             items(
                                 items = state.dstPointsList,
-                                key = { point ->
-                                    // Здесь должно быть уникальное поле точки.
-                                    // Например: point.id или point.zoneId
-                                    point.zoneId
-                                }
+                                key = { point -> point.zoneId }
                             ) { point ->
                                 DstPointRow(
                                     dstPoint = point,
-                                    onClick = {
-                                        onDstPoint(point.zoneId)
-                                    }
+                                    onClick = { onDstPoint(point.zoneId) }
                                 )
-
                                 HorizontalDivider()
                             }
                         }
@@ -142,27 +148,68 @@ private fun DstPointRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .heightIn(min = 44.dp)
+                .padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "Код подразделения",
-                    style = MaterialTheme.typography.labelSmall
-                )
+            Text(
+                text = dstPoint.zoneName,
+                modifier = Modifier.weight(7f),
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
 
-                Text(
-                    text = dstPoint.departmentId,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+            Text(
+                text = dstPoint.departmentId,
+                modifier = Modifier.weight(2f),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
 
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun TableHeader() {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Наименование подразделения",
+                modifier = Modifier.weight(7f),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                text = "Код",
+                modifier = Modifier.weight(2f),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            // Стрелка — фиксированная (~10%)
+            Spacer(modifier = Modifier.width(24.dp))
         }
     }
 }
