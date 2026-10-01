@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 /**
  * Тело ответа при успешной авторизации.
  *
- * @property userName Отображаемое имя пользователя.
+ * @property fullName Отображаемое имя пользователя.
  *                    В JSON приходит как "fio" (историческое название поля на сервере).
  * @property message Приветственное сообщение от сервера.
  */
@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class LoginResponseDto(
     @SerialName("fio")
-    val userName: String,
+    val fullName: String,
     val message: String
 ) {
 }

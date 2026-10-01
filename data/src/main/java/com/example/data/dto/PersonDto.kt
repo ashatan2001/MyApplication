@@ -9,10 +9,10 @@ import kotlinx.serialization.Serializable
  *
  * Сервер возвращает поля с именами в стиле PascalCase и историческими
  * названиями ("FIO" вместо "userName", "PersonID" вместо "id").
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.UserMapper].
+ * Маппинг в доменную модель выполняется в [com.example.data.mapper.PersonMapper].
  *
  * @property id Уникальный идентификатор пользователя.
- * @property userName ФИО пользователя (в серверном ответе — "FIO").
+ * @property fullName ФИО пользователя (в серверном ответе — "FIO").
  * @property position Название должности.
  * @property positionId ID должности.
  * @property isEmployee Признак сотрудника организации.
@@ -20,9 +20,9 @@ import kotlinx.serialization.Serializable
  */
 @OptIn(InternalSerializationApi::class)
 @Serializable
-data class UserDto(
+data class PersonDto(
     @SerialName("PersonID") val id: Int,
-    @SerialName("FIO") val userName: String,
+    @SerialName("FIO") val fullName: String,
     @SerialName("Position") val position: String,
     @SerialName("PositionID") val positionId: Int,
     @SerialName("IsEmployee") val isEmployee: Boolean,

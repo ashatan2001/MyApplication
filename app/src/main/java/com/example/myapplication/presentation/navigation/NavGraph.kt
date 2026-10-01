@@ -78,8 +78,8 @@ fun NavGraph(
 
         composable(Routers.Home.route) {
             HomeScreen(
-                onOpenUser = {
-                    navController.navigate(Routers.UserInfo.route)
+                onOpenPerson = {
+                    navController.navigate(Routers.PersonInfo.route)
                 },
                 onDstPointsList = {
                     navController.navigate(Routers.DstPointsList.route)
@@ -88,8 +88,8 @@ fun NavGraph(
             )
         }
 
-        composable(Routers.UserInfo.route) {
-            UserScreen(
+        composable(Routers.PersonInfo.route) {
+            PersonScreen(
                 onBack = {
                     navController.popBackStack()
                 },

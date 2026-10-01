@@ -37,7 +37,7 @@ class AuthLocalDataSource @Inject constructor(
         }
     }
 
-    suspend fun getUserId(): Int? {
+    suspend fun getPersonId(): Int? {
         return context.authDataStore.data.first()[USER_ID_KEY]
     }
 
@@ -45,7 +45,7 @@ class AuthLocalDataSource @Inject constructor(
         context.authDataStore.edit { it[USER_NAME_KEY] = userName}
     }
 
-    suspend fun getUserName(): String? {
+    suspend fun getPersonName(): String? {
         return context.authDataStore.data.first()[USER_NAME_KEY]
     }
 

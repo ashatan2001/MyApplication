@@ -2,12 +2,12 @@ package com.example.data.di
 
 import com.example.data.repository.AuthRepositoryImpl
 import com.example.data.repository.DstPointsRepositoryImpl
-import com.example.data.repository.UserRepositoryImpl
+import com.example.data.repository.PersonRepositoryImpl
 import com.example.domain.event.AuthEventBus
 import com.example.domain.event.AuthEventBusImpl
 import com.example.domain.repository.AuthRepository
 import com.example.domain.repository.DstPointsRepository
-import com.example.domain.repository.UserRepository
+import com.example.domain.repository.PersonRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -23,7 +23,7 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class) // или ViewModelComponent::class
 abstract class RepositoryModule {
     @Binds
-    abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
+    abstract fun bindPersonRepository(impl: PersonRepositoryImpl): PersonRepository
     @Binds
     abstract fun bindDstPointsRepository(impl: DstPointsRepositoryImpl): DstPointsRepository
     @Binds

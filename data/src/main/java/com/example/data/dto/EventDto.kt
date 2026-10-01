@@ -5,23 +5,30 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные точки выгрузки бетона от сервера (эндпоинт `api/apb/dstpoints/:zoneid`).
+ * Данные точки выгрузки бетона от сервера.
  *
  * Сервер возвращает поля с именами в стиле PascalCase и историческими
- * названиями ("FIO" вместо "userName", "PersonID" вместо "id").
+ * названиями
  * Маппинг в доменную модель выполняется в [com.example.data.mapper.DstPointMapper].
  *
- * @property zoneId Код зоны разгрузки бетона (поле ZoneNo).
- * @property zoneName Наименование подразделения.
- * @property departmentId Код подразделения.
- * @property postId код поста заказа продукции (операторской панели,
- *                  управляющей одной или несколькими точками выгрузки).
+ * @property id идентификатор события в базе данных.
+ * @property date Дата и время.
+ * @property person Информация о сотруднике.
+ * @property eq Информация об оборудовании.
+ * @property deviceName Наименование управляющей службы технологического процесса.
+ * @property wpName Наименование места, на котором возникло событие.
+ * @property className Наименование класса событий
+ * @property text Текст события
  */
 @OptIn(InternalSerializationApi::class)
 @Serializable
 data class EventDto (
-    @SerialName("ZoneNo") val zoneId: Int,
-    @SerialName("ZoneName") val zoneName: String,
-    @SerialName("DepartmentID") val departmentId: String,
-    @SerialName("PostID") val postId: String? = null
+    @SerialName("EventID") val id: Int,
+    @SerialName("EventDate") val date: String,
+    @SerialName("Person") val person: PersonDto,
+    @SerialName("Eq") val equipment: EquipmentDto,
+    @SerialName("DeviceName") val deviceName: String? = null,
+    @SerialName("WPName") val workPlaceName: String? = null,
+    @SerialName("EventClassName") val className: String? = null,
+    @SerialName("EventText") val text: String? = null
 )

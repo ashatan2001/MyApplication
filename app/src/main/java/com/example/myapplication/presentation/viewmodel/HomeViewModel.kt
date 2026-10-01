@@ -3,7 +3,7 @@ package com.example.myapplication.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.domain.exception.*
-import com.example.domain.usecase.GetUserNameUseCase
+import com.example.domain.usecase.GetPersonNameUseCase
 import com.example.domain.usecase.LogoutUseCase
 import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +25,7 @@ import javax.inject.Inject
  */
 sealed class HomeUiState {
     data object Loading : HomeUiState()
-    data class Success(val userName: String) : HomeUiState()
+    data class Success(val personName: String) : HomeUiState()
     data class Error(val message: String) : HomeUiState()
 }
 
@@ -42,12 +42,12 @@ sealed class HomeEvent {
  *
  * Загружает имя пользователя для приветствия и обрабатывает выход из системы.
  *
- * @param getUserName UseCase для получения имени пользователя из кэша.
+ * @param getPersonName UseCase для получения имени пользователя из кэша.
  * @param logoutUseCase UseCase для выполнения выхода из системы.
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getUserName: GetUserNameUseCase,
+    private val getPersonName: GetPersonNameUseCase,
     private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
 
@@ -63,9 +63,9 @@ class HomeViewModel @Inject constructor(
     fun loadHomeData() {
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
-            when (val result = getUserName()) {
+            when (val result = getPersonName()) {
                 is CustomResult.Success -> {
-                    _uiState.value = HomeUiState.Success(userName = result.data)
+                    _uiState.value = HomeUiState.Success(personName = result.data)
                 }
                 is CustomResult.Error -> {
                     result.exception?.let { handleError(it) }
@@ -122,7 +122,7 @@ class HomeViewModel @Inject constructor(
      * Маппит исключения в человекочитаемые сообщения для пользователя.
      */
     private fun Throwable.toUserMessage(): String = when (this) {
-        is UserNotFoundException -> "Пользователь не найден"
+        is PersonNotFoundException -> "Пользователь не найден"
         is NetworkConnectionException -> "Нет соединения с интернетом"
         is ServerUnavailableException -> "Ошибка сервера, попробуйте позже"
         is ServerApiException -> message ?: "Ошибка API"

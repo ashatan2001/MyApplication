@@ -5,9 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.domain.event.AuthEventBus
 import com.example.domain.exception.NetworkConnectionException
 import com.example.domain.exception.SessionExpiredDomainException
-import com.example.domain.exception.UserNotFoundException
-import com.example.domain.model.User
-import com.example.domain.usecase.GetUserInfoUseCase
+import com.example.domain.exception.PersonNotFoundException
+import com.example.domain.model.Person
+import com.example.domain.usecase.GetPersonInfoUseCase
 import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,34 +27,34 @@ import javax.inject.Inject
  *
  * @property isNetworkError Флаг для показа специфичного UI при ошибках сети
  */
-sealed class UserUiState {
-    data object Loading : UserUiState()
-    data class Success(val user: User) : UserUiState()
-    data class Error(val message: String, val isNetworkError: Boolean = false) : UserUiState()
+sealed class PersonUiState {
+    data object Loading : PersonUiState()
+    data class Success(val person: Person) : PersonUiState()
+    data class Error(val message: String, val isNetworkError: Boolean = false) : PersonUiState()
 }
 
 /**
  * ViewModel экрана профиля. Реагирует на глобальные события аутентификации
  * через [authEventBus] для корректного сброса состояния при выходе.»
  *
- * @param getUserInfoUseCase UseCase для получения информации о пользователе.
+ * @param getPersonInfoUseCase UseCase для получения информации о пользователе.
  * @param authEventBus Шина событий для отслеживания выхода из системы.
  */
 @HiltViewModel
-class UserViewModel @Inject constructor(
-    private val getUserInfoUseCase: GetUserInfoUseCase,
+class PersonViewModel @Inject constructor(
+    private val getPersonInfoUseCase: GetPersonInfoUseCase,
     private val authEventBus: AuthEventBus
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UserUiState>(UserUiState.Loading)
-    val uiState: StateFlow<UserUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<PersonUiState>(PersonUiState.Loading)
+    val uiState: StateFlow<PersonUiState> = _uiState.asStateFlow()
 
     init {
-        Timber.d("UserViewModel инициализирован")
+        Timber.d("PersonViewModel инициализирован")
         viewModelScope.launch {
             authEventBus.logoutEvents.collect {
                 Timber.d("Получено событие выхода, сброс состояния на Loading")
-                _uiState.value = UserUiState.Loading
+                _uiState.value = PersonUiState.Loading
             }
         }
     }
@@ -65,14 +65,14 @@ class UserViewModel @Inject constructor(
      * При истёкшей сессии ничего не делает — [TokenInterceptor] уже обработал редирект на логин.
      * При других ошибках отображает сообщение пользователю.
      */
-    fun loadUserData() {
+    fun loadPersonData() {
         Timber.d("Начало загрузки данных пользователя")
         viewModelScope.launch {
-            _uiState.value = UserUiState.Loading
-            when (val result = getUserInfoUseCase()) {
+            _uiState.value = PersonUiState.Loading
+            when (val result = getPersonInfoUseCase()) {
                 is CustomResult.Success -> {
                     Timber.d("Данные пользователя успешно загружены")
-                    _uiState.value = UserUiState.Success(result.data)
+                    _uiState.value = PersonUiState.Success(result.data)
                 }
                 is CustomResult.Error -> {
                     val message = when (result.exception) {
@@ -81,7 +81,7 @@ class UserViewModel @Inject constructor(
                             Timber.w("Сессия истекла, пропуск обработки")
                             return@launch
                         }
-                        is UserNotFoundException -> {
+                        is PersonNotFoundException -> {
                             Timber.w("Пользователь не найден")
                             "Пользователь не найден"
                         }
@@ -94,7 +94,7 @@ class UserViewModel @Inject constructor(
                             result.exception.message ?: "Неизвестная ошибка"
                         }
                     }
-                    _uiState.value = UserUiState.Error(message)
+                    _uiState.value = PersonUiState.Error(message)
                 }
             }
         }

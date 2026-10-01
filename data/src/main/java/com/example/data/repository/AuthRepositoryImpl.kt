@@ -65,11 +65,11 @@ class AuthRepositoryImpl @Inject constructor(
         extractAndSaveUserId()
 
         // Сохраняем данные пользователя для отображения без повторного запроса
-        val userName = dto.userName
-        localDataSource.saveUserName(userName)
+        val fullName = dto.fullName
+        localDataSource.saveUserName(fullName)
         localDataSource.saveAuthState(true)
 
-        Timber.d("Login successful for user: $userName")
+        Timber.d("Login successful for user: $fullName")
         return authMapper.toDomain(dto)
     }
 

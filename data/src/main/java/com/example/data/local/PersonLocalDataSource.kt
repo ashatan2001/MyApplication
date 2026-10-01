@@ -1,10 +1,10 @@
 package com.example.data.local
 
 import android.content.Context
-import com.example.data.dto.UserDto
+import com.example.data.dto.PersonDto
 import com.example.data.exception.DataException
 import com.example.data.exception.DataParsingException
-import com.example.domain.exception.UserNotFoundException
+import com.example.domain.exception.PersonNotFoundException
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,26 +20,26 @@ import javax.inject.Inject
  * Используется для оффлайн-режима, моков или начального состояния приложения,
  * когда сетевой запрос еще не выполнен.
  */
-class UserLocalDataSource @Inject constructor(
+class PersonLocalDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
     private val json: Json
 ) {
     /**
      * Читает и десериализует данные пользователя из JSON-файла в папке assets.
      *
-     * @param fileName Имя файла в assets (например, "user_mock.json").
-     * @return Десериализованный [UserDto].
-     * @throws UserNotFoundException если файл не найден в assets.
-     * @throws DataParsingException если JSON невалиден или не соответствует структуре [UserDto].
+     * @param fileName Имя файла в assets.
+     * @return Десериализованный [PersonDto].
+     * @throws PersonNotFoundException если файл не найден в assets.
+     * @throws DataParsingException если JSON невалиден или не соответствует структуре [PersonDto].
      * @throws DataException при общих ошибках ввода-вывода.
      */
-    suspend fun getUserFromAssets(fileName: String): UserDto = withContext(Dispatchers.IO) {
+    suspend fun getPersonFromAssets(fileName: String): PersonDto = withContext(Dispatchers.IO) {
         try {
             val jsonString = context.assets.open(fileName).bufferedReader().use { it.readText() }
-            json.decodeFromString<UserDto>(jsonString)
+            json.decodeFromString<PersonDto>(jsonString)
         } catch (e: FileNotFoundException) {
-            throw UserNotFoundException(
-                userId = null,
+            throw PersonNotFoundException(
+                personId = null,
                 message = "Файл не найден: $fileName",
                 cause = e
             )

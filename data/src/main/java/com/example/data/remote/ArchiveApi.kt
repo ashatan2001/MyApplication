@@ -3,7 +3,6 @@ package com.example.data.dto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.Path
 
 /**
  * Retrofit API для получения архивов, в которых собрана
@@ -12,10 +11,10 @@ import retrofit2.http.Path
  * Все методы возвращают [Response], чтобы [safeApiCall]
  * мог получить доступ к коду ответа и телу ошибки для детального маппинга исключений.
  */
-interface DstPointsApi {
+interface ArchiveApi {
 
     /**
-     * Получение информацию о точке выгрузки бетона.
+     * Получение архива событий.
      *
      * @param startdate дата начала просматриваемого периода в формате dd.mm.yyyyy hh:nn:ss
      * @param enddate дата окончания просматриваемого периода в формате dd.mm.yyyyy hh:nn:ss
@@ -35,5 +34,5 @@ interface DstPointsApi {
      * - 500 — внутренняя ошибка получения информации о точках разгрузки
      */
     @GET("api/events")
-    suspend fun getEvents(@Path("zoneid") id: Int): Response<List<EventDto>>
+    suspend fun getEvents(): Response<ArchiveDto<EventDto>>
 }

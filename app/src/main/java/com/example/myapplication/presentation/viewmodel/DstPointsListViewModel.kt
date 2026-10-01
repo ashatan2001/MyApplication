@@ -3,10 +3,8 @@ package com.example.myapplication.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.domain.event.AuthEventBus
-import com.example.domain.exception.DstPointNotFoundException
 import com.example.domain.exception.NetworkConnectionException
 import com.example.domain.exception.SessionExpiredDomainException
-import com.example.domain.exception.UserNotFoundException
 import com.example.domain.model.DstPoint
 import com.example.domain.usecase.GetDstPointsListUseCase
 import com.example.domain.util.CustomResult

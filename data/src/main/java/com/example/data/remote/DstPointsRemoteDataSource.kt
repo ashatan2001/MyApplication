@@ -15,7 +15,7 @@ class DstPointsRemoteDataSource @Inject constructor(
     private val api: DstPointsApi
 ) {
     /**
-     * Загружает данные точки выгруза бетона по ее коду.
+     * Загружает данные точки выгрузки бетона по ее коду.
      *
      * @param zoneId код точки выгрузки бетона
      * @return [DstPointDto] при успехе.
@@ -23,5 +23,11 @@ class DstPointsRemoteDataSource @Inject constructor(
      */
     suspend fun getDstPoint(zoneId: Int): DstPointDto = safeApiCall { api.getDstPoint(zoneId) }
 
+    /**
+     * Загружает список точек выгрузки бетона.
+     *
+     * @return [List<DstPointDto>] при успехе.
+     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
+     */
     suspend fun getDstPointsList(): List<DstPointDto> = safeApiCall { api.getDstPointsList() }
 }

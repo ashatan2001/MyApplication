@@ -31,10 +31,10 @@ sealed class DomainException(
 /**
  * Пользователь не найден в системе.
  *
- * @param userId ID запрашиваемого пользователя (для логирования).
+ * @param personId ID запрашиваемого пользователя (для логирования).
  */
-class UserNotFoundException(
-    val userId: Int? = null,
+class PersonNotFoundException(
+    val personId: Int? = null,
     message: String = "User not found",
     cause: Throwable? = null
 ) : DomainException(errorCode = 2002, message = message, cause = cause)

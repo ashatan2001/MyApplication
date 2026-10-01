@@ -14,27 +14,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.domain.model.User
-import com.example.myapplication.presentation.viewmodel.UserUiState
-import com.example.myapplication.presentation.viewmodel.UserViewModel
+import com.example.domain.model.Person
+import com.example.myapplication.presentation.viewmodel.PersonUiState
+import com.example.myapplication.presentation.viewmodel.PersonViewModel
 
 /**
  * Экран профиля пользователя.
  *
  * @param onBack Навигация назад на предыдущий экран.
- * @param viewModel [UserViewModel] для загрузки данных пользователя.
+ * @param viewModel [PersonViewModel] для загрузки данных пользователя.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserScreen(
+fun PersonScreen(
     onBack: () -> Unit,
-    viewModel: UserViewModel = hiltViewModel()
+    viewModel: PersonViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Загрузка при первом входе на экран
     LaunchedEffect(Unit) {
-        viewModel.loadUserData()
+        viewModel.loadPersonData()
     }
 
 
@@ -62,9 +62,9 @@ fun UserScreen(
             contentAlignment = Alignment.Center
         ) {
             when (val state = uiState) {
-                is UserUiState.Loading -> CircularProgressIndicator()
-                is UserUiState.Success -> UserContent(user = state.user)
-                is UserUiState.Error -> {
+                is PersonUiState.Loading -> CircularProgressIndicator()
+                is PersonUiState.Success -> PersonContent(person = state.person)
+                is PersonUiState.Error -> {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -80,7 +80,7 @@ fun UserScreen(
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyLarge
                         )
-                        Button(onClick = { viewModel.loadUserData() }) {
+                        Button(onClick = { viewModel.loadPersonData() }) {
                             Text("Повторить")
                         }
                     }
@@ -94,7 +94,7 @@ fun UserScreen(
  * Основной контент экрана профиля
  */
 @Composable
-private fun UserContent(user: User) {
+private fun PersonContent(person: Person) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -110,7 +110,7 @@ private fun UserContent(user: User) {
         )
 
         Text(
-            user.userName,
+            person.fullName,
             style = MaterialTheme.typography.headlineMedium
         )
 
@@ -124,11 +124,11 @@ private fun UserContent(user: User) {
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                InfoRow("ID", user.id.toString())
-                InfoRow("Position", user.position)
-                InfoRow("PositionId", user.positionId.toString())
-                InfoRow("isEmployee", user.isEmployee.toString())
-                InfoRow("isActive", user.isActive.toString())
+                InfoRow("ID", person.id.toString())
+                InfoRow("Position", person.position)
+                InfoRow("PositionId", person.positionId.toString())
+                InfoRow("isEmployee", person.isEmployee.toString())
+                InfoRow("isActive", person.isActive.toString())
             }
         }
     }

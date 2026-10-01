@@ -1,33 +1,32 @@
-// data/src/main/java/com/example/data/repository/UserRepositoryImpl.kt
 package com.example.data.repository
 
 import com.example.data.exception.*
 import com.example.data.local.AuthLocalDataSource
-import com.example.data.mapper.UserMapper
-import com.example.data.remote.UserRemoteDataSource
+import com.example.data.mapper.PersonMapper
+import com.example.data.remote.PersonRemoteDataSource
 import com.example.domain.exception.*
-import com.example.domain.model.User
-import com.example.domain.repository.UserRepository
+import com.example.domain.model.Person
+import com.example.domain.repository.PersonRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class UserRepositoryImpl @Inject constructor(
-    private val remoteDataSource: UserRemoteDataSource,
+class PersonRepositoryImpl @Inject constructor(
+    private val remoteDataSource: PersonRemoteDataSource,
     private val localDataSource: AuthLocalDataSource,
-    private val mapper: UserMapper
-) : UserRepository {
+    private val mapper: PersonMapper
+) : PersonRepository {
 
-    override suspend fun getUserId(): Int? = localDataSource.getUserId()
+    override suspend fun getPersonId(): Int? = localDataSource.getPersonId()
 
-    override suspend fun getUserName(): String? = localDataSource.getUserName()
+    override suspend fun getPersonName(): String? = localDataSource.getPersonName()
 
-    override suspend fun getUserInfo(): User {
-        val userId = getUserId()
-            ?: throw UserNotFoundException(userId = null, message = "Пользователь не авторизирован")
+    override suspend fun getPersonInfo(): Person {
+        val personId = getPersonId()
+            ?: throw PersonNotFoundException(personId = null, message = "Пользователь не авторизирован")
 
         val dto = try {
-            remoteDataSource.getUserInfo(userId)
+            remoteDataSource.getPersonInfo(personId)
         } catch (e: UnauthorizedException) {
             localDataSource.clearSession()
             throw AuthenticationFailedException(
@@ -58,8 +57,8 @@ class UserRepositoryImpl @Inject constructor(
             )
         } catch (e: DataLayerException) {
             if (e.errorCode == 404) {
-                throw UserNotFoundException(
-                    userId = userId,
+                throw PersonNotFoundException(
+                    personId = personId,
                     message = e.message ?: "Пользователь не найден на сервере"
                 )
             }
@@ -67,12 +66,12 @@ class UserRepositoryImpl @Inject constructor(
                 message = "Ошибка сети при получении данных пользователя (код: ${e.errorCode})",
                 cause = e
             )
-        } catch (e: UserNotFoundException) {
+        } catch (e: PersonNotFoundException) {
             // Уже доменное исключение — пробрасываем без повторной обёртки
             throw e
         } catch (e: Exception) {
             throw AppException(
-                message = "Неожиданная ошибка при получении пользователя $userId: ${e.message ?: "неизвестная ошибка"}",
+                message = "Неожиданная ошибка при получении пользователя $personId: ${e.message ?: "неизвестная ошибка"}",
                 cause = e
             )
         }

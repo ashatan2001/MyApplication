@@ -1,7 +1,7 @@
 package com.example.data.mapper
 
-import com.example.data.dto.UserDto
-import com.example.domain.model.User
+import com.example.data.dto.PersonDto
+import com.example.domain.model.Person
 import javax.inject.Inject
 
 /**
@@ -10,21 +10,21 @@ import javax.inject.Inject
  * Двунаправленный: используется как для чтения данных (сервер → домен),
  * так и для записи в кэш (домен → DTO).
  */
-class UserMapper @Inject constructor() {
-        fun toModel(dto: UserDto): User =
-            User(
+class PersonMapper @Inject constructor() {
+        fun toModel(dto: PersonDto): Person =
+            Person(
                 id = dto.id,
-                userName = dto.userName,
+                fullName = dto.fullName,
                 position = dto.position,
                 positionId = dto.positionId,
                 isEmployee = dto.isEmployee,
                 isActive = dto.isActive,
             )
 
-        fun toDto(model: User): UserDto =
-            UserDto(
+        fun toDto(model: Person): PersonDto =
+            PersonDto(
                 id = model.id,
-                userName = model.userName,
+                fullName = model.fullName,
                 position = model.position,
                 positionId = model.positionId,
                 isEmployee = model.isEmployee,

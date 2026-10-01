@@ -6,7 +6,6 @@ import com.example.domain.event.AuthEventBus
 import com.example.domain.exception.DstPointNotFoundException
 import com.example.domain.exception.NetworkConnectionException
 import com.example.domain.exception.SessionExpiredDomainException
-import com.example.domain.exception.UserNotFoundException
 import com.example.domain.model.DstPoint
 import com.example.domain.usecase.GetDstPointUseCase
 import com.example.domain.util.CustomResult

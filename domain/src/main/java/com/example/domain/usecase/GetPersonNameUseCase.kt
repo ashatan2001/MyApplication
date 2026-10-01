@@ -1,7 +1,7 @@
 package com.example.domain.usecase
 
 import com.example.domain.exception.AppException
-import com.example.domain.repository.UserRepository
+import com.example.domain.repository.PersonRepository
 import com.example.domain.util.CustomResult
 import javax.inject.Inject
 
@@ -13,12 +13,12 @@ import javax.inject.Inject
  *
  * @param repository Репозиторий для работы с данными пользователя.
  */
-class GetUserNameUseCase @Inject constructor(
-    private val repository: UserRepository
+class GetPersonNameUseCase @Inject constructor(
+    private val repository: PersonRepository
 ) {
     suspend operator fun invoke(): CustomResult<String> {
         return try {
-            val userName = repository.getUserName()
+            val userName = repository.getPersonName()
                 ?: throw IllegalStateException("Имя пользователя не найдено")
 
             CustomResult.Success(userName)

@@ -1,6 +1,6 @@
 package com.example.data.remote
 
-import com.example.data.dto.UserDto
+import com.example.data.dto.PersonDto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
 import retrofit2.http.GET
@@ -12,13 +12,13 @@ import retrofit2.http.Path
  * Все методы возвращают [Response], чтобы [safeApiCall]
  * мог получить доступ к коду ответа и телу ошибки для детального маппинга исключений.
  */
-interface UserApi {
+interface PersonApi {
 
     /**
      * Получение данных пользователя по идентификатору.
      *
      * @param id Уникальный идентификатор пользователя (извлекается из токена).
-     * @return [UserDto] с данными профиля.
+     * @return [PersonDto] с данными профиля.
      *
      * Возможные коды ошибок:
      * - 401/403 — сессия недействительна
@@ -27,5 +27,5 @@ interface UserApi {
      * - 5xx — ошибка сервера
      */
     @GET("api/persons/{id}")
-    suspend fun getUser(@Path("id") id: Int): Response<UserDto>
+    suspend fun getPerson(@Path("id") id: Int): Response<PersonDto>
 }

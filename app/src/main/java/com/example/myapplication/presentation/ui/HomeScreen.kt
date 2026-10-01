@@ -28,13 +28,13 @@ import kotlinx.coroutines.launch
 /**
  * Главный экран приложения с приветствием и боковым меню.
  *
- * @param onOpenUser Навигация к экрану профиля пользователя.
+ * @param onOpenPerson Навигация к экрану профиля пользователя.
  * @param onLogout Колбэк для выхода из системы (вызывается из бокового меню).
  * @param viewModel [HomeViewModel] для управления данными пользователя.
  */
 @Composable
 fun HomeScreen(
-    onOpenUser: () -> Unit,
+    onOpenPerson: () -> Unit,
     onDstPointsList: () -> Unit,
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
@@ -61,7 +61,7 @@ fun HomeScreen(
             DrawerContent(
                 uiState = uiState,
                 onCloseDrawer = { scope.launch { drawerState.close() } },
-                onOpenUser = onOpenUser,
+                onOpenPerson = onOpenPerson,
                 onDstPointsList = onDstPointsList,
                 onLogout = {
                     scope.launch { drawerState.close() }
@@ -127,7 +127,7 @@ private fun HomeContent(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        "Привет, ${uiState.userName}!",
+                        "Привет, ${uiState.personName}!",
                         style = MaterialTheme.typography.headlineMedium
                     )
                 }
@@ -163,12 +163,12 @@ private fun HomeContent(
 private fun DrawerContent(
     uiState: HomeUiState,
     onCloseDrawer: () -> Unit,
-    onOpenUser: () -> Unit,
+    onOpenPerson: () -> Unit,
     onDstPointsList: () -> Unit,
     onLogout: () -> Unit
 ) {
     // Безопасное приведение: имя доступно только в состоянии успеха
-    val userName = (uiState as? HomeUiState.Success)?.userName
+    val fullName = (uiState as? HomeUiState.Success)?.personName
 
     ModalDrawerSheet {
         Column(
@@ -186,10 +186,10 @@ private fun DrawerContent(
             DrawerItem(
                 icon = Icons.Default.Person,
                 text = "Профиль",
-                enabled = userName != null,
+                enabled = fullName != null,
                 onClick = {
                     onCloseDrawer()
-                    onOpenUser()
+                    onOpenPerson()
                 }
             )
 

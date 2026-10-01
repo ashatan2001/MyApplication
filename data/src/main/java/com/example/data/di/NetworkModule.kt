@@ -11,7 +11,7 @@ import com.example.data.network.HeadersInterceptor
 import com.example.data.network.TokenInterceptor
 import com.example.data.remote.AuthApi
 import com.example.data.remote.DstPointsApi
-import com.example.data.remote.UserApi
+import com.example.data.remote.PersonApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -171,8 +171,8 @@ object NetworkModule {
     /** API для получения данных пользователя. */
     @Provides
     @Singleton
-    fun provideUserApi(@AuthRetrofit retrofit: Retrofit): UserApi =
-        retrofit.create(UserApi::class.java)
+    fun provideUserApi(@AuthRetrofit retrofit: Retrofit): PersonApi =
+        retrofit.create(PersonApi::class.java)
 
     /** API для получения данных о точках выгрузки бетона. */
     @Provides

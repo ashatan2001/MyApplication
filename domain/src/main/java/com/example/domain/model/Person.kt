@@ -4,15 +4,15 @@ package com.example.domain.model
  * Модель профиля пользователя в системе.
  *
  * @property id Уникальный идентификатор пользователя.
- * @property userName Отображаемое имя пользователя.
+ * @property fullName ФИО пользователя.
  * @property position Название должности.
  * @property positionId ID должности для связи со справочником.
  * @property isEmployee true, если пользователь является сотрудником организации.
  * @property isActive true, если учётная запись не заблокирована.
  */
-data class User(
+data class Person(
     val id: Int,
-    val userName: String,
+    val fullName: String,
     val position: String,
     val positionId: Int,
     val isEmployee: Boolean,

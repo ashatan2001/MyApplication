@@ -22,7 +22,7 @@ import javax.inject.Inject
 sealed class AuthUiState {
     data object Idle : AuthUiState()
     data object Loading : AuthUiState()
-    data class Success(val userName: String) : AuthUiState()
+    data class Success(val fullName: String) : AuthUiState()
     data class Error(val message: String) : AuthUiState()
 }
 
@@ -69,8 +69,8 @@ class AuthViewModel @Inject constructor(
 
                 when (result) {
                     is CustomResult.Success -> {
-                        Timber.d("Авторизация успешна: ${result.data.userName}")
-                        _uiState.value = AuthUiState.Success(result.data.userName)
+                        Timber.d("Авторизация успешна: ${result.data.fullName}")
+                        _uiState.value = AuthUiState.Success(result.data.fullName)
                         _events.trySend(AuthEvent.LoginSuccess)
                     }
                     is CustomResult.Error -> {
