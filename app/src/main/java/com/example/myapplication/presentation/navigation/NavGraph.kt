@@ -11,14 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.domain.model.AuthState
-import com.example.myapplication.presentation.ui.AuthScreen
-import com.example.myapplication.presentation.ui.DstPointListScreen
-import com.example.myapplication.presentation.ui.DstPointScreen
-import com.example.myapplication.presentation.ui.HomeScreen
-import com.example.myapplication.presentation.ui.UserScreen
+import com.example.myapplication.presentation.ui.*
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
 
 /**
@@ -104,18 +102,31 @@ fun NavGraph(
                 onBack = {
                     navController.popBackStack()
                 },
-                onDstPoint = {
-                    navController.navigate(Routers.DstPoint.route)
+                onDstPoint = { zoneId ->
+                    navController.navigate(Routers.DstPoint.createRoute(zoneId))
                 },
                 viewModel = hiltViewModel()
             )
         }
 
-        composable(Routers.DstPoint.route) {
+        composable(
+            route = Routers.DstPoint.route,
+            arguments = listOf(
+                navArgument(Routers.DstPoint.ARG_ZONE_ID) {
+                    type = NavType.IntType
+                }
+            )
+        ) { backStackEntry ->
+
+            val zoneId = backStackEntry.arguments
+                ?.getInt(Routers.DstPoint.ARG_ZONE_ID)
+                ?: return@composable
+
             DstPointScreen(
                 onBack = {
                     navController.popBackStack()
                 },
+                zoneId = zoneId,
                 viewModel = hiltViewModel()
             )
         }

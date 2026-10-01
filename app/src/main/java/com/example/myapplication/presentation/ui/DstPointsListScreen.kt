@@ -1,99 +1,168 @@
 package com.example.myapplication.presentation.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.DstPoint
-import com.example.myapplication.presentation.viewmodel.DstPointUiState
-import com.example.myapplication.presentation.viewmodel.DstPointViewModel
-import com.example.myapplication.presentation.viewmodel.HomeEvent
+import com.example.myapplication.presentation.viewmodel.DstPointsListUiState
+import com.example.myapplication.presentation.viewmodel.DstPointsListViewModel
 
-/**
- * Экран вывода информации о точках выгрузки бетона.
- *
- * @param onBack Навигация назад на домашний экран.
- * @param viewModel [DstPointViewModel] для загрузки данных о точках выгрузки бетона.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DstPointListScreen(
     onBack: () -> Unit,
-    onDstPoint: () -> Unit,
-    viewModel: DstPointViewModel = hiltViewModel()
+    onDstPoint: (Int) -> Unit,
+    viewModel: DstPointsListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var zoneId by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        viewModel.loadDstPointData()
+        viewModel.loadDstPointsList()
+    }
 
-        viewModel.events.collect { event ->
-            when (event) {
-                is HomeEvent.NavigateToLogin -> {
-                    onLogout()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Список точек выгрузки бетона")
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Назад"
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when (val state = uiState) {
+
+                is DstPointsListUiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                is DstPointsListUiState.Success -> {
+                    if (state.dstPointsList.isEmpty()) {
+                        Text(
+                            text = "Список точек пуст",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(
+                                items = state.dstPointsList,
+                                key = { point ->
+                                    // Здесь должно быть уникальное поле точки.
+                                    // Например: point.id или point.zoneId
+                                    point.zoneId
+                                }
+                            ) { point ->
+                                DstPointRow(
+                                    dstPoint = point,
+                                    onClick = {
+                                        onDstPoint(point.zoneId)
+                                    }
+                                )
+
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+
+                is DstPointsListUiState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Button(
+                            onClick = {
+                                viewModel.loadDstPointsList()
+                            }
+                        ) {
+                            Text("Повторить")
+                        }
+                    }
                 }
             }
         }
     }
+}
 
-    Scaffold { innerPadding ->
-        Column(
+@Composable
+private fun DstPointRow(
+    dstPoint: DstPoint,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.Place,
-                contentDescription = null,
-                modifier = Modifier.size(100.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Text(
-                "Список точек выгрузки бетона",
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
-                OutlinedTextField(
-                    value = zoneId,
-                    onValueChange = { zoneId = it },
-                    label = { Text("Код подразделения") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
+                Text(
+                    text = "Код подразделения",
+                    style = MaterialTheme.typography.labelSmall
                 )
 
-                Button(
-                    onClick = {
-                        zoneId.toIntOrNull()?.let { id ->
-                            viewModel.loadDstPointData(id)
-                        }
-                    },
-                    enabled = zoneId.isNotBlank()
-                ) {
-                    Text("Найти")
-                }
+                Text(
+                    text = dstPoint.departmentId,
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null
+            )
         }
     }
 }

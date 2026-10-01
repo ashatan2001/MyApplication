@@ -3,16 +3,19 @@ package com.example.data.repository
 import com.example.data.exception.*
 import com.example.data.local.AuthLocalDataSource
 import com.example.data.mapper.DstPointMapper
-import com.example.data.remote.DstPointRemoteDataSource
+import com.example.data.remote.DstPointsRemoteDataSource
 import com.example.domain.exception.*
 import com.example.domain.model.DstPoint
-import com.example.domain.repository.DstPointRepository
+import com.example.domain.repository.DstPointsRepository
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class DstPointRepositoryImpl (
-    private val remoteDataSource: DstPointRemoteDataSource,
+@Singleton
+class DstPointsRepositoryImpl @Inject constructor(
+    private val remoteDataSource: DstPointsRemoteDataSource,
     private val localDataSource: AuthLocalDataSource,
     private val mapper: DstPointMapper
-) : DstPointRepository {
+) : DstPointsRepository {
 
     override suspend fun getDstPoint(zoneId: Int): DstPoint {
         val dto = try {
@@ -67,5 +70,46 @@ class DstPointRepositoryImpl (
         }
 
         return mapper.toModel(dto)
+    }
+
+    override suspend fun getDstPointsList(): List<DstPoint> {
+        val dtoList = try {
+            remoteDataSource.getDstPointsList()
+        } catch (e: UnauthorizedException) {
+            localDataSource.clearSession()
+            throw AuthenticationFailedException(
+                message = e.message ?: "Ошибка авторизации",
+                cause = e
+            )
+        } catch (e: SessionExpiredException) {
+            localDataSource.clearSession()
+            throw SessionExpiredDomainException(
+                message = e.message ?: "Сессия истекла",
+                cause = e
+            )
+        } catch (e: NetworkException) {
+            throw NetworkConnectionException(
+                message = e.message ?: "Нет подключения к интернету",
+                cause = e
+            )
+        } catch (e: ServerException) {
+            throw ServerUnavailableException(
+                message = e.message ?: "Ошибка сервера",
+                cause = e
+            )
+        } catch (e: ApiException) {
+            throw ServerApiException(
+                errorNumber = e.errorNumber,
+                message = e.message ?: "Ошибка API",
+                cause = e
+            )
+        } catch (e: Exception) {
+            throw AppException(
+                message = "Неожиданная ошибка при получении списка точек выгрузки бетона",
+                cause = e
+            )
+        }
+
+        return mapper.toModel(dtoList)
     }
 }

@@ -22,5 +22,11 @@ sealed class Routers(val route: String) {
     data object DstPointsList : Routers("dst_points_list")
 
     /** Экран точки выгрузки бетона. */
-    data object DstPoint : Routers("dst_point")
+    data object DstPoint : Routers("dst_point/{zoneId}") {
+        const val ARG_ZONE_ID = "zoneId"
+
+        fun createRoute(zoneId: Int): String {
+            return "dst_point/$zoneId"
+        }
+    }
 }

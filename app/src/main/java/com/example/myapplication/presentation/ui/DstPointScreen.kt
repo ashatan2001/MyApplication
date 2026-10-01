@@ -5,7 +5,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -15,60 +17,67 @@ import com.example.domain.model.DstPoint
 import com.example.myapplication.presentation.viewmodel.DstPointUiState
 import com.example.myapplication.presentation.viewmodel.DstPointViewModel
 
-/**
- * Экран вывода информации о точках выгрузки бетона.
- *
- * @param onBack Навигация назад на домашний экран.
- * @param viewModel [DstPointViewModel] для загрузки данных о точках выгрузки бетона.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DstPointScreen(
     onBack: () -> Unit,
+    zoneId: Int,
     viewModel: DstPointViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var zoneId by remember { mutableStateOf("") }
 
-    @Composable
-    fun DstPointScreen(
-        onBack: () -> Unit,
-        viewModel: DstPointViewModel = hiltViewModel()
-    ) {
-        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-        var zoneId by remember { mutableStateOf("") }
+    LaunchedEffect(zoneId) {
+        viewModel.loadDstPointData(zoneId)
+    }
 
-        Scaffold { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                when (val state = uiState) {
-                    is DstPointUiState.Loading -> CircularProgressIndicator()
-                    is DstPointUiState.Success -> DstPointContent(dstPoint = state.dstPoint)
-                    is DstPointUiState.Error -> {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Text(
-                                state.message,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Button(onClick = { viewModel.loadDstPointData() }) {
-                                Text("Повторить")
+    Scaffold { innerPadding ->
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when (val state = uiState) {
+
+                is DstPointUiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                is DstPointUiState.Success -> {
+                    DstPointContent(
+                        dstPoint = state.dstPoint
+                    )
+                }
+
+                is DstPointUiState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Button(
+                            onClick = {
+                                viewModel.loadDstPointData(zoneId)
                             }
+                        ) {
+                            Text("Повторить")
                         }
                     }
                 }
@@ -77,9 +86,6 @@ fun DstPointScreen(
     }
 }
 
-/**
- * Основной контент экрана с информацией о точках загрузки
- */
 @Composable
 private fun DstPointContent(dstPoint: DstPoint) {
     Column(
@@ -96,16 +102,27 @@ private fun DstPointContent(dstPoint: DstPoint) {
             )
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Код подразделения", style = MaterialTheme.typography.labelSmall)
-                    Text(dstPoint.departmentId, style = MaterialTheme.typography.bodyLarge)
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = "Код подразделения",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+
+                    Text(
+                        text = dstPoint.departmentId,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
 
                 Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null
                 )
             }

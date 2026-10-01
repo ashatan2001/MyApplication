@@ -17,7 +17,7 @@ class DstPointMapper @Inject constructor() {
             postId = dto.postId
         )
 
-    fun toDomain(list: List<DstPointDto>): List<DstPoint> =
+    fun toModel(list: List<DstPointDto>): List<DstPoint> =
             list.map(::toModel)
 
     fun toDto(domain: DstPoint): DstPointDto =

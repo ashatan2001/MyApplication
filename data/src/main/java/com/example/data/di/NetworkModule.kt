@@ -10,6 +10,7 @@ import com.example.data.network.CustomCookieJar
 import com.example.data.network.HeadersInterceptor
 import com.example.data.network.TokenInterceptor
 import com.example.data.remote.AuthApi
+import com.example.data.remote.DstPointsApi
 import com.example.data.remote.UserApi
 import dagger.Module
 import dagger.Provides
@@ -172,4 +173,10 @@ object NetworkModule {
     @Singleton
     fun provideUserApi(@AuthRetrofit retrofit: Retrofit): UserApi =
         retrofit.create(UserApi::class.java)
+
+    /** API для получения данных о точках выгрузки бетона. */
+    @Provides
+    @Singleton
+    fun provideDstPointsApi(@AuthRetrofit retrofit: Retrofit): DstPointsApi =
+        retrofit.create(DstPointsApi::class.java)
 }

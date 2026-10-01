@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
  */
 @OptIn(InternalSerializationApi::class)
 @Serializable
-class DstPointDto (
+data class DstPointDto (
     @SerialName("ZoneNo") val zoneId: Int,
     @SerialName("ZoneName") val zoneName: String,
     @SerialName("DepartmentID") val departmentId: String,

@@ -30,7 +30,7 @@ interface DstPointsApi {
      * - 5xx — внутренняя ошибка получения информации о точках разгрузки
      */
     @GET("/apb/dst-points/{zoneid}")
-    suspend fun getDstPoints(@Path("zoneid") id: Int): Response<DstPointDto>
+    suspend fun getDstPoint(@Path("zoneid") id: Int): Response<DstPointDto>
 
     /**
      * Получение полного списка точек выгрузки бетона.
@@ -47,5 +47,5 @@ interface DstPointsApi {
      * - 5xx — внутренняя ошибка получения информации о точках разгрузки
      */
     @GET("/apb/dst-points")
-    suspend fun getDstPoints(): Response<List<DstPointDto>>
+    suspend fun getDstPointsList(): Response<List<DstPointDto>>
 }

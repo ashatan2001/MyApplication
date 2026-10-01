@@ -1,6 +1,7 @@
 package com.example.domain.usecase
 
 import com.example.domain.exception.AppException
+import com.example.domain.exception.DstPointNotFoundException
 import com.example.domain.model.DstPoint
 import com.example.domain.repository.DstPointsRepository
 import com.example.domain.util.CustomResult
@@ -8,29 +9,30 @@ import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * Use-case для получения информации о конкретной точки выгрузке бетона.
+ * Use-case для получения списка точек выгрузки бетона.
  *
  * Инкапсулирует логику запроса профиля из [com.example.domain.repository.DstPointsRepository] и оборачивает результат
  * в [CustomResult] для безопасной обработки ошибок на уровне Presentation.
  *
- * @param repository Репозиторий для работы с данными точки выгрузки бетона.
+ * @param repository Репозиторий для работы со списком точек выгрузки бетона.
  */
-class GetDstPointUseCase @Inject constructor(
+class GetDstPointsListUseCase @Inject constructor(
     private val repository: DstPointsRepository
 ) {
-
-    suspend operator fun invoke(zoneId: Int): CustomResult<DstPoint> {
+    suspend operator fun invoke(): CustomResult<List<DstPoint>> {
         return try {
-            val dstPoint = repository.getDstPoint(zoneId)
-            CustomResult.Success(dstPoint)
+            val dstPointsList = repository.getDstPointsList()
+            CustomResult.Success(dstPointsList)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: DstPointNotFoundException) {
+            CustomResult.Success(emptyList())
         } catch (e: AppException) {
             CustomResult.Error(e)
         } catch (e: Exception) {
             CustomResult.Error(
                 AppException(
-                    message = "Failed to get dst point with zoneId=$zoneId",
+                    message = "Failed to get dst points list",
                     cause = e
                 )
             )

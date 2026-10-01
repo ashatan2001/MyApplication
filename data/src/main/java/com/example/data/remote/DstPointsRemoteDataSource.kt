@@ -11,7 +11,7 @@ import javax.inject.Inject
  * от репозитория. Все методы обёрнуты в [safeApiCall], который
  * автоматически маппит сетевые ошибки в исключения дата-слоя.
  */
-class DstPointRemoteDataSource @Inject constructor(
+class DstPointsRemoteDataSource @Inject constructor(
     private val api: DstPointsApi
 ) {
     /**
@@ -21,5 +21,7 @@ class DstPointRemoteDataSource @Inject constructor(
      * @return [DstPointDto] при успехе.
      * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
-    suspend fun getDstPoint(zoneId: Int): DstPointDto = safeApiCall { api.getDstPoints(zoneId) }
+    suspend fun getDstPoint(zoneId: Int): DstPointDto = safeApiCall { api.getDstPoint(zoneId) }
+
+    suspend fun getDstPointsList(): List<DstPointDto> = safeApiCall { api.getDstPointsList() }
 }
