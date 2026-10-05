@@ -3,12 +3,10 @@ package com.example.data.dto
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
 
 /**
- * Данные архива автоматизированной системы.
+ * Данные архива в автоматизированной системы.
  *
- * Сервер возвращает поля с именами в стиле PascalCase и историческими названиями.
  * Маппинг в доменную модель выполняется в [com.example.data.mapper.DstPointMapper].
  *
  * @property startDate Дата и время начала периода

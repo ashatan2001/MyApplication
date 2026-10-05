@@ -3,6 +3,8 @@ package com.example.data.dto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
 import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.Query
 
 /**
  * Retrofit API для получения архивов, в которых собрана
@@ -34,5 +36,10 @@ interface ArchiveApi {
      * - 500 — внутренняя ошибка получения информации о точках разгрузки
      */
     @GET("api/events")
-    suspend fun getEvents(): Response<ArchiveDto<EventDto>>
+    suspend fun getEvents(
+        @Query("startdate") startDate: String,
+        @Query("enddate")   endDate: String,
+        @Query("page")      page: Int,
+        @Query("records")   records: Int
+    ): Response<ArchiveDto<EventDto>>
 }

@@ -11,8 +11,8 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * Use-case для получения списка точек выгрузки бетона.
  *
- * Инкапсулирует логику запроса профиля из [com.example.domain.repository.DstPointsRepository] и оборачивает результат
- * в [CustomResult] для безопасной обработки ошибок на уровне Presentation.
+ * Инкапсулирует логику запроса списка точек выгрузки из [com.example.domain.repository.DstPointsRepository]
+ * и оборачивает результат в [CustomResult] для безопасной обработки ошибок на уровне Presentation.
  *
  * @param repository Репозиторий для работы со списком точек выгрузки бетона.
  */

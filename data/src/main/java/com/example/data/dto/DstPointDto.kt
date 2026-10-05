@@ -7,8 +7,6 @@ import kotlinx.serialization.Serializable
 /**
  * Данные точки выгрузки бетона от сервера (эндпоинт `api/apb/dstpoints/:zoneid`).
  *
- * Сервер возвращает поля с именами в стиле PascalCase и историческими
- * названиями ("FIO" вместо "userName", "PersonID" вместо "id").
  * Маппинг в доменную модель выполняется в [com.example.data.mapper.DstPointMapper].
  *
  * @property zoneId Код зоны разгрузки бетона (поле ZoneNo).

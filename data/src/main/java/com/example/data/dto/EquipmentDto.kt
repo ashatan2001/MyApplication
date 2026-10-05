@@ -5,11 +5,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные точки выгрузки бетона от сервера (эндпоинт `api/apb/dstpoints/:zoneid`).
+ * Данные оборудования.
  *
- * Сервер возвращает поля с именами в стиле PascalCase и историческими
- * названиями ("FIO" вместо "userName", "PersonID" вместо "id").
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.DstPointMapper].
+ * Маппинг в доменную модель выполняется в [com.example.data.mapper.EquipmentMapper].
  *
  * @property id Идентификатор агрегата.
  * @property name Наименование агрегата.

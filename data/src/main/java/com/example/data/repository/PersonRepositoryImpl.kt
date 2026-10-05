@@ -2,7 +2,7 @@ package com.example.data.repository
 
 import com.example.data.exception.*
 import com.example.data.local.AuthLocalDataSource
-import com.example.data.mapper.PersonMapper
+import com.example.data.mapper.toDomain
 import com.example.data.remote.PersonRemoteDataSource
 import com.example.domain.exception.*
 import com.example.domain.model.Person
@@ -13,8 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class PersonRepositoryImpl @Inject constructor(
     private val remoteDataSource: PersonRemoteDataSource,
-    private val localDataSource: AuthLocalDataSource,
-    private val mapper: PersonMapper
+    private val localDataSource: AuthLocalDataSource
 ) : PersonRepository {
 
     override suspend fun getPersonId(): Int? = localDataSource.getPersonId()
@@ -76,6 +75,6 @@ class PersonRepositoryImpl @Inject constructor(
             )
         }
 
-        return mapper.toModel(dto)
+        return dto.toDomain()
     }
 }

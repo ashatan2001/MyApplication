@@ -1,13 +1,13 @@
 package com.example.data.remote
 
 import com.example.data.dto.ArchiveApi
-import com.example.data.dto.DstPointDto
+import com.example.data.dto.ArchiveDto
 import com.example.data.dto.EventDto
 import com.example.data.util.safeApiCall
 import javax.inject.Inject
 
 /**
- * Удалённый источник данных для операций c точками выгруза бетона.
+ * Сервис-обертка над Retrofit API для работы с архивами.
  *
  * Изолирует детали сетевых запросов (сериализация, обработка ошибок)
  * от репозитория. Все методы обёрнуты в [safeApiCall], который
@@ -19,8 +19,14 @@ class ArchiveRemoteDataSource @Inject constructor(
     /**
      * Загружает архив событий
      *
-     * @return [List<EventDto>] при успехе.
+     * @return [ArchiveDto<EventDto>] при успехе.
      * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
-    suspend fun getEvents(): List<EventDto> = safeApiCall { api.getEvents() }
+    suspend fun getEventArchive(
+        startDate: String,
+        endDate: String,
+        pageNum: Int,
+        pages: Int,
+        records: Int):
+            ArchiveDto<EventDto> = safeApiCall { api.getEvents() }
 }

@@ -2,7 +2,7 @@ package com.example.data.repository
 
 import com.example.data.exception.*
 import com.example.data.local.AuthLocalDataSource
-import com.example.data.mapper.AuthMapper
+import com.example.data.mapper.toDomain
 import com.example.data.network.CustomCookieJar
 import com.example.data.remote.AuthRemoteDataSource
 import com.example.data.util.JwtParser
@@ -28,7 +28,6 @@ class AuthRepositoryImpl @Inject constructor(
     private val remoteDataSource: AuthRemoteDataSource,
     private val localDataSource: AuthLocalDataSource,
     private val cookieJar: CustomCookieJar,
-    private val authMapper: AuthMapper,
     private val jwtParser: JwtParser
 ) : AuthRepository {
 
@@ -70,12 +69,12 @@ class AuthRepositoryImpl @Inject constructor(
         localDataSource.saveAuthState(true)
 
         Timber.d("Login successful for user: $fullName")
-        return authMapper.toDomain(dto)
+        return dto.toDomain()
     }
 
     /**
      * Обновляет токен сессии.
-     * Вызывается [TokenInterceptor] при получении 401/419.
+     * Вызывается [java/com/example/data/network/TokenInterceptor.kt] при получении 401/419.
      */
     override suspend fun refreshToken() {
         remoteDataSource.refreshToken()
@@ -125,16 +124,6 @@ class AuthRepositoryImpl @Inject constructor(
                 Timber.w("Failed to extract userId from JWT")
             }
         } ?: Timber.w("Access token not found after login")
-    }
-
-    /**
-     * Полная очистка сессии: куки, локальные данные, состояние авторизации.
-     * Вызывается при выходе и при критических ошибках аутентификации.
-     */
-    private suspend fun clearSession() {
-        cookieJar.clear()
-        localDataSource.clearSession()
-        Timber.d("Session fully cleared")
     }
 
     // endregion

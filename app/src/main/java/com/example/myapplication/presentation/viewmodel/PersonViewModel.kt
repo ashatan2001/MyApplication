@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.domain.event.AuthEventBus
 import com.example.domain.exception.NetworkConnectionException
-import com.example.domain.exception.SessionExpiredDomainException
 import com.example.domain.exception.PersonNotFoundException
+import com.example.domain.exception.SessionExpiredDomainException
 import com.example.domain.model.Person
 import com.example.domain.usecase.GetPersonInfoUseCase
 import com.example.domain.util.CustomResult

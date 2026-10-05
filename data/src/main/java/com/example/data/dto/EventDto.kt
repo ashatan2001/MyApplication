@@ -5,18 +5,16 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные точки выгрузки бетона от сервера.
+ * Данные события из архива системы.
  *
- * Сервер возвращает поля с именами в стиле PascalCase и историческими
- * названиями
  * Маппинг в доменную модель выполняется в [com.example.data.mapper.DstPointMapper].
  *
  * @property id идентификатор события в базе данных.
  * @property date Дата и время.
  * @property person Информация о сотруднике.
- * @property eq Информация об оборудовании.
+ * @property equipment Информация об оборудовании.
  * @property deviceName Наименование управляющей службы технологического процесса.
- * @property wpName Наименование места, на котором возникло событие.
+ * @property workPlaceName Наименование места, на котором возникло событие.
  * @property className Наименование класса событий
  * @property text Текст события
  */

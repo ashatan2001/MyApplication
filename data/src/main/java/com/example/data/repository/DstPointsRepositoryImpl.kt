@@ -2,7 +2,7 @@ package com.example.data.repository
 
 import com.example.data.exception.*
 import com.example.data.local.AuthLocalDataSource
-import com.example.data.mapper.DstPointMapper
+import com.example.data.mapper.toDomain
 import com.example.data.remote.DstPointsRemoteDataSource
 import com.example.domain.exception.*
 import com.example.domain.model.DstPoint
@@ -13,8 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class DstPointsRepositoryImpl @Inject constructor(
     private val remoteDataSource: DstPointsRemoteDataSource,
-    private val localDataSource: AuthLocalDataSource,
-    private val mapper: DstPointMapper
+    private val localDataSource: AuthLocalDataSource
 ) : DstPointsRepository {
 
     override suspend fun getDstPoint(zoneId: Int): DstPoint {
@@ -69,7 +68,7 @@ class DstPointsRepositoryImpl @Inject constructor(
             )
         }
 
-        return mapper.toModel(dto)
+        return dto.toDomain()
     }
 
     override suspend fun getDstPointsList(): List<DstPoint> {
@@ -110,6 +109,6 @@ class DstPointsRepositoryImpl @Inject constructor(
             )
         }
 
-        return mapper.toModel(dtoList)
+        return dtoList.map {it.toDomain()}
     }
 }
