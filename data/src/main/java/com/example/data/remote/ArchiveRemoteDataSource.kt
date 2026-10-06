@@ -26,7 +26,6 @@ class ArchiveRemoteDataSource @Inject constructor(
         startDate: String,
         endDate: String,
         pageNum: Int,
-        pages: Int,
         records: Int):
-            ArchiveDto<EventDto> = safeApiCall { api.getEvents() }
+            ArchiveDto<EventDto> = safeApiCall { api.getEvents(startDate, endDate, pageNum, records) }
 }

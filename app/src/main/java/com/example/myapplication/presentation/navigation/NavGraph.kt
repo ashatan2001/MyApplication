@@ -18,14 +18,13 @@ import androidx.navigation.navArgument
 import com.example.domain.model.AuthState
 import com.example.myapplication.presentation.ui.*
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
+import com.example.presentation.archive.ArchiveScreen
 
 /**
  * Корневой граф навигации приложения.
- *
  * Автоматически перенаправляет пользователя в зависимости от [AuthState]:
- * - [AuthState.Authenticated] → [Routers.Home]
- * - [AuthState.Unauthenticated] → [Routers.UserAuth]
- *
+ * [AuthState.Authenticated] → [Routers.Home]
+ * [AuthState.Unauthenticated] → [Routers.UserAuth]
  * @param navController Контроллер навигации из [androidx.navigation.compose.rememberNavController].
  * @param onLogout Колбэк для выхода (вызывается из бокового меню HomeScreen).
  * @param viewModel [SessionViewModel] для наблюдения за состоянием сессии.
@@ -39,9 +38,6 @@ fun NavGraph(
     val authState by viewModel.authState.collectAsStateWithLifecycle()
 
     // Реактивная навигация при изменении состояния сессии.
-    // Когда CustomCookieJar.clear() очищает сессию, поток эмитит
-    // AuthState.Unauthenticated, и пользователь автоматически
-    // перенаправляется на экран входа без ручного вызова навигации.
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
@@ -50,7 +46,6 @@ fun NavGraph(
             is AuthState.Unauthenticated -> {
                 navController.navigateClearingBackStack(Routers.UserAuth.route)
             }
-            // Loading и Error: остаёмся на Splash, пока состояние не станет определённым
             else -> {}
         }
     }
@@ -84,24 +79,23 @@ fun NavGraph(
                 onDstPointsList = {
                     navController.navigate(Routers.DstPointsList.route)
                 },
+                onArchive = {
+                    navController.navigate(Routers.Archive.route) // Исправлено
+                },
                 onLogout = onLogout
             )
         }
 
         composable(Routers.PersonInfo.route) {
             PersonScreen(
-                onBack = {
-                    navController.popBackStack()
-                },
+                onBack = { navController.popBackStack() },
                 viewModel = hiltViewModel()
             )
         }
 
         composable(Routers.DstPointsList.route) {
             DstPointListScreen(
-                onBack = {
-                    navController.popBackStack()
-                },
+                onBack = { navController.popBackStack() },
                 onDstPoint = { zoneId ->
                     navController.navigate(Routers.DstPoint.createRoute(zoneId))
                 },
@@ -117,16 +111,19 @@ fun NavGraph(
                 }
             )
         ) { backStackEntry ->
-
             val zoneId = backStackEntry.arguments
                 ?.getInt(Routers.DstPoint.ARG_ZONE_ID)
                 ?: return@composable
-
             DstPointScreen(
-                onBack = {
-                    navController.popBackStack()
-                },
+                onBack = { navController.popBackStack() },
                 zoneId = zoneId,
+                viewModel = hiltViewModel()
+            )
+        }
+
+        composable(Routers.Archive.route) {
+            ArchiveScreen(
+                onBack = { navController.popBackStack() },
                 viewModel = hiltViewModel()
             )
         }

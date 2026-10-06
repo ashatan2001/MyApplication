@@ -23,11 +23,10 @@ class ArchiveRepositoryImpl @Inject constructor(
         startDate: String,
         endDate: String,
         pageNum: Int,
-        pages: Int,
         records: Int,
     ): Archive<Event> {
         val dto: ArchiveDto<EventDto> = try {
-            remoteDataSource.getEventArchive(startDate, endDate, pageNum, pages, records)
+            remoteDataSource.getEventArchive(startDate, endDate, pageNum, records)
         } catch (e: DataLayerException) {
             throw e
         } catch (e: Exception) {

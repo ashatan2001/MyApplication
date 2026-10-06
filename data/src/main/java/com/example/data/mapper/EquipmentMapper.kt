@@ -2,6 +2,7 @@ package com.example.data.mapper
 
 import com.example.data.dto.EquipmentDto
 import com.example.domain.model.Equipment
+import kotlinx.serialization.SerialName
 
 /**
  * Маппер оборудования между DTO и доменной моделью.
@@ -12,5 +13,11 @@ import com.example.domain.model.Equipment
 fun EquipmentDto.toDomain(): Equipment =
     Equipment(
         id = id,
-        name = name
+        name = name,
+        eqClassName = eqClassName,
+        workHours = workHours,
+        nOn = nOn,
+        nOff = nOff,
+        plcID = plcID,
+        plcName = plcName
     )

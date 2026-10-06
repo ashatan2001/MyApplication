@@ -19,4 +19,10 @@ data class Archive<T>(
     val pages: Int,
     val records: Int,
     val data: List<T>
-)
+) {
+    val hasNextPage: Boolean
+        get() = pageNum < pages
+
+    val nextPage: Int?
+        get() = if (hasNextPage) pageNum + 1 else null
+}

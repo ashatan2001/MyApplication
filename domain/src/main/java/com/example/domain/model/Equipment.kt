@@ -7,6 +7,12 @@ package com.example.domain.model
  * @property name Наименование агрегата.
  */
 class Equipment(
-     val id: Int,
+    val id: Int,
     val name: String,
+    val eqClassName: String?,
+    val workHours: Int?,
+    val nOn: Int?,
+    val nOff: Int?,
+    val plcID: String?,
+    val plcName: String?
 )

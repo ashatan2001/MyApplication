@@ -1,4 +1,4 @@
-package com.example.data.mapper
+package com.example.data.util
 
 import java.time.format.DateTimeFormatter
 
@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter
  *
  * Вынесено в отдельный объект, чтобы:
  * - избежать дублирования в разных мапперах;
- * - переиспользовать скомпилированный [DateTimeFormatter] (его создание дорогое);
+ * - переиспользовать скомпилированный [java.time.format.DateTimeFormatter] (его создание дорогое);
  * - менять формат в одном месте при изменении контракта с сервером.
  */
 object DateFormatters {

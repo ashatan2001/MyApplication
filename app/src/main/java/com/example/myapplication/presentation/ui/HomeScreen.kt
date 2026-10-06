@@ -4,10 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +33,7 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     onOpenPerson: () -> Unit,
     onDstPointsList: () -> Unit,
+    onArchive: () -> Unit,
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -63,6 +61,7 @@ fun HomeScreen(
                 onCloseDrawer = { scope.launch { drawerState.close() } },
                 onOpenPerson = onOpenPerson,
                 onDstPointsList = onDstPointsList,
+                onArchive = onArchive,
                 onLogout = {
                     scope.launch { drawerState.close() }
                     viewModel.logout { }
@@ -165,6 +164,7 @@ private fun DrawerContent(
     onCloseDrawer: () -> Unit,
     onOpenPerson: () -> Unit,
     onDstPointsList: () -> Unit,
+    onArchive: () -> Unit,
     onLogout: () -> Unit
 ) {
     // Безопасное приведение: имя доступно только в состоянии успеха
@@ -199,6 +199,15 @@ private fun DrawerContent(
                 onClick = {
                     onCloseDrawer()
                     onDstPointsList()
+                }
+            )
+
+            DrawerItem(
+                icon = Icons.Default.Archive,
+                text = "Архивы",
+                onClick = {
+                    onCloseDrawer()
+                    onArchive()
                 }
             )
 

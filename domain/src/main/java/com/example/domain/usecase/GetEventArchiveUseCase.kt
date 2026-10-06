@@ -24,11 +24,11 @@ class GetEventArchiveUseCase @Inject constructor(
         startDate: String,
         endDate: String,
         pageNum: Int,
-        pages: Int,
         records: Int,
     ): CustomResult<Archive<Event>> {
         return try {
-            val archive = repository.getEventArchive(startDate, endDate, pageNum, pages, records)
+            val archive = repository.getEventArchive(startDate, endDate, pageNum, records)
+
             CustomResult.Success(archive)
         } catch (e: CancellationException) {
             throw e

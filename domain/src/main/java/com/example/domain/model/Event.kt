@@ -17,8 +17,8 @@ import java.time.LocalDateTime
 data class Event(
     val id: Int,
     val date: LocalDateTime,
-    val person: Person,
-    val equipment: Equipment,
+    val person: Person?,
+    val equipment: Equipment?,
     val deviceName: String?,
     val workPlaceName: String?,
     val className: String?,

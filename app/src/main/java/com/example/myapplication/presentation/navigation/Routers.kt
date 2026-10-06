@@ -29,4 +29,7 @@ sealed class Routers(val route: String) {
             return "dst_point/$zoneId"
         }
     }
+
+    /** Экран просмотра архивов с выпадающим списком типов. */
+    data object Archive : Routers("archive")
 }

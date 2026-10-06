@@ -25,7 +25,6 @@ interface ArchiveRepository {
         startDate: String,
         endDate: String,
         pageNum: Int,
-        pages: Int,
         records: Int,
     ): Archive<Event>
 }
