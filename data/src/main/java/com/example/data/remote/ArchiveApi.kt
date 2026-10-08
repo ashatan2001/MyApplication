@@ -1,9 +1,11 @@
-package com.example.data.dto
+package com.example.data.remote
 
+import com.example.data.dto.ArchiveDto
+import com.example.data.dto.EventDto
+import com.example.data.dto.HandLoadDto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.POST
 import retrofit2.http.Query
 
 /**
@@ -37,8 +39,8 @@ interface ArchiveApi {
      */
     @GET("api/events")
     suspend fun getEvents(
-        @Query("startdate") startDate: String,
-        @Query("enddate")   endDate: String,
+        @Query(value = "startdate", encoded = true) startDate: String,
+        @Query(value = "enddate", encoded = true) endDate: String,
         @Query("page")      page: Int,
         @Query("records")   records: Int
     ): Response<ArchiveDto<EventDto>>
@@ -65,8 +67,8 @@ interface ArchiveApi {
      */
     @GET("api/handloads")
     suspend fun getHandLoads(
-        @Query("startdate") startDate: String,
-        @Query("enddate")   endDate: String,
+        @Query(value = "startdate", encoded = true) startDate: String,
+        @Query(value = "enddate", encoded = true) endDate: String,
         @Query("page")      page: Int,
         @Query("records")   records: Int
     ): Response<ArchiveDto<HandLoadDto>>

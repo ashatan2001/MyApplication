@@ -23,8 +23,8 @@ import kotlinx.serialization.Serializable
 data class PersonDto(
     @SerialName("PersonID") val id: Int,
     @SerialName("FIO") val fullName: String,
-    @SerialName("Position") val position: String,
-    @SerialName("PositionID") val positionId: Int,
-    @SerialName("IsEmployee") val isEmployee: Boolean,
-    @SerialName("IsActive") val isActive: Boolean
+    @SerialName("Position") val position: String? = null,
+    @SerialName("PositionID") val positionId: Int? = null,
+    @SerialName("IsEmployee") val isEmployee: Boolean? = null,
+    @SerialName("IsActive") val isActive: Boolean? = null
 )

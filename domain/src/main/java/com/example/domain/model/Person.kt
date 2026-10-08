@@ -13,8 +13,8 @@ package com.example.domain.model
 data class Person(
     val id: Int,
     val fullName: String,
-    val position: String,
-    val positionId: Int,
-    val isEmployee: Boolean,
-    val isActive: Boolean,
+    val position: String?,
+    val positionId: Int?,
+    val isEmployee: Boolean?,
+    val isActive: Boolean?,
 )

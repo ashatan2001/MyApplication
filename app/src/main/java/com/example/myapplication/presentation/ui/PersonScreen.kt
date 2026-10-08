@@ -2,7 +2,7 @@ package com.example.myapplication.presentation.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -44,7 +44,7 @@ fun PersonScreen(
                 title = { Text("Профиль") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.Menu, contentDescription = "Меню")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -125,7 +125,7 @@ private fun PersonContent(person: Person) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 InfoRow("ID", person.id.toString())
-                InfoRow("Position", person.position)
+                InfoRow("Position", person.position.toString())
                 InfoRow("PositionId", person.positionId.toString())
                 InfoRow("isEmployee", person.isEmployee.toString())
                 InfoRow("isActive", person.isActive.toString())

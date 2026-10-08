@@ -1,6 +1,5 @@
 package com.example.data.remote
 
-import com.example.data.dto.ArchiveApi
 import com.example.data.dto.ArchiveDto
 import com.example.data.dto.EventDto
 import com.example.data.util.safeApiCall

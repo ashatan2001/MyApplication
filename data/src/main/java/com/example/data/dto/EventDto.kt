@@ -23,8 +23,8 @@ import kotlinx.serialization.Serializable
 data class EventDto (
     @SerialName("EventID") val id: Int,
     @SerialName("EventDate") val date: String,
-    @SerialName("Person") val person: PersonDto? = null,
-    @SerialName("Eq") val equipment: EquipmentDto? = null,
+    @SerialName("Person") val person: PersonDto,
+    @SerialName("Eq") val equipment: EquipmentDto,
     @SerialName("DeviceName") val deviceName: String? = null,
     @SerialName("WPName") val workPlaceName: String? = null,
     @SerialName("EventClassName") val className: String? = null,

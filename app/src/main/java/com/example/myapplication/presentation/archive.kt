@@ -1,4 +1,4 @@
-package com.example.presentation.archive
+package com.example.myapplication.presentation
 
 import com.example.domain.model.Event
 
@@ -20,10 +20,10 @@ data class ArchiveScreenState(
     val startDate: String = "",
     val endDate: String = "",
     val records: String = "50",
+    val rows: List<ArchiveRow> = emptyList(),
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
-    val rows: List<ArchiveRow> = emptyList(),
     val currentPage: Int = 1,
-    val totalPages: Int = 0,
+    val totalPages: Int = 1,
     val error: String? = null
 )

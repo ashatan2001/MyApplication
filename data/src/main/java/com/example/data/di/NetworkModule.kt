@@ -9,6 +9,7 @@ import com.example.data.BuildConfig
 import com.example.data.network.CustomCookieJar
 import com.example.data.network.HeadersInterceptor
 import com.example.data.network.TokenInterceptor
+import com.example.data.remote.ArchiveApi
 import com.example.data.remote.AuthApi
 import com.example.data.remote.DstPointsApi
 import com.example.data.remote.PersonApi
@@ -179,4 +180,10 @@ object NetworkModule {
     @Singleton
     fun provideDstPointsApi(@AuthRetrofit retrofit: Retrofit): DstPointsApi =
         retrofit.create(DstPointsApi::class.java)
+
+    /** API для получения архивов системы. */
+    @Provides
+    @Singleton
+    fun provideArchiveApi(@AuthRetrofit retrofit: Retrofit): ArchiveApi =
+        retrofit.create(ArchiveApi::class.java)
 }

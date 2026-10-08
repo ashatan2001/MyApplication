@@ -18,7 +18,6 @@ import androidx.navigation.navArgument
 import com.example.domain.model.AuthState
 import com.example.myapplication.presentation.ui.*
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
-import com.example.presentation.archive.ArchiveScreen
 
 /**
  * Корневой граф навигации приложения.
