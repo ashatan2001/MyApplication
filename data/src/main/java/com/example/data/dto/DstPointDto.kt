@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные точки выгрузки бетона от сервера (эндпоинт `api/apb/dstpoints/:zoneid`).
+ * Данные точки выгрузки бетона от сервера.
  *
  * Маппинг в доменную модель выполняется в [com.example.data.mapper.DstPointMapper].
  *

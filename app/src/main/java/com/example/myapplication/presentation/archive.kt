@@ -1,6 +1,7 @@
 package com.example.myapplication.presentation
 
 import com.example.domain.model.Event
+import com.example.domain.model.HandLoad
 
 // Типы архивов из вашего ArchiveApi
 enum class ArchiveType(val title: String) {
@@ -11,7 +12,7 @@ enum class ArchiveType(val title: String) {
 // Универсальное представление строки таблицы для UI
 sealed interface ArchiveRow {
     data class EventRow(val event: Event) : ArchiveRow
-    // data class HandLoadRow(val handLoad: HandLoad) : ArchiveRow
+    data class HandLoadRow(val handLoad: HandLoad) : ArchiveRow
 }
 
 // Состояние экрана

@@ -2,6 +2,7 @@ package com.example.data.remote
 
 import com.example.data.dto.ArchiveDto
 import com.example.data.dto.EventDto
+import com.example.data.dto.HandLoadDto
 import com.example.data.util.safeApiCall
 import javax.inject.Inject
 
@@ -25,6 +26,25 @@ class ArchiveRemoteDataSource @Inject constructor(
         startDate: String,
         endDate: String,
         pageNum: Int,
-        records: Int):
-            ArchiveDto<EventDto> = safeApiCall { api.getEvents(startDate, endDate, pageNum, records) }
+        records: Int
+    ): ArchiveDto<EventDto> = safeApiCall(
+        emptyValue = ArchiveDto(
+            startDate = "", endDate = "", pageNum = 0, pages = 0, records = 0, data = emptyList()
+        )
+    ) {
+        api.getEvents(startDate, endDate, pageNum, records)
+    }
+
+    suspend fun getHandLoadArchive(
+        startDate: String,
+        endDate: String,
+        pageNum: Int,
+        records: Int
+    ): ArchiveDto<HandLoadDto> = safeApiCall(
+        emptyValue = ArchiveDto(
+            startDate = "", endDate = "", pageNum = 0, pages = 0, records = 0, data = emptyList()
+        )
+    ) {
+        api.getHandLoads(startDate, endDate, pageNum, records)
+    }
 }

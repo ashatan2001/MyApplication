@@ -11,12 +11,12 @@ import java.time.format.DateTimeParseException
  * Маппер события между DTO и доменной моделью.
  */
 fun <T, R> ArchiveDto<T>.toDomain(itemMapper: (T) -> R): Archive<R> = Archive(
-    startDate = parseDate(this.startDate),
-    endDate = parseDate(this.endDate),
-    pageNum = this.pageNum,
-    pages = this.pages,
-    records = this.records,
-    data = this.data.map(itemMapper)
+    startDate = parseDate(startDate),
+    endDate = parseDate(endDate),
+    pageNum = pageNum,
+    pages = pages,
+    records = records,
+    data = data.map(itemMapper)
 )
 
 private fun parseDate(raw: String): LocalDateTime = try {

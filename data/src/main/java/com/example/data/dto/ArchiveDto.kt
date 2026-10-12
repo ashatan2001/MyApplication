@@ -25,4 +25,5 @@ data class ArchiveDto<T> (
     @SerialName("Pages") val pages: Int,
     @SerialName("Records") val records: Int,
     @SerialName("Data") val data: List<T>
-)
+){
+}

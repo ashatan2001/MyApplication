@@ -6,6 +6,7 @@ import com.example.domain.event.AuthEventBus
 import com.example.domain.model.Archive
 import com.example.domain.model.Event
 import com.example.domain.usecase.GetEventArchiveUseCase
+import com.example.domain.usecase.GetHandLoadArchiveUseCase
 import com.example.domain.util.CustomResult
 import com.example.myapplication.presentation.ArchiveRow
 import com.example.myapplication.presentation.ArchiveScreenState
@@ -21,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ArchiveViewModel @Inject constructor(
     private val getEventArchiveUseCase: GetEventArchiveUseCase,
+    private val getHandLoadArchiveUseCase: GetHandLoadArchiveUseCase,
     private val authEventBus: AuthEventBus
 ) : ViewModel() {
 
@@ -69,7 +71,9 @@ class ArchiveViewModel @Inject constructor(
 
     private suspend fun executeUseCase(state: ArchiveScreenState, pageNum: Int): CustomResult<Archive<*>> {
         val recordsInt = state.records.toIntOrNull() ?: 50
+
         return when (state.selectedType) {
+
             ArchiveType.EVENTS -> {
                 getEventArchiveUseCase(
                     startDate = state.startDate,
@@ -78,8 +82,14 @@ class ArchiveViewModel @Inject constructor(
                     records = recordsInt
                 )
             }
+
             ArchiveType.HAND_LOADS -> {
-                TODO("Реализовать GetHandLoadArchiveUseCase")
+                getHandLoadArchiveUseCase(
+                    startDate = state.startDate,
+                    endDate = state.endDate,
+                    pageNum = pageNum,
+                    records = recordsInt
+                )
             }
         }
     }

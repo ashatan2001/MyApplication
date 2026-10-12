@@ -13,7 +13,7 @@ fun EquipmentDto.toDomain(): Equipment =
     Equipment(
         id = id,
         name = name,
-        eqClassName = eqClassName,
+        className = className,
         workHours = workHours,
         nOn = nOn,
         nOff = nOff,

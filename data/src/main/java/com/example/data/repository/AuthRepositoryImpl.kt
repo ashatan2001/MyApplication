@@ -1,11 +1,11 @@
 package com.example.data.repository
 
-import com.example.data.exception.*
 import com.example.data.local.AuthLocalDataSource
 import com.example.data.mapper.toDomain
 import com.example.data.network.CustomCookieJar
 import com.example.data.remote.AuthRemoteDataSource
 import com.example.data.util.JwtParser
+import com.example.data.util.safeRepositoryCall
 import com.example.domain.exception.*
 import com.example.domain.model.AuthState
 import com.example.domain.model.AuthSuccess
@@ -17,7 +17,6 @@ import javax.inject.Inject
 
 /**
  * Реализация [AuthRepository], объединяющая удалённый и локальный источники данных.
- *
  * Отвечает за:
  * - Выполнение входа и маппинг инфраструктурных ошибок в доменные.
  * - Извлечение и сохранение данных пользователя из JWT-токена.
@@ -33,31 +32,26 @@ class AuthRepositoryImpl @Inject constructor(
 
     /**
      * Выполняет вход и сохраняет данные сессии локально.
-     *
      * После успешного входа:
-     * 1. Извлекает userId из JWT-токена и сохраняет в локальное хранилище.
-     * 2. Сохраняет имя пользователя для отображения в UI.
-     * 3. Устанавливает флаг авторизации.
+     * - Извлекает userId из JWT-токена и сохраняет в локальное хранилище.
+     * - Сохраняет имя пользователя для отображения в UI.
+     * - Устанавливает флаг авторизации.
      *
      * @throws NetworkConnectionException при отсутствии сети.
      * @throws AuthenticationFailedException при неверных учётных данных.
      * @throws ServerApiException при бизнес-ошибке сервера.
      */
     override suspend fun login(username: String, password: String): AuthSuccess {
-        val dto = try {
+        val dto = safeRepositoryCall(
+            contextMessage = "Ошибка при входе в систему",
+            onAuthError = {
+                // При ошибке авторизации очищаем локальные данные
+                cookieJar.clear()
+                localDataSource.clearSession()
+                Timber.w("Auth error during login, session cleared")
+            }
+        ) {
             remoteDataSource.login(username, password)
-        } catch (e: NetworkException) {
-            throw NetworkConnectionException(message = e.message ?: "Нет подключения к интернету", cause = e)
-        } catch (e: ServerException) {
-            throw ServerUnavailableException(message = e.message ?: "Ошибка сервера", cause = e)
-        } catch (e: ApiException) {
-            throw ServerApiException(errorNumber = e.errorNumber, message = e.message ?: "Ошибка API", cause = e)
-        } catch (e: UnauthorizedException) {
-            throw AuthenticationFailedException(message = e.message ?: "Неверные учетные данные", cause = e)
-        } catch (e: SessionExpiredException) {
-            throw SessionExpiredDomainException(message = e.message ?: "Сессия истекла", cause = e)
-        } catch (e: DataLayerException) {
-            throw AppException(message = e.message ?: "Неизвестная ошибка", cause = e)
         }
 
         // Извлекаем userId из JWT и сохраняем для последующих запросов
@@ -67,14 +61,14 @@ class AuthRepositoryImpl @Inject constructor(
         val fullName = dto.fullName
         localDataSource.saveUserName(fullName)
         localDataSource.saveAuthState(true)
-
         Timber.d("Login successful for user: $fullName")
+
         return dto.toDomain()
     }
 
     /**
      * Обновляет токен сессии.
-     * Вызывается [java/com/example/data/network/TokenInterceptor.kt] при получении 401/419.
+     * Вызывается [TokenInterceptor] при получении 401/419.
      */
     override suspend fun refreshToken() {
         remoteDataSource.refreshToken()
@@ -82,7 +76,6 @@ class AuthRepositoryImpl @Inject constructor(
 
     /**
      * Завершает сессию пользователя.
-     *
      * Пытается инвалидировать сессию на сервере. При сетевой ошибке
      * всё равно очищает локальные данные, гарантируя выход.
      */

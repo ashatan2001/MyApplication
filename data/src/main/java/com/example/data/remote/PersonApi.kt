@@ -7,9 +7,9 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 
 /**
- * Retrofit API для операций пользователем.
+ * Retrofit API для операций с пользователем.
  *
- * Все методы возвращают [Response], чтобы [safeApiCall]
+ * Все методы возвращают [Response], чтобы [com.example.data.util.safeApiCall]
  * мог получить доступ к коду ответа и телу ошибки для детального маппинга исключений.
  */
 interface PersonApi {

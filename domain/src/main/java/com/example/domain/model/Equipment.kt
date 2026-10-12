@@ -9,7 +9,7 @@ package com.example.domain.model
 class Equipment(
     val id: Int,
     val name: String,
-    val eqClassName: String?,
+    val className: String?,
     val workHours: Int?,
     val nOn: Int?,
     val nOff: Int?,

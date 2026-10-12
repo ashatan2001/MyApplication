@@ -22,7 +22,7 @@ data class HandLoadDto (
     @SerialName("LoadDate") val date: String,
     @SerialName("WPName") val workPlaceName: String? = null,
     @SerialName("Status") val status: Boolean? = null,
-    @SerialName("Eq") val equipment: EquipmentDto? = null,
+    @SerialName("Eq") val equipment: EquipmentDto,
     @SerialName("EqCapacity") val equipmentCapacity: Float,
-    @SerialName("Comp") val component: Component,
+    @SerialName("Comp") val component: ComponentDto,
 )

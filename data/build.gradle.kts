@@ -10,10 +10,10 @@ plugins {
 
 android {
     namespace = "com.example.data"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
-        minSdk = 24
+        minSdk = 26
         buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3080/\"")
     }
 

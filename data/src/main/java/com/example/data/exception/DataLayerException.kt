@@ -70,6 +70,12 @@ class DataException(
     cause: Throwable? = null
 ) : DataLayerException(errorCode = 1004, message = message, cause = cause)
 
+/** HTTP 204. Запрос успешен, но данных за указанный период нет. */
+class NoDataException(
+    message: String = "Данные отсутствуют за указанный период",
+    cause: Throwable? = null
+) : DataLayerException(errorCode = 204, message = message, cause = cause)
+
 /**
  * HTTP 419. Сессия истекла на сервере.
  * Перехватывается [com.example.data.network.TokenInterceptor] для автообновления токена.
@@ -77,4 +83,4 @@ class DataException(
 class SessionExpiredException(
     message: String = "Сессия истекла. Выполняется перенаправление на экран входа.",
     cause: Throwable? = null
-) : DataLayerException(message = message, cause = cause)
+) : DataLayerException(errorCode = 419, message = message, cause = cause)

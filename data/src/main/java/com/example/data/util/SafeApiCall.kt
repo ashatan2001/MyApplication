@@ -2,114 +2,118 @@ package com.example.data.util
 
 import com.example.data.dto.ErrorResponseDto
 import com.example.data.exception.*
+import com.example.domain.exception.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import retrofit2.Response
 import java.io.IOException
 
-/**
- * Конфигурация JSON для парсинга тел ошибок.
- * [coerceInputValues] позволяет обрабатывать некорректные значения
- * (например, число вместо строки) без падения.
- */
 private val json = Json {
     ignoreUnknownKeys = true
     coerceInputValues = true
 }
 
 /**
- * Безопасная обёртка для выполнения сетевых запросов.
- *
- * Централизует обработку ошибок: парсит тело ошибки сервера в [ErrorResponseDto]
- * и преобразует в соответствующее исключение дата-слоя.
- * Позволяет не дублировать обработку ошибок в каждом DataSource.
- *
- * @param block Лямбда, выполняющая запрос и возвращающая [Response].
- * @return Десериализованное тело ответа при успехе.
- * @throws NetworkException при ошибке соединения.
- * @throws ApiException при бизнес-ошибке от сервера.
- * @throws UnauthorizedException при 401/403/419.
- * @throws DataParsingException при ошибке парсинга ответа.
+ * Использовать, когда успешный ответ обязан содержать тело.
  */
-suspend fun <T> safeApiCall(block: suspend () -> Response<T>): T {
-    android.util.Log.d("LOGIN_DEBUG", "[SafeApiCall] Начало выполнения запроса...")
+suspend fun <T> safeApiCall(
+    emptyValue: T? = null,
+    block: suspend () -> Response<T>
+): T {
     return try {
         val response = block()
-        android.util.Log.d("LOGIN_DEBUG", "[SafeApiCall] Запрос завершен. Успех: ${response.isSuccessful}, Код: ${response.code()}")
 
         if (response.isSuccessful) {
-            response.body() ?: run {
-                // Body может быть null для ответов 204 No Content.
-                // Приводим к Unit для совместимости с общим типом возврата.
-                @Suppress("UNCHECKED_CAST")
-                Unit as T
+            // 204 No Content — допустимый ответ для пустых архивов
+            if (response.code() == 204) {
+                emptyValue ?: throw DataLayerException(
+                    message = "Пустой ответ (204)",
+                    errorCode = 204
+                )
             }
+
+            response.body()
+                ?: emptyValue
+                ?: throw DataParsingException(message = "Пустое тело ответа")
         } else {
             throw parseErrorBody(response.errorBody()?.string(), response.code())
         }
-    } catch (e: SessionExpiredException) {
+    } catch (e: CancellationException) {
         throw e
-    } catch (e: ApiException) {
-        throw e
-    } catch (e: UnauthorizedException) {
+    } catch (e: DataLayerException) {
         throw e
     } catch (e: IOException) {
-        android.util.Log.e("LOGIN_DEBUG", "[SafeApiCall] Ошибка сети (IO)", e)
         throw NetworkException(cause = e)
     } catch (e: Exception) {
-        android.util.Log.e("LOGIN_DEBUG", "[SafeApiCall] Неожиданная ошибка", e)
         throw DataParsingException(message = e.message ?: "Неизвестная ошибка", cause = e)
     }
 }
 
-/**
- * Парсит тело ошибки сервера в исключение дата-слоя.
- *
- * Приоритет:
- * 1. Пытается распарсить [ErrorResponseDto] из тела ответа.
- * 2. Если парсинг не удался — маппит по HTTP-коду.
- *
- * @param body Тело ошибки в формате JSON или текст.
- * @param httpCode HTTP-статус ответа.
- * @return Соответствующее исключение [DataLayerException].
- */
 private fun parseErrorBody(body: String?, httpCode: Int): DataLayerException {
-    android.util.Log.d("LOGIN_DEBUG", "[parseErrorBody] code=$httpCode, body=$body")
-
     if (body.isNullOrBlank()) {
         return mapHttpError(httpCode)
     }
 
     return try {
         val dto = json.decodeFromString<ErrorResponseDto>(body)
-        android.util.Log.d("LOGIN_DEBUG", "[parseErrorBody] parsed dto=$dto")
-
         val errorNum = dto.errorNumber ?: 0
-        val errorMessage = dto.message ?: "Ошибка сервера (код ${dto.errorNumber})"
+        val errorMessage = dto.message ?: "Ошибка сервера (код $errorNum)"
 
-        ApiException(errorNumber = errorNum, message = errorMessage)
-
+        when (httpCode) {
+            401, 403 -> UnauthorizedException(message = errorMessage)
+            419 -> SessionExpiredException(message = errorMessage)
+            else -> ApiException(errorNumber = errorNum, message = errorMessage)
+        }
     } catch (e: Exception) {
-        android.util.Log.w("LOGIN_DEBUG", "[parseErrorBody] Не удалось распарсить JSON, используем raw body. Причина: ${e.message}")
-
-        if (httpCode == 401 || httpCode == 403 || httpCode == 419) {
-            UnauthorizedException(message = body, cause = e)
-        } else {
-            DataLayerException(message = body, cause = e)
+        when (httpCode) {
+            401, 403 -> UnauthorizedException(message = body, cause = e)
+            419 -> SessionExpiredException(message = body, cause = e)
+            else -> DataLayerException(message = body, errorCode = httpCode, cause = e)
         }
     }
 }
 
-/**
- * Маппит HTTP-код ошибки в соответствующее исключение дата-слоя.
- * Используется когда тело ответа пустое или не содержит структурированной ошибки.
- *
- * @param code HTTP-статус ответа.
- * @param cause Исходное исключение (опционально).
- */fun mapHttpError(code: Int, cause: Throwable? = null): DataLayerException = when (code) {
+fun mapHttpError(code: Int, cause: Throwable? = null): DataLayerException = when (code) {
     401 -> UnauthorizedException(message = "Сессия истекла. Войдите снова.", cause = cause)
     403 -> UnauthorizedException(message = "Доступ запрещен", cause = cause)
-    419 -> UnauthorizedException(message = "Сессия истекла. Войдите снова.", cause = cause)
-    404 -> DataLayerException(message = "Ресурс не найден", cause = cause)
+    419 -> SessionExpiredException(message = "Сессия истекла. Войдите снова.", cause = cause)
+    404 -> DataLayerException(message = "Ресурс не найден", errorCode = 404, cause = cause)
     in 500..599 -> ServerException(httpCode = code, message = "Ошибка сервера: $code", cause = cause)
-    else -> DataLayerException(message = "HTTP ошибка: $code", cause = cause)
+    else -> DataLayerException(message = "HTTP ошибка: $code", errorCode = code, cause = cause)
+}
+
+/**
+ * Универсальная обёртка для вызовов в репозиториях.
+ * Централизует маппинг исключений дата-слоя в доменные исключения.
+ */
+suspend fun <T> safeRepositoryCall(
+    contextMessage: String = "Неизвестная ошибка",
+    onAuthError: suspend () -> Unit = {},
+    notFoundMapper: ((DataLayerException) -> AppException)? = null,
+    block: suspend () -> T
+): T {
+    return try {
+        block()
+    } catch (e: UnauthorizedException) {
+        onAuthError()
+        throw AuthenticationFailedException(message = e.message ?: "Ошибка авторизации", cause = e)
+    } catch (e: SessionExpiredException) {
+        onAuthError()
+        throw SessionExpiredDomainException(message = e.message ?: "Сессия истекла", cause = e)
+    } catch (e: NetworkException) {
+        throw NetworkConnectionException(message = e.message ?: "Нет подключения к интернету", cause = e)
+    } catch (e: ServerException) {
+        throw ServerUnavailableException(message = e.message ?: "Ошибка сервера", cause = e)
+    } catch (e: ApiException) {
+        throw ServerApiException(errorNumber = e.errorNumber, message = e.message ?: "Ошибка API", cause = e)
+    } catch (e: DataLayerException) {
+        if (e.errorCode == 404 && notFoundMapper != null) {
+            throw notFoundMapper(e)
+        }
+        throw AppException(message = "$contextMessage (код: ${e.errorCode})", cause = e)
+    } catch (e: AppException) {
+        throw e
+    } catch (e: Exception) {
+        throw AppException(message = "$contextMessage: ${e.message ?: "неизвестная ошибка"}", cause = e)
+    }
 }

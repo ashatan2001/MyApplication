@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные пользователя от сервера (эндпоинт `api/persons/{id}`).
+ * Данные пользователя от сервера.
  *
  * Сервер возвращает поля с именами в стиле PascalCase и историческими
  * названиями ("FIO" вместо "userName", "PersonID" вместо "id").

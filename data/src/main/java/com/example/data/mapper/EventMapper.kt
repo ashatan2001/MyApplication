@@ -13,14 +13,14 @@ import java.time.format.DateTimeParseException
 
 fun EventDto.toDomain(): Event =
     Event(
-        id = this.id,
-        date = parseDate(this.date),
-        person = this.person.toDomain(),
-        equipment = this.equipment.toDomain(),
-        deviceName = this.deviceName,
-        workPlaceName = this.workPlaceName,
-        className = this.className,
-        text = this.text
+        id = id,
+        date = parseDate(date),
+        person = person.toDomain(),
+        equipment = equipment.toDomain(),
+        deviceName = deviceName,
+        workPlaceName = workPlaceName,
+        className = className,
+        text = text
     )
 
 private fun parseDate(raw: String): LocalDateTime = try {

@@ -1,10 +1,13 @@
 package com.example.myapplication.presentation.ui
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -16,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -24,10 +29,7 @@ import com.example.myapplication.presentation.ArchiveScreenState
 import com.example.myapplication.presentation.ArchiveType
 import com.example.myapplication.presentation.viewmodel.ArchiveViewModel
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-import java.time.format.DateTimeFormatter
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -230,7 +232,7 @@ private fun ArchiveForm(
     var typeExpanded by remember { mutableStateOf(false) }
     var recordsExpanded by remember { mutableStateOf(false) }
 
-    val recordsOptions = listOf("10", "25", "50", "100", "200")
+    val recordsOptions = listOf("25", "50", "100", "200")
     val shape = RoundedCornerShape(8.dp)
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -347,21 +349,24 @@ private fun ArchiveTable(
     onLoadMore: () -> Unit,
     hasNextPage: Boolean
 ) {
+    val scrollState = rememberScrollState()
+
     Column(modifier = Modifier.fillMaxWidth()) {
-        TableHeader(type)
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .border(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant, shape = RoundedCornerShape(8.dp))
-                .clip(RoundedCornerShape(8.dp))
-        ) {
+        TableHeader(type = type, scrollState = scrollState)
+        HorizontalDivider()
+
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
             items(rows, key = {
                 when (it) {
                     is ArchiveRow.EventRow -> "event_${it.event.id}"
+                    is ArchiveRow.HandLoadRow -> "handload_${it.handLoad.id}"
                 }
             }) { row ->
-                TableRow(row, type)
+                TableRow(
+                    row = row,
+                    type = type,
+                    scrollState = scrollState
+                )
             }
             if (isLoadingMore) {
                 item {
@@ -386,50 +391,115 @@ private fun ArchiveTable(
 }
 
 @Composable
-private fun TableHeader(type: ArchiveType) {
+private fun TableHeader(type: ArchiveType, scrollState: ScrollState) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f), shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-            .padding(vertical = 8.dp, horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(vertical = 8.dp)
     ) {
-        when (type) {
-            ArchiveType.EVENTS -> {
-                Text("ID", modifier = Modifier.weight(0.5f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("Дата и время", modifier = Modifier.weight(1.5f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("Сотрудник", modifier = Modifier.weight(1.5f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("Событие", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-            }
-            ArchiveType.HAND_LOADS -> {
-                Text("ID", modifier = Modifier.weight(0.5f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("Дата", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("Объем", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("Комментарий", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        // Фиксированная колонка "Дата"
+        HeaderCell("Дата и время", width = 160.dp)
+
+        // Прокручиваемая часть
+        Row(
+            modifier = Modifier.horizontalScroll(scrollState)
+        ) {
+            when (type) {
+                ArchiveType.EVENTS -> {
+                    HeaderCell("Сотрудник", 150.dp)
+                    HeaderCell("Оборудование", 200.dp)
+                    HeaderCell("Упр. служба", 150.dp)
+                    HeaderCell("Место", 150.dp)
+                    HeaderCell("Класс", 120.dp)
+                    HeaderCell("Текст", 250.dp)
+                }
+                ArchiveType.HAND_LOADS -> {
+                    HeaderCell("Место", 150.dp)
+                    HeaderCell("Статус", 120.dp)
+                    HeaderCell("Оборудование", 150.dp)
+                    HeaderCell("Вместимость дозатора, кг", 200.dp)
+                    HeaderCell("Компонент", 150.dp)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun TableRow(row: ArchiveRow, type: ArchiveType) {
+private fun HeaderCell(text: String, width: Dp) {
+    Text(
+        text = text,
+        modifier = Modifier.width(width).padding(horizontal = 8.dp),
+        fontWeight = FontWeight.Bold,
+        fontSize = 12.sp,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun TableRow(row: ArchiveRow, type: ArchiveType, scrollState: ScrollState) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
     ) {
-        when (row) {
-            is ArchiveRow.EventRow -> {
-                val event = row.event
-                Text(event.id.toString(), modifier = Modifier.weight(0.5f), fontSize = 12.sp)
-                // Форматирование даты (предполагается, что event.date поддерживает java.time.format или имеет свой toString)
-                Text(
-                    event.date.toString().replace("T", " "),
-                    modifier = Modifier.weight(1.5f),
-                    fontSize = 12.sp
-                )
-                Text(event.person?.fullName ?: "—", modifier = Modifier.weight(1.5f), fontSize = 12.sp)
-                Text(event.text ?: "—", modifier = Modifier.weight(2f), fontSize = 12.sp)
+        Box(
+            modifier = Modifier
+                .width(160.dp)
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = when (row) {
+                    is ArchiveRow.EventRow -> row.event.date.toString().replace("T", " ")
+                    is ArchiveRow.HandLoadRow -> row.handLoad.date.toString().replace("T", " ")
+                },
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Row(
+            modifier = Modifier.horizontalScroll(scrollState)
+        ) {
+            when (row) {
+                is ArchiveRow.EventRow -> {
+                    CellText(row.event.person?.fullName ?: "—", 150.dp)
+                    CellText(row.event.equipment?.name ?: "—", 200.dp)
+                    CellText(row.event.deviceName ?: "—", 150.dp)
+                    CellText(row.event.workPlaceName ?: "—", 150.dp)
+                    CellText(row.event.className ?: "—", 120.dp)
+                    CellText(row.event.text ?: "—", 250.dp)
+                }
+
+                is ArchiveRow.HandLoadRow -> {
+                    CellText(row.handLoad.workPlaceName ?: "—", 150.dp)
+                    CellText(row.handLoad.status.toString(), 150.dp)
+                    CellText(row.handLoad.equipment?.name ?: "—", 200.dp)
+                    CellText(row.handLoad.equipmentCapacity.toString(), 150.dp)
+                    CellText(row.handLoad.component?.productName ?: "—", 200.dp)
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun CellText(text: String, width: Dp) {
+    Box(
+        modifier = Modifier
+            .width(width)
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(
+            text = text,
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
