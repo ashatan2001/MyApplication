@@ -20,6 +20,6 @@ data class HandLoad (
     val workPlaceName: String?,
     val status: Boolean?,
     val equipment: Equipment?,
-    val equipmentCapacity: Float,
+    val equipmentCapacity: Float?,
     val component: Component?
 )

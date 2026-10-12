@@ -15,8 +15,8 @@ fun EventDto.toDomain(): Event =
     Event(
         id = id,
         date = parseDate(date),
-        person = person.toDomain(),
-        equipment = equipment.toDomain(),
+        person = person?.toDomain(),
+        equipment = equipment?.toDomain(),
         deviceName = deviceName,
         workPlaceName = workPlaceName,
         className = className,

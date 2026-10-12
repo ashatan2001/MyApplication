@@ -8,19 +8,18 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 
 /**
- * Маппер архива ручных загрузок между DTO и доменной моделью.
+ * Маппер ручной загрузки между DTO и доменной моделью.
+ * Безопасно обрабатывает отсутствие данных об оборудовании или компоненте.
  */
-
-fun HandLoadDto.toDomain(): HandLoad =
-    HandLoad(
-        id = id,
-        date = parseDate(date),
-        workPlaceName = workPlaceName,
-        status = status,
-        equipment = equipment.toDomain(),
-        equipmentCapacity = equipmentCapacity,
-        component = component.toDomain()
-    )
+fun HandLoadDto.toDomain(): HandLoad = HandLoad(
+    id = id,
+    date = parseDate(date),
+    workPlaceName = workPlaceName,
+    status = status,
+    equipment = equipment?.toDomain(),
+    equipmentCapacity = equipmentCapacity,
+    component = component?.toDomain()
+)
 
 private fun parseDate(raw: String): LocalDateTime = try {
     LocalDateTime.parse(raw.trim(), DateFormatters.SERVER_DATE_TIME)

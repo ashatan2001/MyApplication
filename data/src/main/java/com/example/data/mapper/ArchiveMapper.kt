@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 
 /**
- * Маппер события между DTO и доменной моделью.
+ * Маппер архива между DTO и доменной моделью.
  */
 fun <T, R> ArchiveDto<T>.toDomain(itemMapper: (T) -> R): Archive<R> = Archive(
     startDate = parseDate(startDate),
