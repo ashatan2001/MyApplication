@@ -12,7 +12,7 @@ import retrofit2.http.Path
  * Все методы возвращают [Response], чтобы [safeApiCall]
  * мог получить доступ к коду ответа и телу ошибки для детального маппинга исключений.
  */
-interface DstPointsApi {
+interface DstPointApi {
 
     /**
      * Получение информацию о точке выгрузки бетона.
@@ -47,5 +47,5 @@ interface DstPointsApi {
      * - 500 — внутренняя ошибка получения информации о точках разгрузки
      */
     @GET("api/apb/dst-points")
-    suspend fun getDstPointsList(): Response<List<DstPointDto>>
+    suspend fun getDstPointList(): Response<List<DstPointDto>>
 }

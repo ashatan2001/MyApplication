@@ -42,10 +42,10 @@ class PersonNotFoundException(
 /**
  * Пользователь не найден в системе.
  *
- * @param zoneId ID запрашиваемой точки загрузки бетона (для логирования).
+ * @param zone ID запрашиваемой точки загрузки бетона (для логирования).
  */
 class DstPointNotFoundException(
-    val zoneId: Int? = null,
+    val zone: Int? = null,
     message: String = "DstPoint not found",
     cause: Throwable? = null
 ) : DomainException(errorCode = 2002, message = message, cause = cause)

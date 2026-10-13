@@ -9,10 +9,8 @@ import com.example.domain.model.Component
  */
 fun ComponentDto.toDomain(): Component =
     Component(
-        productId = productId,
-        productName = productName,
-        productNum = productNum,
-        density = density,
-        notes = notes,
-        isComponent = isComponent
+        id = id,
+        name = name,
+        number = number,
+        quantity = quantity
     )

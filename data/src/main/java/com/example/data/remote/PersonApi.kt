@@ -1,7 +1,6 @@
 package com.example.data.remote
 
 import com.example.data.dto.PersonDto
-import com.example.data.util.safeApiCall
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path

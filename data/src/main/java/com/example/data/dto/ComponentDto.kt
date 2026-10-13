@@ -9,18 +9,16 @@ import kotlinx.serialization.Serializable
  *
  * Маппинг в доменную модель выполняется в [com.example.data.mapper.ComponentMapper].
  *
- * @property productId Код компонента
- * @property productName Наименование компонента
- * @property productNum Номер компонента
- * @property density Плотность компонента
- * @property notes Примечание к компоненту
- * @property isComponent Признак того, что данный продукт является компонентом
+ * @property id Код компонента
+ * @property number Номер компонента
+ * @property name Наименование компонента
+ * @property quantity Количество компонента в килограммах
  */
 @OptIn(InternalSerializationApi::class)
 @Serializable
 data class ComponentDto (
-    @SerialName("CompID") val productId: Int,
-    @SerialName("CompNo") val productNum: String? = null,
-    @SerialName("CompName") val productName: String,
-    @SerialName("CompQty") val density: Float? = null,
+    @SerialName("CompID") val id: Int,
+    @SerialName("CompNo") val number: String,
+    @SerialName("CompName") val name: String,
+    @SerialName("CompQty") val quantity: Float,
 )

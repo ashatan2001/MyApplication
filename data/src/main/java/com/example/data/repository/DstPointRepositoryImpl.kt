@@ -2,19 +2,19 @@ package com.example.data.repository
 
 import com.example.data.local.AuthLocalDataSource
 import com.example.data.mapper.toDomain
-import com.example.data.remote.DstPointsRemoteDataSource
+import com.example.data.remote.DstPointRemoteDataSource
 import com.example.data.util.safeRepositoryCall
 import com.example.domain.exception.DstPointNotFoundException
 import com.example.domain.model.DstPoint
-import com.example.domain.repository.DstPointsRepository
+import com.example.domain.repository.DstPointRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DstPointsRepositoryImpl @Inject constructor(
-    private val remoteDataSource: DstPointsRemoteDataSource,
+class DstPointRepositoryImpl @Inject constructor(
+    private val remoteDataSource: DstPointRemoteDataSource,
     private val localDataSource: AuthLocalDataSource
-) : DstPointsRepository {
+) : DstPointRepository {
 
     override suspend fun getDstPoint(zoneId: Int): DstPoint {
         val dto = safeRepositoryCall(
@@ -22,7 +22,7 @@ class DstPointsRepositoryImpl @Inject constructor(
             onAuthError = { localDataSource.clearSession() },
             notFoundMapper = {
                 DstPointNotFoundException(
-                    zoneId = zoneId,
+                    zone = zoneId,
                     message = it.message ?: "Точка выгрузки бетона не найдена"
                 )
             }
@@ -32,13 +32,13 @@ class DstPointsRepositoryImpl @Inject constructor(
         return dto.toDomain()
     }
 
-    override suspend fun getDstPointsList(): List<DstPoint> {
-        val dtoList = safeRepositoryCall(
+    override suspend fun getDstPointList(): List<DstPoint> {
+        val dto = safeRepositoryCall(
             contextMessage = "Ошибка при получении списка точек выгрузки бетона",
             onAuthError = { localDataSource.clearSession() }
         ) {
-            remoteDataSource.getDstPointsList()
+            remoteDataSource.getDstPointList()
         }
-        return dtoList.map { it.toDomain() }
+        return dto.map { it.toDomain() }
     }
 }

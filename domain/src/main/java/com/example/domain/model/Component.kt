@@ -3,19 +3,15 @@ package com.example.domain.model
 /**
  * Модель компонента.
  *
- * @property productId Код компонента
- * @property productName Наименование компонента
- * @property productNum Номер компонента
- * @property density Плотность компонента
- * @property notes Примечание к компоненту
- * @property isComponent Признак того, что данный продукт является компонентом
+ * @property id Код компонента
+ * @property name Наименование компонента
+ * @property number Номер компонента
+ * @property quantity Количество компонента в килограммах
  */
 
 data class Component (
-    val productId: Int,
-    val productName: String,
-    val productNum: String?,
-    val density: Float?,
-    val notes: String?,
-    val isComponent: Boolean?
+    val id: Int,
+    val name: String,
+    val number: String?,
+    val quantity: Float?
 )

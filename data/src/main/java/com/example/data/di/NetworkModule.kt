@@ -9,10 +9,7 @@ import com.example.data.BuildConfig
 import com.example.data.network.CustomCookieJar
 import com.example.data.network.HeadersInterceptor
 import com.example.data.network.TokenInterceptor
-import com.example.data.remote.ArchiveApi
-import com.example.data.remote.AuthApi
-import com.example.data.remote.DstPointsApi
-import com.example.data.remote.PersonApi
+import com.example.data.remote.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -175,11 +172,17 @@ object NetworkModule {
     fun provideUserApi(@AuthRetrofit retrofit: Retrofit): PersonApi =
         retrofit.create(PersonApi::class.java)
 
-    /** API для получения данных о точках выгрузки бетона. */
+    /** API для получения продуктов. */
     @Provides
     @Singleton
-    fun provideDstPointsApi(@AuthRetrofit retrofit: Retrofit): DstPointsApi =
-        retrofit.create(DstPointsApi::class.java)
+    fun provideProductApi(@AuthRetrofit retrofit: Retrofit): ProductApi =
+        retrofit.create(ProductApi::class.java)
+
+    /** API для получения продуктов. */
+    @Provides
+    @Singleton
+    fun provideDstPointApi(@AuthRetrofit retrofit: Retrofit): DstPointApi =
+        retrofit.create(DstPointApi::class.java)
 
     /** API для получения архивов системы. */
     @Provides

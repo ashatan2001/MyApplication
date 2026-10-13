@@ -1,15 +1,9 @@
 package com.example.data.di
 
-import com.example.data.repository.ArchiveRepositoryImpl
-import com.example.data.repository.AuthRepositoryImpl
-import com.example.data.repository.DstPointsRepositoryImpl
-import com.example.data.repository.PersonRepositoryImpl
+import com.example.data.repository.*
 import com.example.domain.event.AuthEventBus
 import com.example.domain.event.AuthEventBusImpl
-import com.example.domain.repository.ArchiveRepository
-import com.example.domain.repository.AuthRepository
-import com.example.domain.repository.DstPointsRepository
-import com.example.domain.repository.PersonRepository
+import com.example.domain.repository.*
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -18,20 +12,27 @@ import dagger.hilt.components.SingletonComponent
 /**
  * Связывает интерфейсы доменного слоя с реализациями из data-слоя.
  *
- * Используется [Binds] вместо [Provides], т.к. реализации не требуют
+ * Используется [Binds] вместо [Provides], т.к. не требуют реализации
  * дополнительной конфигурации при создании.
  */
 @Module
-@InstallIn(SingletonComponent::class) // или ViewModelComponent::class
+@InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
     @Binds
     abstract fun bindPersonRepository(impl: PersonRepositoryImpl): PersonRepository
+
     @Binds
-    abstract fun bindDstPointsRepository(impl: DstPointsRepositoryImpl): DstPointsRepository
+    abstract fun bindDstPointRepository(impl: DstPointRepositoryImpl): DstPointRepository
+
     @Binds
-    abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+    abstract fun bindProductRepository(impl: ProductRepositoryImpl): ProductRepository
+
     @Binds
     abstract fun bindArchiveRepository(impl: ArchiveRepositoryImpl): ArchiveRepository
+
+    @Binds
+    abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+
     @Binds
     abstract fun bindAuthEventBus(impl: AuthEventBusImpl): AuthEventBus
 }

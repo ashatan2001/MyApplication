@@ -2,7 +2,7 @@ package com.example.domain.usecase
 
 import com.example.domain.exception.AppException
 import com.example.domain.model.DstPoint
-import com.example.domain.repository.DstPointsRepository
+import com.example.domain.repository.DstPointRepository
 import com.example.domain.util.CustomResult
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -10,13 +10,13 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * Use-case для получения информации о конкретной точки выгрузке бетона.
  *
- * Инкапсулирует логику запроса профиля из [com.example.domain.repository.DstPointsRepository] и оборачивает результат
+ * Инкапсулирует логику запроса профиля из [com.example.domain.repository.DstPointRepository] и оборачивает результат
  * в [CustomResult] для безопасной обработки ошибок на уровне Presentation.
  *
  * @param repository Репозиторий для работы с данными точки выгрузки бетона.
  */
 class GetDstPointUseCase @Inject constructor(
-    private val repository: DstPointsRepository
+    private val repository: DstPointRepository
 ) {
 
     suspend operator fun invoke(zoneId: Int): CustomResult<DstPoint> {

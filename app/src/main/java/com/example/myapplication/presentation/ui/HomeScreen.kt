@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     onOpenPerson: () -> Unit,
-    onDstPointsList: () -> Unit,
+    onDstPointList: () -> Unit,
     onArchive: () -> Unit,
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
@@ -60,7 +60,7 @@ fun HomeScreen(
                 uiState = uiState,
                 onCloseDrawer = { scope.launch { drawerState.close() } },
                 onOpenPerson = onOpenPerson,
-                onDstPointsList = onDstPointsList,
+                onDstPointList = onDstPointList,
                 onArchive = onArchive,
                 onLogout = {
                     scope.launch { drawerState.close() }
@@ -163,7 +163,7 @@ private fun DrawerContent(
     uiState: HomeUiState,
     onCloseDrawer: () -> Unit,
     onOpenPerson: () -> Unit,
-    onDstPointsList: () -> Unit,
+    onDstPointList: () -> Unit,
     onArchive: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -194,11 +194,11 @@ private fun DrawerContent(
             )
 
             DrawerItem(
-                icon = Icons.Default.Place,
-                text = "Точки выгрузки бетона",
+                icon = Icons.Default.LibraryAdd,
+                text = "Заказ бетона",
                 onClick = {
                     onCloseDrawer()
-                    onDstPointsList()
+                    onDstPointList()
                 }
             )
 

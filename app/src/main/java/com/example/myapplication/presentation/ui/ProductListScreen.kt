@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -19,28 +18,30 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.domain.model.DstPoint
-import com.example.myapplication.presentation.viewmodel.DstPointsListUiState
-import com.example.myapplication.presentation.viewmodel.DstPointsListViewModel
+import com.example.domain.model.Product
+import com.example.myapplication.presentation.viewmodel.ProductListUiState
+import com.example.myapplication.presentation.viewmodel.ProductListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DstPointListScreen(
+fun ProductListScreen(
     onBack: () -> Unit,
-    onDstPoint: (Int) -> Unit,
-    viewModel: DstPointsListViewModel = hiltViewModel()
+    zone: Int,
+    viewModel: ProductListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedProduct by viewModel.selectedProduct.collectAsStateWithLifecycle()
+
 
     LaunchedEffect(Unit) {
-        viewModel.loadDstPointsList()
+        viewModel.loadProductList(zone)
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Список точек выгрузки бетона")
+                    Text("Список продуктов, разрешенных для отгрузки\n")
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -58,25 +59,22 @@ fun DstPointListScreen(
         ) {
             when (val state = uiState) {
 
-                is DstPointsListUiState.Loading -> {
+                is ProductListUiState.Loading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
 
-                is DstPointsListUiState.Success -> {
+                is ProductListUiState.Success -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        // Sticky header - остается видимым при прокрутке
-                        stickyHeader {
-                            TableHeader()
-                        }
+                        stickyHeader { TableHeader() }
 
-                        if (state.dstPointsList.isEmpty()) {
+                        if (state.productList.isEmpty()) {
                             item {
                                 Text(
-                                    text = "Список точек выгрузки бетона пуст",
+                                    text = "Список продуктов",
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(16.dp),
@@ -85,12 +83,12 @@ fun DstPointListScreen(
                             }
                         } else {
                             items(
-                                items = state.dstPointsList,
-                                key = { point -> point.zoneId }
-                            ) { point ->
-                                DstPointRow(
-                                    dstPoint = point,
-                                    onClick = { onDstPoint(point.zoneId) }
+                                items = state.productList,
+                                key = { product -> product.name }
+                            ) { product ->
+                                ProductRow(
+                                    product = product,
+                                    onClick = { viewModel.onProductClick(product) }
                                 )
                                 HorizontalDivider()
                             }
@@ -98,7 +96,7 @@ fun DstPointListScreen(
                     }
                 }
 
-                is DstPointsListUiState.Error -> {
+                is ProductListUiState.Error -> {
                     Column(
                         modifier = Modifier
                             .align(Alignment.Center)
@@ -121,7 +119,7 @@ fun DstPointListScreen(
 
                         Button(
                             onClick = {
-                                viewModel.loadDstPointsList()
+                                viewModel.loadProductList(zone)
                             }
                         ) {
                             Text("Повторить")
@@ -129,13 +127,21 @@ fun DstPointListScreen(
                     }
                 }
             }
+
+            selectedProduct?.let { product ->
+                CreateApplicationDialog(
+                    product = product,
+                    onDismiss = viewModel::onDialogDismiss,
+                    onSubmit = { qty -> viewModel.submitApplication(product, qty) }
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun DstPointRow(
-    dstPoint: DstPoint,
+private fun ProductRow(
+    product: Product,
     onClick: () -> Unit
 ) {
     Surface(
@@ -150,27 +156,27 @@ private fun DstPointRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = dstPoint.zoneName,
-                modifier = Modifier.weight(7f),
+                text = product.number.toString(),
+                modifier = Modifier.weight(2f),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
             Text(
-                text = dstPoint.departmentId,
-                modifier = Modifier.weight(2f),
+                text = product.name,
+                modifier = Modifier.weight(7f),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1
             )
 
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Button(
+                onClick = onClick,
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Text("Заказать")
+            }
         }
     }
 }
@@ -188,8 +194,8 @@ private fun TableHeader() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Наименование подразделения",
-                modifier = Modifier.weight(7f),
+                text = "Код",
+                modifier = Modifier.weight(2f),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -198,8 +204,8 @@ private fun TableHeader() {
             )
 
             Text(
-                text = "Код",
-                modifier = Modifier.weight(2f),
+                text = "Наименование продукта",
+                modifier = Modifier.weight(7f),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer

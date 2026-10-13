@@ -1,13 +1,9 @@
 package com.example.myapplication.presentation.ui
 
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -480,7 +476,7 @@ private fun TableRow(row: ArchiveRow, type: ArchiveType, scrollState: ScrollStat
                     CellText(row.handLoad.status.toString(), 150.dp)
                     CellText(row.handLoad.equipment?.name ?: "—", 200.dp)
                     CellText(row.handLoad.equipmentCapacity.toString(), 150.dp)
-                    CellText(row.handLoad.component?.productName ?: "—", 200.dp)
+                    CellText(row.handLoad.component?.name ?: "—", 200.dp)
                 }
             }
         }

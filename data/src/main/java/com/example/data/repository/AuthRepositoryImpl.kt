@@ -6,7 +6,9 @@ import com.example.data.network.CustomCookieJar
 import com.example.data.remote.AuthRemoteDataSource
 import com.example.data.util.JwtParser
 import com.example.data.util.safeRepositoryCall
-import com.example.domain.exception.*
+import com.example.domain.exception.AuthenticationFailedException
+import com.example.domain.exception.NetworkConnectionException
+import com.example.domain.exception.ServerApiException
 import com.example.domain.model.AuthState
 import com.example.domain.model.AuthSuccess
 import com.example.domain.repository.AuthRepository

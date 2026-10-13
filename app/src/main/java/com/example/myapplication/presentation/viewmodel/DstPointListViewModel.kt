@@ -6,7 +6,7 @@ import com.example.domain.event.AuthEventBus
 import com.example.domain.exception.NetworkConnectionException
 import com.example.domain.exception.SessionExpiredDomainException
 import com.example.domain.model.DstPoint
-import com.example.domain.usecase.GetDstPointsListUseCase
+import com.example.domain.usecase.GetDstPointListUseCase
 import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,52 +26,52 @@ import javax.inject.Inject
  *
  * @property isNetworkError Флаг для показа специфичного UI при ошибках сети
  */
-sealed class DstPointsListUiState {
-    data object Loading : DstPointsListUiState()
-    data class Success(val dstPointsList: List<DstPoint>) : DstPointsListUiState()
-    data class Error(val message: String, val isNetworkError: Boolean = false) : DstPointsListUiState()
+sealed class DstPointListUiState {
+    data object Loading : DstPointListUiState()
+    data class Success(val dstPointList: List<DstPoint>) : DstPointListUiState()
+    data class Error(val message: String, val isNetworkError: Boolean = false) : DstPointListUiState()
 }
 
 /**
  * ViewModel экрана со списком точек выгрузки бетона. Реагирует на глобальные события аутентификации
  * через [authEventBus] для корректного сброса состояния при выходе.»
  *
- * @param getDstPointsListUseCase UseCase для получения списка точек выгрузки бетона.
+ * @param getDstPointListUseCase UseCase для получения списка точек выгрузки бетона.
  * @param authEventBus Шина событий для отслеживания выхода из системы.
  */
 @HiltViewModel
-class DstPointsListViewModel @Inject constructor(
-    private val getDstPointsListUseCase: GetDstPointsListUseCase,
+class DstPointListViewModel @Inject constructor(
+    private val getDstPointListUseCase: GetDstPointListUseCase,
     private val authEventBus: AuthEventBus
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<DstPointsListUiState>(DstPointsListUiState.Loading)
-    val uiState: StateFlow<DstPointsListUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<DstPointListUiState>(DstPointListUiState.Loading)
+    val uiState: StateFlow<DstPointListUiState> = _uiState.asStateFlow()
 
     init {
         Timber.d("DstPointViewModel инициализирован")
         viewModelScope.launch {
             authEventBus.logoutEvents.collect {
                 Timber.d("Получено событие выхода, сброс состояния на Loading")
-                _uiState.value = DstPointsListUiState.Loading
+                _uiState.value = DstPointListUiState.Loading
             }
         }
     }
 
     /**
-     * Загружает данные точки выгрузки бетона из репозитория.
+     * Загружает список точек выгрузки бетона из репозитория.
      *
      * При истёкшей сессии ничего не делает — [TokenInterceptor] уже обработал редирект на логин.
      * При других ошибках отображает сообщение пользователю.
      */
-    fun loadDstPointsList() {
-        Timber.d("Начало загрузки данных точки выгрузки бетона")
+    fun loadDstPointList() {
+        Timber.d("Начало загрузки списка точек выгрузки бетона")
         viewModelScope.launch {
-            _uiState.value = DstPointsListUiState.Loading
-            when (val result = getDstPointsListUseCase()) {
+            _uiState.value = DstPointListUiState.Loading
+            when (val result = getDstPointListUseCase()) {
                 is CustomResult.Success -> {
-                    Timber.d("Данные точки выгрузки бетона успешно загружены")
-                    _uiState.value = DstPointsListUiState.Success(result.data)
+                    Timber.d("Список точек выгрузки бетона успешно загружен")
+                    _uiState.value = DstPointListUiState.Success(result.data)
                 }
                 is CustomResult.Error -> {
                     val message = when (result.exception) {
@@ -81,15 +81,15 @@ class DstPointsListViewModel @Inject constructor(
                             return@launch
                         }
                         is NetworkConnectionException -> {
-                            Timber.w("Ошибка сети при загрузке данных точки выгрузки бетона")
+                            Timber.w("Ошибка сети при загрузке списка точек выгрузки бетона")
                             "Нет соединения с интернетом"
                         }
                         else -> {
-                            Timber.e(result.exception, "Неожиданная ошибка при загрузке данных точки выгрузки бетона")
+                            Timber.e(result.exception, "Неожиданная ошибка при загрузке списка точек выгрузки бетона")
                             result.exception.message ?: "Неизвестная ошибка"
                         }
                     }
-                    _uiState.value = DstPointsListUiState.Error(message)
+                    _uiState.value = DstPointListUiState.Error(message)
                 }
             }
         }

@@ -75,8 +75,8 @@ fun NavGraph(
                 onOpenPerson = {
                     navController.navigate(Routers.PersonInfo.route)
                 },
-                onDstPointsList = {
-                    navController.navigate(Routers.DstPointsList.route)
+                onDstPointList = {
+                    navController.navigate(Routers.DstPointList.route)
                 },
                 onArchive = {
                     navController.navigate(Routers.Archive.route) // Исправлено
@@ -92,11 +92,11 @@ fun NavGraph(
             )
         }
 
-        composable(Routers.DstPointsList.route) {
+        composable(Routers.DstPointList.route) {
             DstPointListScreen(
                 onBack = { navController.popBackStack() },
-                onDstPoint = { zoneId ->
-                    navController.navigate(Routers.DstPoint.createRoute(zoneId))
+                onProductList = { zoneId ->
+                    navController.navigate(Routers.ProductList.createRoute(zoneId))
                 },
                 viewModel = hiltViewModel()
             )
@@ -116,6 +116,24 @@ fun NavGraph(
             DstPointScreen(
                 onBack = { navController.popBackStack() },
                 zoneId = zoneId,
+                viewModel = hiltViewModel()
+            )
+        }
+
+        composable(
+            route = Routers.ProductList.route,
+            arguments = listOf(
+                navArgument(Routers.ProductList.ARG_ZONE_ID) {
+                    type = NavType.IntType
+                }
+            )
+        ) { backStackEntry ->
+            val zone = backStackEntry.arguments
+                ?.getInt(Routers.ProductList.ARG_ZONE_ID)
+                ?: return@composable
+            ProductListScreen(
+                onBack = { navController.popBackStack() },
+                zone = zone,
                 viewModel = hiltViewModel()
             )
         }

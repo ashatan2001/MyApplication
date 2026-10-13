@@ -3,7 +3,7 @@ package com.example.domain.usecase
 import com.example.domain.exception.AppException
 import com.example.domain.exception.DstPointNotFoundException
 import com.example.domain.model.DstPoint
-import com.example.domain.repository.DstPointsRepository
+import com.example.domain.repository.DstPointRepository
 import com.example.domain.util.CustomResult
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -11,18 +11,18 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * Use-case для получения списка точек выгрузки бетона.
  *
- * Инкапсулирует логику запроса списка точек выгрузки из [com.example.domain.repository.DstPointsRepository]
+ * Инкапсулирует логику запроса списка точек выгрузки из [com.example.domain.repository.DstPointRepository]
  * и оборачивает результат в [CustomResult] для безопасной обработки ошибок на уровне Presentation.
  *
  * @param repository Репозиторий для работы со списком точек выгрузки бетона.
  */
-class GetDstPointsListUseCase @Inject constructor(
-    private val repository: DstPointsRepository
+class GetDstPointListUseCase @Inject constructor(
+    private val repository: DstPointRepository
 ) {
     suspend operator fun invoke(): CustomResult<List<DstPoint>> {
         return try {
-            val dstPointsList = repository.getDstPointsList()
-            CustomResult.Success(dstPointsList)
+            val dstPointList = repository.getDstPointList()
+            CustomResult.Success(dstPointList)
         } catch (e: CancellationException) {
             throw e
         } catch (e: DstPointNotFoundException) {
