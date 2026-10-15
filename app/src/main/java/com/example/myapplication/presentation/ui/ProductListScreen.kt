@@ -131,8 +131,11 @@ fun ProductListScreen(
             selectedProduct?.let { product ->
                 CreateTaskDialog(
                     product = product,
-                    onDismiss = viewModel::onDialogDismiss,
-                    onSubmit = { qty -> viewModel.submitApplication(product, qty) }
+                    zone = zone,
+                    onDismiss = { viewModel.onDialogDismiss() },
+                    onSubmit = { quantity, pallete ->
+                        viewModel.submitApplication(zone, product, quantity, pallete)
+                    }
                 )
             }
         }

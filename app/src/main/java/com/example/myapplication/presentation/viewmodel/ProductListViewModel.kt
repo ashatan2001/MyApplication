@@ -6,6 +6,9 @@ import com.example.domain.event.AuthEventBus
 import com.example.domain.exception.NetworkConnectionException
 import com.example.domain.exception.SessionExpiredDomainException
 import com.example.domain.model.Product
+import com.example.domain.model.TaskRequest
+import com.example.domain.model.TaskResult
+import com.example.domain.usecase.CreateTaskUseCase
 import com.example.domain.usecase.GetProductListUseCase
 import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,11 +47,16 @@ sealed class ProductListUiState {
 @HiltViewModel
 class ProductListViewModel @Inject constructor(
     private val getProductListUseCase: GetProductListUseCase,
+    private val createTaskUseCase: CreateTaskUseCase,
     private val authEventBus: AuthEventBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProductListUiState>(ProductListUiState.Loading)
     val uiState: StateFlow<ProductListUiState> = _uiState.asStateFlow()
+
+    private val _taskResult = MutableStateFlow<TaskResult?>(null)
+    val taskResult: StateFlow<TaskResult?> = _taskResult.asStateFlow()
+
 
     init {
         Timber.d("ProductViewModel инициализирован")
@@ -108,13 +116,27 @@ class ProductListViewModel @Inject constructor(
         _selectedProduct.value = null
     }
 
-    fun submitApplication(product: Product, quantity: Int) {
+    fun submitApplication(zone: Int, product: Product, quantity: Float, pallete: String?) {
         viewModelScope.launch {
-            Timber.d("Отправка заявки: продукт=${product.name}, кол-во=$quantity")
-            // TODO: Вызов UseCase: createApplicationUseCase(product.id, quantity, comment)
+            // Создаем доменную модель
+            val taskRequest = TaskRequest(
+                quantity = quantity,
+                zone = zone,
+                pallete = pallete,
+                product = product.id
+            )
 
-            // Закрываем диалог после успешной отправки
-            _selectedProduct.value = null
+            when (val result = createTaskUseCase(taskRequest)) {
+                is CustomResult.Success -> {
+                    Timber.d("Заявка создана: ${result.data}")
+                    _taskResult.value = result.data
+                    _selectedProduct.value = null
+                }
+                is CustomResult.Error -> {
+                    Timber.e(result.exception, "Ошибка при создании заявки")
+                    // Обработка ошибки
+                }
+            }
         }
     }
 }
