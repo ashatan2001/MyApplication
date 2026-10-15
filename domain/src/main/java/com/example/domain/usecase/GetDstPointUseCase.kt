@@ -30,7 +30,7 @@ class GetDstPointUseCase @Inject constructor(
         } catch (e: Exception) {
             CustomResult.Error(
                 AppException(
-                    message = "Failed to get dst point with zoneId=$zoneId",
+                    message = "Ошибка при получении точки выгрузки: $zoneId",
                     cause = e
                 )
             )

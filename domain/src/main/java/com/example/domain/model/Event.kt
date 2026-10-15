@@ -15,7 +15,7 @@ import java.time.LocalDateTime
  * @property text Текст события
  */
 data class Event(
-    val id: Int,
+    val id: Long,
     val date: LocalDateTime,
     val person: Person?,
     val equipment: Equipment?,

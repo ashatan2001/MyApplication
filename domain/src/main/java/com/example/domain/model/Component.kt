@@ -10,7 +10,7 @@ package com.example.domain.model
  */
 
 data class Component (
-    val id: Int,
+    val id: Long,
     val name: String,
     val number: String?,
     val quantity: Float?

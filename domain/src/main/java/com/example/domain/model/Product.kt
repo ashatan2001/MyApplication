@@ -14,7 +14,7 @@ package com.example.domain.model
 data class Product (
     val zone: Int,
     val department: String,
-    val id: Int,
+    val id: Long,
     val name: String,
     val number: String?,
     val quantity: Float?,

@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 @OptIn(InternalSerializationApi::class)
 @Serializable
 data class HandLoadDto (
-    @SerialName("LoadID") val id: Int,
+    @SerialName("LoadID") val id: Long,
     @SerialName("LoadDate") val date: String,
     @SerialName("WPName") val workPlaceName: String? = null,
     @SerialName("Status") val status: Boolean? = null,

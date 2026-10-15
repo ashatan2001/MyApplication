@@ -6,7 +6,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -15,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.example.domain.model.Product
 
 @Composable
-fun CreateApplicationDialog(
+fun CreateTaskDialog(
     product: Product,
     onDismiss: () -> Unit,
     onSubmit: (quantity: Int) -> Unit

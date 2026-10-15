@@ -178,6 +178,12 @@ object NetworkModule {
     fun provideProductApi(@AuthRetrofit retrofit: Retrofit): ProductApi =
         retrofit.create(ProductApi::class.java)
 
+    /** API для работы с заявками. */
+    @Provides
+    @Singleton
+    fun provideTaskApi(@AuthRetrofit retrofit: Retrofit): TaskApi =
+        retrofit.create(TaskApi::class.java)
+
     /** API для получения продуктов. */
     @Provides
     @Singleton

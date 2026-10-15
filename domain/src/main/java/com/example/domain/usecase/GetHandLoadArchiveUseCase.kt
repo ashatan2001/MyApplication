@@ -37,7 +37,7 @@ class GetHandLoadArchiveUseCase @Inject constructor(
         } catch (e: Exception) {
             CustomResult.Error(
                 AppException(
-                    message = "Failed to get hand load archive",
+                    message = "Ошибка при получении архива ручных отгрузок",
                     cause = e
                 )
             )

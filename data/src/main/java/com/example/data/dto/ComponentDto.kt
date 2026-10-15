@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 @OptIn(InternalSerializationApi::class)
 @Serializable
 data class ComponentDto (
-    @SerialName("CompID") val id: Int,
+    @SerialName("CompID") val id: Long,
     @SerialName("CompNo") val number: String,
     @SerialName("CompName") val name: String,
     @SerialName("CompQty") val quantity: Float,

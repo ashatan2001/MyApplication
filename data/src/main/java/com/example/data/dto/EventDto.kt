@@ -21,7 +21,7 @@ import kotlinx.serialization.Serializable
 @OptIn(InternalSerializationApi::class)
 @Serializable
 data class EventDto (
-    @SerialName("EventID") val id: Int,
+    @SerialName("EventID") val id: Long,
     @SerialName("EventDate") val date: String,
     @SerialName("Person") val person: PersonDto? = null,
     @SerialName("Eq") val equipment: EquipmentDto? = null,

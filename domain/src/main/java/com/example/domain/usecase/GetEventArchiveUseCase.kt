@@ -37,7 +37,7 @@ class GetEventArchiveUseCase @Inject constructor(
         } catch (e: Exception) {
             CustomResult.Error(
                 AppException(
-                    message = "Failed to get event archive",
+                    message = "Ошибка при получении архива событий",
                     cause = e
                 )
             )

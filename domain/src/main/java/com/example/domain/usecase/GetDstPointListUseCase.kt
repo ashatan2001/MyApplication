@@ -32,7 +32,7 @@ class GetDstPointListUseCase @Inject constructor(
         } catch (e: Exception) {
             CustomResult.Error(
                 AppException(
-                    message = "Failed to get dst points list",
+                    message = "Ошибка при получении списка точек выгрузки бетона",
                     cause = e
                 )
             )

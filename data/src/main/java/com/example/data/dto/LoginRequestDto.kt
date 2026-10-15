@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  * @property username Логин пользователя.
  * @property password Пароль пользователя.
  */
-@OptIn(InternalSerializationApi::class) // <= kotlinx.serialization (1.6+)
+@OptIn(InternalSerializationApi::class)
 @Serializable
 data class LoginRequestDto(
     val username: String,

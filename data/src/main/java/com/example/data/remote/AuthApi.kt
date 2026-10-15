@@ -28,14 +28,14 @@ interface AuthApi {
      * Обновление токена сессии.
      *
      * Вызывается из [com.example.data.network.TokenInterceptor] при получении 401/419.
-     * Возвращает [Unit], так как сервер не передаёт тело при успехе (204).
+     * @return [Unit], так как сервер не передаёт тело при успехе (204).
      */
     @GET("auth/get-token")
     suspend fun refreshToken(): Response<Unit>
 
     /**
      * Выход из системы (инвалидация сессии на сервере).
-     * Возвращает [Unit], так как тело ответа не требуется.
+     * @return [Unit], так как тело ответа не требуется.
      */
     @POST("auth/logout")
     suspend fun logout(): Response<Unit>

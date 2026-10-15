@@ -21,7 +21,7 @@ import kotlinx.serialization.Serializable
 @OptIn(InternalSerializationApi::class)
 @Serializable
 data class PersonDto(
-    @SerialName("PersonID") val id: Int,
+    @SerialName("PersonID") val id: String,
     @SerialName("FIO") val fullName: String,
     @SerialName("Position") val position: String? = null,
     @SerialName("PositionID") val positionId: Int? = null,

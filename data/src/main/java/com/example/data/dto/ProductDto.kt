@@ -21,7 +21,7 @@ import kotlinx.serialization.Serializable
 data class ProductDto (
     @SerialName("ZoneNo") val zone: Int,
     @SerialName("DepartmentID") val department: String,
-    @SerialName("ProductID") val id: Int,
+    @SerialName("ProductID") val id: Long,
     @SerialName("ProductName") val name: String,
     @SerialName("ProductNo") val number: String? = null,
     @SerialName("DefQty") val quantity: Float? = null,

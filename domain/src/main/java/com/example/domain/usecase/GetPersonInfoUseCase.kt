@@ -24,7 +24,10 @@ class GetPersonInfoUseCase @Inject constructor(
         } catch (e: AppException) {
             CustomResult.Error(e)
         } catch (e: Exception) {
-            CustomResult.Error(AppException(message = "Failed to get current user", cause = e))
+            CustomResult.Error(AppException(
+                message = "Ошибка при получении текущего авторизированного пользователя",
+                cause = e)
+            )
         }
     }
 }

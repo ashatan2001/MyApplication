@@ -11,7 +11,7 @@ package com.example.domain.model
  * @property isActive true, если учётная запись не заблокирована.
  */
 data class Person(
-    val id: Int,
+    val id: String,
     val fullName: String,
     val position: String?,
     val positionId: Int?,

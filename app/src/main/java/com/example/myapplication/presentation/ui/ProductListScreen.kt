@@ -129,7 +129,7 @@ fun ProductListScreen(
             }
 
             selectedProduct?.let { product ->
-                CreateApplicationDialog(
+                CreateTaskDialog(
                     product = product,
                     onDismiss = viewModel::onDialogDismiss,
                     onSubmit = { qty -> viewModel.submitApplication(product, qty) }
@@ -211,7 +211,6 @@ private fun TableHeader() {
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
 
-            // Стрелка — фиксированная (~10%)
             Spacer(modifier = Modifier.width(24.dp))
         }
     }

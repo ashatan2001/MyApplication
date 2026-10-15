@@ -15,7 +15,7 @@ import java.time.LocalDateTime
  */
 
 data class HandLoad (
-    val id: Int,
+    val id: Long,
     val date: LocalDateTime,
     val workPlaceName: String?,
     val status: Boolean?,
