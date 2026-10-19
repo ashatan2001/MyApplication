@@ -5,7 +5,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -23,10 +22,17 @@ import com.example.domain.model.DstPoint
 import com.example.myapplication.presentation.viewmodel.DstPointListUiState
 import com.example.myapplication.presentation.viewmodel.DstPointListViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Экран списка точек выгрузки бетона.
+ *
+ * Отображает список доступных зон в виде таблицы с закрепленным заголовком.
+ * Удален собственный [Scaffold], так как навигация и заголовок предоставляются [MainShell].
+ *
+ * @param onProductList Колбэк, вызываемый при выборе точки выгрузки, передает ID зоны.
+ * @param viewModel [DstPointListViewModel] для управления загрузкой списка точек.
+ */
 @Composable
 fun DstPointListScreen(
-    onBack: () -> Unit,
     onProductList: (Int) -> Unit,
     viewModel: DstPointListViewModel = hiltViewModel()
 ) {
@@ -36,118 +42,62 @@ fun DstPointListScreen(
         viewModel.loadDstPointList()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("Список точек выгрузки бетона")
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.Menu, contentDescription = "Меню")
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val state = uiState) {
+            is DstPointListUiState.Loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            is DstPointListUiState.Success -> {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    stickyHeader { TableHeader() }
+                    if (state.dstPointList.isEmpty()) {
+                        item {
+                            Text(
+                                text = "Список точек выгрузки бетона пуст",
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    } else {
+                        items(items = state.dstPointList, key = { point -> point.zoneId }) { point ->
+                            DstPointRow(dstPoint = point, onClick = { onProductList(point.zoneId) })
+                            HorizontalDivider()
+                        }
                     }
                 }
-            )
-        }
-    ) { innerPadding ->
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (val state = uiState) {
-
-                is DstPointListUiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+            }
+            is DstPointListUiState.Error -> {
+                Column(
+                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(48.dp)
                     )
-                }
-
-                is DstPointListUiState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // Sticky header - остается видимым при прокрутке
-                        stickyHeader {
-                            TableHeader()
-                        }
-
-                        if (state.dstPointList.isEmpty()) {
-                            item {
-                                Text(
-                                    text = "Список точек выгрузки бетона пуст",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        } else {
-                            items(
-                                items = state.dstPointList,
-                                key = { point -> point.zoneId }
-                            ) { point ->
-                                DstPointRow(
-                                    dstPoint = point,
-                                    onClick = { onProductList(point.zoneId) }
-                                )
-                                HorizontalDivider()
-                            }
-                        }
-                    }
-                }
-
-                is DstPointListUiState.Error -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(48.dp)
-                        )
-
-                        Text(
-                            text = state.message,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-
-                        Button(
-                            onClick = {
-                                viewModel.loadDstPointList()
-                            }
-                        ) {
-                            Text("Повторить")
-                        }
-                    }
+                    Text(text = state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
+                    Button(onClick = { viewModel.loadDstPointList() }) { Text("Повторить") }
                 }
             }
         }
     }
 }
 
+/**
+ * Отдельная строка списка точек выгрузки.
+ * Реагирует на нажатие и вызывает переданный колбэк.
+ *
+ * @param dstPoint Модель данных точки выгрузки.
+ * @param onClick Действие при нажатии на строку.
+ */
 @Composable
-private fun DstPointRow(
-    dstPoint: DstPoint,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick
-
-    ) {
+private fun DstPointRow(dstPoint: DstPoint, onClick: () -> Unit) {
+    Surface(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 44.dp)
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -157,7 +107,6 @@ private fun DstPointRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
@@ -168,16 +117,14 @@ private fun DstPointRow(
     }
 }
 
+/**
+ * Закрепленный заголовок таблицы списка точек выгрузки.
+ */
 @Composable
 private fun TableHeader() {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Surface(color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -189,8 +136,6 @@ private fun TableHeader() {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-
-            // Стрелка — фиксированная (~10%)
             Spacer(modifier = Modifier.width(24.dp))
         }
     }

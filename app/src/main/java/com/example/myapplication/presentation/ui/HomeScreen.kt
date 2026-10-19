@@ -1,6 +1,5 @@
 package com.example.myapplication.presentation.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -9,115 +8,51 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.myapplication.presentation.viewmodel.HomeEvent
 import com.example.myapplication.presentation.viewmodel.HomeUiState
 import com.example.myapplication.presentation.viewmodel.HomeViewModel
-import kotlinx.coroutines.launch
 
 /**
- * Главный экран приложения с приветствием и боковым меню.
+ * Экран главной панели управления (Dashboard).
  *
- * @param onOpenPerson Навигация к экрану профиля пользователя.
- * @param onLogout Колбэк для выхода из системы (вызывается из бокового меню).
- * @param viewModel [HomeViewModel] для управления данными пользователя.
+ * Упрощен до отображения только контента, так как [Scaffold] и панели навигации
+ * теперь управляются на уровне [MainShell]. Отвечает за загрузку данных пользователя
+ * и отображение приветствия или состояния ошибки.
+ *
+ * @param viewModel [HomeViewModel] для управления состоянием и бизнес-логикой экрана.
  */
 @Composable
 fun HomeScreen(
-    onOpenPerson: () -> Unit,
-    onDstPointList: () -> Unit,
-    onArchive: () -> Unit,
-    onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.loadHomeData()
-
         viewModel.events.collect { event ->
+            // События глобальной навигации (например, выход) обрабатываются на уровне MainShell
             when (event) {
-                is HomeEvent.NavigateToLogin -> {
-                    onLogout()
-                }
+                is HomeEvent.NavigateToLogin -> { /* Обработано в MainShell */ }
             }
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            DrawerContent(
-                uiState = uiState,
-                onCloseDrawer = { scope.launch { drawerState.close() } },
-                onOpenPerson = onOpenPerson,
-                onDstPointList = onDstPointList,
-                onArchive = onArchive,
-                onLogout = {
-                    scope.launch { drawerState.close() }
-                    viewModel.logout { }
-                }
-            )
-        },
-        // Жесты для открытия меню доступны только в состоянии успеха.
-        // При загрузке или ошибке меню не содержит полезных действий.
-        gesturesEnabled = uiState is HomeUiState.Success
-    ) {
-        Scaffold(
-            topBar = {
-                HomeTopBar(
-                    onMenuClick = {
-                        scope.launch {
-                            if (drawerState.isClosed) drawerState.open() else drawerState.close()
-                        }
-                    }
-                )
-            }
-        ) { innerPadding ->
-            HomeContent(
-                uiState = uiState,
-                modifier = Modifier.padding(innerPadding)
-            )
-        }
-    }
+    HomeContent(uiState = uiState)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Отображение контента главного экрана в зависимости от текущего состояния UI.
+ *
+ * @param uiState Текущее состояние экрана ([HomeUiState]).
+ */
 @Composable
-private fun HomeTopBar(onMenuClick: () -> Unit) {
-    TopAppBar(
-        title = { Text("Главная") },
-        navigationIcon = {
-            IconButton(onClick = onMenuClick) {
-                Icon(Icons.Default.Menu, contentDescription = "Меню")
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            titleContentColor = MaterialTheme.colorScheme.onPrimary,
-            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-        )
-    )
-}
-
-@Composable
-private fun HomeContent(
-    uiState: HomeUiState,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+private fun HomeContent(uiState: HomeUiState) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         when (uiState) {
             is HomeUiState.Loading -> CircularProgressIndicator()
             is HomeUiState.Success -> {
@@ -125,10 +60,7 @@ private fun HomeContent(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        "Привет, ${uiState.personName}!",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
+                    Text("Привет, ${uiState.personName}!", style = MaterialTheme.typography.headlineMedium)
                 }
             }
             is HomeUiState.Error -> {
@@ -142,118 +74,9 @@ private fun HomeContent(
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(48.dp)
                     )
-                    Text(
-                        uiState.message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Text(uiState.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
-    }
-}
-
-/**
- * Содержимое бокового меню.
- *
- * Пункт "Профиль" активен только при наличии данных пользователя.
- */
-@Composable
-private fun DrawerContent(
-    uiState: HomeUiState,
-    onCloseDrawer: () -> Unit,
-    onOpenPerson: () -> Unit,
-    onDstPointList: () -> Unit,
-    onArchive: () -> Unit,
-    onLogout: () -> Unit
-) {
-    // Безопасное приведение: имя доступно только в состоянии успеха
-    val fullName = (uiState as? HomeUiState.Success)?.personName
-
-    ModalDrawerSheet {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Text(
-                "Меню",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            HorizontalDivider(modifier = Modifier.padding(bottom = 16.dp))
-
-            DrawerItem(
-                icon = Icons.Default.Person,
-                text = "Профиль",
-                enabled = fullName != null,
-                onClick = {
-                    onCloseDrawer()
-                    onOpenPerson()
-                }
-            )
-
-            DrawerItem(
-                icon = Icons.Default.LibraryAdd,
-                text = "Заказ бетона",
-                onClick = {
-                    onCloseDrawer()
-                    onDstPointList()
-                }
-            )
-
-            DrawerItem(
-                icon = Icons.Default.Archive,
-                text = "Архивы",
-                onClick = {
-                    onCloseDrawer()
-                    onArchive()
-                }
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            DrawerItem(
-                icon = Icons.AutoMirrored.Filled.ExitToApp,
-                text = "Выйти",
-                onClick = onLogout
-            )
-        }
-    }
-}
-
-/**
- * Элемент бокового меню.
- *
- * @param enabled Если false — элемент визуально приглушён и не реагирует на нажатия.
- */
-@Composable
-private fun DrawerItem(
-    icon: ImageVector,
-    text: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .then(if (enabled) Modifier.clickable { onClick() } else Modifier)
-            .alpha(if (enabled) 1f else 0.5f),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = if (enabled) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (enabled) MaterialTheme.colorScheme.onSurface
-            else MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }

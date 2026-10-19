@@ -2,7 +2,6 @@ package com.example.myapplication.presentation.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -21,10 +20,12 @@ import com.example.myapplication.presentation.viewmodel.PersonViewModel
 /**
  * Экран профиля пользователя.
  *
- * @param onBack Навигация назад на предыдущий экран.
+ * Верхняя панель с кнопкой "Назад" предоставляется глобальной оболочкой [MainShell],
+ * поэтому собственный [Scaffold] и [TopAppBar] здесь удалены.
+ *
+ * @param onBack Колбэк для возврата на предыдущий экран (обрабатывается [MainShell]).
  * @param viewModel [PersonViewModel] для загрузки данных пользователя.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonScreen(
     onBack: () -> Unit,
@@ -32,57 +33,40 @@ fun PersonScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Загрузка при первом входе на экран
+    // Загрузка данных при первом входе на экран
     LaunchedEffect(Unit) {
         viewModel.loadPersonData()
     }
 
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Профиль") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.Menu, contentDescription = "Меню")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            when (val state = uiState) {
-                is PersonUiState.Loading -> CircularProgressIndicator()
-                is PersonUiState.Success -> PersonContent(person = state.person)
-                is PersonUiState.Error -> {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-                            state.message,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Button(onClick = { viewModel.loadPersonData() }) {
-                            Text("Повторить")
-                        }
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        when (val state = uiState) {
+            is PersonUiState.Loading -> {
+                CircularProgressIndicator()
+            }
+            is PersonUiState.Success -> {
+                PersonContent(person = state.person)
+            }
+            is PersonUiState.Error -> {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Button(onClick = { viewModel.loadPersonData() }) {
+                        Text("Повторить")
                     }
                 }
             }
@@ -91,7 +75,9 @@ fun PersonScreen(
 }
 
 /**
- * Основной контент экрана профиля
+ * Основной контент экрана профиля.
+ *
+ * @param person Модель данных пользователя для отображения.
  */
 @Composable
 private fun PersonContent(person: Person) {
@@ -103,17 +89,15 @@ private fun PersonContent(person: Person) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Icon(
-            Icons.Default.Person,
+            imageVector = Icons.Default.Person,
             contentDescription = null,
             modifier = Modifier.size(100.dp),
             tint = MaterialTheme.colorScheme.primary
         )
-
         Text(
-            person.fullName,
+            text = person.fullName,
             style = MaterialTheme.typography.headlineMedium
         )
-
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -124,11 +108,11 @@ private fun PersonContent(person: Person) {
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                InfoRow("ID", person.id.toString())
-                InfoRow("Position", person.position.toString())
-                InfoRow("PositionId", person.positionId.toString())
-                InfoRow("isEmployee", person.isEmployee.toString())
-                InfoRow("isActive", person.isActive.toString())
+                InfoRow("ID", person.id)
+                InfoRow("Должность", person.position ?: "Не указана")
+                InfoRow("ID должности", person.positionId?.toString() ?: "Не указан")
+                InfoRow("Сотрудник", if (person.isEmployee == true) "Да" else "Нет")
+                InfoRow("Активен", if (person.isActive == true) "Да" else "Нет")
             }
         }
     }
@@ -136,6 +120,9 @@ private fun PersonContent(person: Person) {
 
 /**
  * Строка "ключ-значение" для отображения информации о пользователе.
+ *
+ * @param label Название поля.
+ * @param value Значение поля.
  */
 @Composable
 private fun InfoRow(label: String, value: String) {
@@ -144,12 +131,12 @@ private fun InfoRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            label,
+            text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            value,
+            text = value,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )

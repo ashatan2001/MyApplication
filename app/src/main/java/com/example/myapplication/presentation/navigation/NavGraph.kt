@@ -24,6 +24,7 @@ import com.example.myapplication.presentation.viewmodel.SessionViewModel
  * Автоматически перенаправляет пользователя в зависимости от [AuthState]:
  * [AuthState.Authenticated] → [Routers.Home]
  * [AuthState.Unauthenticated] → [Routers.UserAuth]
+ *
  * @param navController Контроллер навигации из [androidx.navigation.compose.rememberNavController].
  * @param onLogout Колбэк для выхода (вызывается из бокового меню HomeScreen).
  * @param viewModel [SessionViewModel] для наблюдения за состоянием сессии.
@@ -36,11 +37,10 @@ fun NavGraph(
 ) {
     val authState by viewModel.authState.collectAsStateWithLifecycle()
 
-    // Реактивная навигация при изменении состояния сессии.
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                navController.navigateClearingBackStack(Routers.Home.route)
+                navController.navigateClearingBackStack("main_shell")
             }
             is AuthState.Unauthenticated -> {
                 navController.navigateClearingBackStack(Routers.UserAuth.route)
@@ -54,10 +54,7 @@ fun NavGraph(
         startDestination = Routers.Splash.route
     ) {
         composable(Routers.Splash.route) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
@@ -65,84 +62,13 @@ fun NavGraph(
         composable(Routers.UserAuth.route) {
             AuthScreen(
                 onNavigateToHome = {
-                    navController.navigateClearingBackStack(Routers.Home.route)
+                    navController.navigateClearingBackStack("main_shell")
                 }
             )
         }
 
-        composable(Routers.Home.route) {
-            HomeScreen(
-                onOpenPerson = {
-                    navController.navigate(Routers.PersonInfo.route)
-                },
-                onDstPointList = {
-                    navController.navigate(Routers.DstPointList.route)
-                },
-                onArchive = {
-                    navController.navigate(Routers.Archive.route) // Исправлено
-                },
-                onLogout = onLogout
-            )
-        }
-
-        composable(Routers.PersonInfo.route) {
-            PersonScreen(
-                onBack = { navController.popBackStack() },
-                viewModel = hiltViewModel()
-            )
-        }
-
-        composable(Routers.DstPointList.route) {
-            DstPointListScreen(
-                onBack = { navController.popBackStack() },
-                onProductList = { zoneId ->
-                    navController.navigate(Routers.ProductList.createRoute(zoneId))
-                },
-                viewModel = hiltViewModel()
-            )
-        }
-
-        composable(
-            route = Routers.DstPoint.route,
-            arguments = listOf(
-                navArgument(Routers.DstPoint.ARG_ZONE_ID) {
-                    type = NavType.IntType
-                }
-            )
-        ) { backStackEntry ->
-            val zoneId = backStackEntry.arguments
-                ?.getInt(Routers.DstPoint.ARG_ZONE_ID)
-                ?: return@composable
-            DstPointScreen(
-                onBack = { navController.popBackStack() },
-                zoneId = zoneId,
-                viewModel = hiltViewModel()
-            )
-        }
-
-        composable(
-            route = Routers.ProductList.route,
-            arguments = listOf(
-                navArgument(Routers.ProductList.ARG_ZONE_ID) {
-                    type = NavType.IntType
-                }
-            )
-        ) { backStackEntry ->
-            val zone = backStackEntry.arguments
-                ?.getInt(Routers.ProductList.ARG_ZONE_ID)
-                ?: return@composable
-            ProductListScreen(
-                onBack = { navController.popBackStack() },
-                zone = zone,
-                viewModel = hiltViewModel()
-            )
-        }
-
-        composable(Routers.Archive.route) {
-            ArchiveScreen(
-                onBack = { navController.popBackStack() },
-                viewModel = hiltViewModel()
-            )
+        composable("main_shell") {
+            MainShell(onLogout = onLogout)
         }
     }
 }

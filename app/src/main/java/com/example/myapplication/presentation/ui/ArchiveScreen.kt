@@ -30,100 +30,78 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArchiveScreen(
-    onBack: () -> Unit,
     viewModel: ArchiveViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Просмотр архивов", fontSize = 18.sp) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.surface
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        ) {
-            ArchiveForm(
-                state = state,
-                onTypeChange = viewModel::updateType,
-                onRecordsChange = viewModel::updateRecords,
-                onLoadClick = viewModel::loadArchive,
-                onShowStartPicker = { showStartPicker = true },
-                onShowEndPicker = { showEndPicker = true }
-            )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        ArchiveForm(
+            state = state,
+            onTypeChange = viewModel::updateType,
+            onRecordsChange = viewModel::updateRecords,
+            onLoadClick = viewModel::loadArchive,
+            onShowStartPicker = { showStartPicker = true },
+            onShowEndPicker = { showEndPicker = true }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (state.isLoading && state.rows.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
-                }
-            } else if (state.error != null && state.rows.isEmpty()) {
-                Text(
-                    text = state.error!!,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.fillMaxWidth().padding(12.dp),
-                    fontSize = 13.sp
-                )
-            } else {
-                ArchiveTable(
-                    type = state.selectedType,
-                    rows = state.rows,
-                    isLoadingMore = state.isLoadingMore,
-                    onLoadMore = viewModel::loadNextPage,
-                    hasNextPage = state.currentPage < state.totalPages
-                )
+        if (state.isLoading && state.rows.isEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(modifier = Modifier.size(32.dp))
             }
+        } else if (state.error != null && state.rows.isEmpty()) {
+            Text(
+                text = state.error!!,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                fontSize = 13.sp
+            )
+        } else {
+            ArchiveTable(
+                type = state.selectedType,
+                rows = state.rows,
+                isLoadingMore = state.isLoadingMore,
+                onLoadMore = viewModel::loadNextPage,
+                hasNextPage = state.currentPage < state.totalPages
+            )
+        }
 
-            if (state.error != null && state.rows.isNotEmpty()) {
-                Snackbar(
-                    modifier = Modifier.padding(top = 4.dp),
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    action = { TextButton(onClick = { viewModel.clearError() }) { Text("OK", fontSize = 12.sp) } }
-                ) {
-                    Text(state.error!!, fontSize = 12.sp)
-                }
+        if (state.error != null && state.rows.isNotEmpty()) {
+            Snackbar(
+                modifier = Modifier.padding(top = 4.dp),
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                action = { TextButton(onClick = { viewModel.clearError() }) { Text("OK", fontSize = 12.sp) } }
+            ) {
+                Text(state.error!!, fontSize = 12.sp)
             }
         }
+    }
 
-        // Диалог выбора даты и времени начала
-        if (showStartPicker) {
-            NativeDateTimePickerDialog(
-                initialDateMillis = parseToMillis(state.startDate),
-                onDismiss = { showStartPicker = false },
-                onDateTimeSelected = { formattedString ->
-                    viewModel.updateStartDate(formattedString)
-                    showStartPicker = false
-                }
-            )
-        }
-
-        // Диалог выбора даты и времени окончания
-        if (showEndPicker) {
-            NativeDateTimePickerDialog(
-                initialDateMillis = parseToMillis(state.endDate),
-                onDismiss = { showEndPicker = false },
-                onDateTimeSelected = { formattedString ->
-                    viewModel.updateEndDate(formattedString)
-                    showEndPicker = false
-                }
-            )
-        }
+    if (showStartPicker) {
+        NativeDateTimePickerDialog(
+            initialDateMillis = parseToMillis(state.startDate),
+            onDismiss = { showStartPicker = false },
+            onDateTimeSelected = { formattedString ->
+                viewModel.updateStartDate(formattedString)
+                showStartPicker = false
+            }
+        )
+    }
+    if (showEndPicker) {
+        NativeDateTimePickerDialog(
+            initialDateMillis = parseToMillis(state.endDate),
+            onDismiss = { showEndPicker = false },
+            onDateTimeSelected = { formattedString ->
+                viewModel.updateEndDate(formattedString)
+                showEndPicker = false
+            }
+        )
     }
 }
 
