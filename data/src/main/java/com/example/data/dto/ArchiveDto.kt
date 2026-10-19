@@ -5,9 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные архива в автоматизированной системы.
- *
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.DstPointMapper].
+ * DTO модель архива, получаемая от сервера
  *
  * @property startDate Дата и время начала периода
  * @property endDate Дата и время окончания периода

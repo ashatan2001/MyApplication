@@ -20,6 +20,9 @@ import dagger.hilt.components.SingletonComponent
 abstract class RepositoryModule {
 
     @Binds
+    abstract fun bindQueueRepository(impl: QueueRepositoryImpl): QueueRepository
+    
+    @Binds
     abstract fun bindTaskRepository(impl: TaskRepositoryImpl): TaskRepository
 
     @Binds

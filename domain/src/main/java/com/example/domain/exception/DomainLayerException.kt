@@ -51,6 +51,14 @@ class DstPointNotFoundException(
 ) : DomainException(errorCode = 2002, message = message, cause = cause)
 
 /**
+ * Точка выгрузки бетона не найдена в системе.
+ */
+class LoadNotFoundException(
+    message: String = "Заявки на отгрузку не найдены",
+    cause: Throwable? = null
+) : DomainException(errorCode = 2002, message = message, cause = cause)
+
+/**
  * Ошибка валидации пользовательского ввода.
  *
  * @param field Название поля, не прошедшего валидацию (например, "login", "password").

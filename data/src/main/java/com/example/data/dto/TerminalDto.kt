@@ -5,9 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные терминала от сервера.
- *
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.TerminalMapper].
+ * DTO модель терминала, получаемая от сервера
  *
  * @property id Код терминала
  * @property number Номер терминала

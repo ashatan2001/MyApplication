@@ -39,6 +39,9 @@ sealed class Routers(val route: String) {
         }
     }
 
+    /** Экран мониторинга очереди заявок на отгрузку */
+    data object Queue : Routers("queue")
+
     /** Экран просмотра архивов с выпадающим списком типов. */
     data object Archive : Routers("archive")
 }

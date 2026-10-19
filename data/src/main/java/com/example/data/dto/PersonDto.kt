@@ -5,11 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные пользователя от сервера.
- *
- * Сервер возвращает поля с именами в стиле PascalCase и историческими
- * названиями ("FIO" вместо "userName", "PersonID" вместо "id").
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.PersonMapper].
+ * DTO модель пользователя, получаемая от сервера
  *
  * @property id Уникальный идентификатор пользователя.
  * @property fullName ФИО пользователя (в серверном ответе — "FIO").

@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные ручной отгрузки из архива системы.
+ * DTO модель ручной отгрузки, получаемая от сервера.
  *
  * @property id Идентификатор ручной отгрузки в базе данных.
  * @property date Дата и время возникновения события.

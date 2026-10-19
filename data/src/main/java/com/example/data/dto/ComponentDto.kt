@@ -5,9 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные компонента от сервера.
- *
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.ComponentMapper].
+ * DTO модель компонента, получаемая от сервера
  *
  * @property id Код компонента
  * @property number Номер компонента

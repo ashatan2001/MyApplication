@@ -5,9 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные события из архива системы.
- *
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.EventMapper].
+ * DTO модель события, получаемая от сервера
  *
  * @property id идентификатор события в базе данных.
  * @property date Дата и время.

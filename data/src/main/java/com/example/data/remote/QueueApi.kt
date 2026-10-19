@@ -1,12 +1,13 @@
 package com.example.data.remote
 
+import com.example.data.dto.LoadDto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
 
 /**
- * Retrofit API для операций c очередью транспортных средств на отгрузочных терминалах.
+ * Retrofit API для управления очередью транспортных средств на отгрузочных терминалах.
  *
  * Все методы возвращают [Response], чтобы [safeApiCall]
  * мог получить доступ к коду ответа и телу ошибки для детального маппинга исключений.
@@ -15,7 +16,7 @@ interface QueueApi {
     /**
      * Мониторинг текущего состояния очереди на отгрузку.
      *
-     * @return [Response<List<Queue>>] с данными продукта, разрешенного для отгрузки в заданную точку выгрузки.
+     * @return [Response<List<LoadDto>>] с данными заявки, находящейся в очереди.
      *
      * Коды ответов сервера:
      * - 200 — успешное выполнение команды (в теле запроса JSON)
@@ -24,16 +25,16 @@ interface QueueApi {
      * - 401 — необходимо выполнить вход в систему
      * - 403 — пользователь не имеет необходимых прав на просмотр информации об очереди на отгрузку
      * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
-     * - 5xx — внутренняя ошибка получения информации о продуктах, разрешенных для заданной зоны
+     * - 5xx — внутренняя ошибка сервера
      */
     @GET("api/queue")
-    suspend fun getQueue(): Response<Unit>
+    suspend fun getLoads(): Response<List<LoadDto>>
 
     /**
      * Мониторинг текущего состояния очереди на отгрузку по коду отгрузочного терминала.
      *
      * @param terminalId Код отгрузочного терминала.
-     * @return [Response<List<Queue>>] с данными продукта, разрешенного для отгрузки в заданную точку выгрузки.
+     * @return [Response<List<LoadDto>>] с данными заявки, находящейся в очереди.
      *
      * Коды ответов сервера:
      * - 200 — успешное выполнение команды (в теле запроса JSON)
@@ -42,16 +43,16 @@ interface QueueApi {
      * - 401 — необходимо выполнить вход в систему
      * - 403 — пользователь не имеет необходимых прав на просмотр информации об очереди на отгрузку
      * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
-     * - 5xx — внутренняя ошибка получения информации о продуктах, разрешенных для заданной зоны
+     * - 5xx — внутренняя ошибка сервера
      */
     @GET("/api/queue/{termid}")
-    suspend fun getQueueByTerminalId(@Path("termid") terminalId: String): Response<Unit>
+    suspend fun getLoadsByTerminalId(@Path("termid") terminalId: String): Response<List<LoadDto>>
 
     /**
      * Мониторинг текущего состояния очереди на отгрузку по номеру отгрузочного терминала.
      *
      * @param terminalNum Номер отгрузочного терминала.
-     * @return [Response<List<Queue>>] с данными продукта, разрешенного для отгрузки в заданную точку выгрузки.
+     * @return [Response<List<LoadDto>>] с данными заявки, находящейся в очереди.
      *
      * Коды ответов сервера:
      * - 200 — успешное выполнение команды (в теле запроса JSON)
@@ -60,9 +61,9 @@ interface QueueApi {
      * - 401 — необходимо выполнить вход в систему
      * - 403 — пользователь не имеет необходимых прав на просмотр информации об очереди на отгрузку
      * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
-     * - 5xx — внутренняя ошибка получения информации о продуктах, разрешенных для заданной зоны
+     * - 5xx — внутренняя ошибка сервера
      */
     @GET("/api/queue/byno/{termno}")
-    suspend fun getQueueByTerminalNum(@Path("termno") terminalNum: Int): Response<Unit>
+    suspend fun getLoadsByTerminalNum(@Path("termno") terminalNum: Int): Response<List<LoadDto>>
 
 }

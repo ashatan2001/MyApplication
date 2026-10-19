@@ -172,6 +172,12 @@ object NetworkModule {
     fun provideUserApi(@AuthRetrofit retrofit: Retrofit): PersonApi =
         retrofit.create(PersonApi::class.java)
 
+    /** API для получения точек выгрузки. */
+    @Provides
+    @Singleton
+    fun provideDstPointApi(@AuthRetrofit retrofit: Retrofit): DstPointApi =
+        retrofit.create(DstPointApi::class.java)
+
     /** API для получения продуктов. */
     @Provides
     @Singleton
@@ -184,11 +190,11 @@ object NetworkModule {
     fun provideTaskApi(@AuthRetrofit retrofit: Retrofit): TaskApi =
         retrofit.create(TaskApi::class.java)
 
-    /** API для получения продуктов. */
+    /** API для получения заявок на отгрузку, находящихся в очереди. */
     @Provides
     @Singleton
-    fun provideDstPointApi(@AuthRetrofit retrofit: Retrofit): DstPointApi =
-        retrofit.create(DstPointApi::class.java)
+    fun provideQueueApi(@AuthRetrofit retrofit: Retrofit): QueueApi =
+        retrofit.create(QueueApi::class.java)
 
     /** API для получения архивов системы. */
     @Provides

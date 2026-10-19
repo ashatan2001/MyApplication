@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryAdd
+import androidx.compose.material.icons.filled.PendingActions
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ fun MainShell(
     val isRootScreen = currentRoute in listOf(
         Routers.Home.route,
         Routers.DstPointList.route,
+        Routers.Queue.route,
         Routers.Archive.route
     )
 
@@ -72,6 +74,13 @@ fun MainShell(
                 },
                 onDstPointListClick = {
                     innerNavController.navigate(Routers.DstPointList.route) {
+                        popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onQueueClick = {
+                    innerNavController.navigate(Routers.Queue.route) {
                         popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
@@ -201,6 +210,7 @@ private fun MainBottomBar(
     currentRoute: String?,
     onHomeClick: () -> Unit,
     onDstPointListClick: () -> Unit,
+    onQueueClick: () -> Unit,
     onArchiveClick: () -> Unit
 ) {
     NavigationBar {
@@ -215,6 +225,12 @@ private fun MainBottomBar(
             label = { Text("Заказ") },
             selected = currentRoute == Routers.DstPointList.route || currentRoute?.startsWith("product_list") == true,
             onClick = onDstPointListClick
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.PendingActions, contentDescription = "Очередь") },
+            label = { Text("Очередь") },
+            selected = currentRoute == Routers.Queue.route,
+            onClick = onQueueClick
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Archive, contentDescription = "Архив") },
@@ -234,6 +250,7 @@ private fun MainBottomBar(
 private fun getScreenTitle(route: String?): String = when (route) {
     Routers.Home.route -> "Главная"
     Routers.DstPointList.route -> "Точки выгрузки"
+    Routers.Queue.route -> "Очередь заявок на отгрузку"
     Routers.Archive.route -> "Архивы"
     Routers.PersonInfo.route -> "Профиль"
     else -> "MyApplication"

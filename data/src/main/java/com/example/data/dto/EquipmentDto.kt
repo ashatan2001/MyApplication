@@ -5,9 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные оборудования.
- *
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.EquipmentMapper].
+ * DTO модель оборудования, получаемая от сервера
  *
  * @property id Идентификатор агрегата.
  * @property name Наименование агрегата.

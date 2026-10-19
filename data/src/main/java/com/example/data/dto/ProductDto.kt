@@ -5,9 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные продукта от сервера.
- *
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.ProductMapper].
+ * DTO модель продукта, получаемая от сервера
  *
  * @property zone Код зоны разгрузки бетона
  * @property department Код подразделения

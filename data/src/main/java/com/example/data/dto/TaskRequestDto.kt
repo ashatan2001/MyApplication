@@ -5,9 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные добавляемой заявки на отгрузку.
- *
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.DstPointMapper].
+ * DTO модель заявки, отправляемая серверу
  *
  * @property quantity Количество бетона.
  * @property zone Номер точки выгрузки бетона.

@@ -60,7 +60,7 @@ fun DstPointListScreen(
                         }
                     } else {
                         items(items = state.dstPointList, key = { point -> point.zoneId }) { point ->
-                            DstPointRow(dstPoint = point, onClick = { onProductList(point.zoneId) })
+                            TerminalRow(dstPoint = point, onClick = { onProductList(point.zoneId) })
                             HorizontalDivider()
                         }
                     }
@@ -94,7 +94,7 @@ fun DstPointListScreen(
  * @param onClick Действие при нажатии на строку.
  */
 @Composable
-private fun DstPointRow(dstPoint: DstPoint, onClick: () -> Unit) {
+private fun TerminalRow(dstPoint: DstPoint, onClick: () -> Unit) {
     Surface(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 16.dp, vertical = 6.dp),
@@ -110,7 +110,7 @@ private fun DstPointRow(dstPoint: DstPoint, onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -129,7 +129,7 @@ private fun TableHeader() {
         ) {
             Text(
                 text = "Наименование подразделения",
-                modifier = Modifier.weight(7f),
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,

@@ -5,9 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Данные точки выгрузки бетона от сервера.
- *
- * Маппинг в доменную модель выполняется в [com.example.data.mapper.DstPointMapper].
+ * DTO модель точки отгрузки бетона, получаемая от сервера
  *
  * @property zoneId Код зоны разгрузки бетона (поле ZoneNo).
  * @property zoneName Наименование подразделения.
