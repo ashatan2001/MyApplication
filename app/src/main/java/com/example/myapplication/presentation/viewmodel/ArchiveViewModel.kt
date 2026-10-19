@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.domain.event.AuthEventBus
 import com.example.domain.model.Archive
 import com.example.domain.model.Event
+import com.example.domain.model.HandLoad
 import com.example.domain.usecase.GetEventArchiveUseCase
 import com.example.domain.usecase.GetHandLoadArchiveUseCase
 import com.example.domain.util.CustomResult
@@ -127,6 +128,7 @@ class ArchiveViewModel @Inject constructor(
         return data.mapNotNull { item ->
             when (item) {
                 is Event -> ArchiveRow.EventRow(item)
+                is HandLoad -> ArchiveRow.HandLoadRow(item)
                 else -> null
             }
         }

@@ -1,12 +1,8 @@
 package com.example.data.remote
 
-import com.example.data.dto.LoginRequestDto
-import com.example.data.dto.LoginResponseDto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
-import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.POST
 import retrofit2.http.Path
 
 /**

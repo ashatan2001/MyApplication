@@ -61,7 +61,7 @@ class AuthRepositoryImpl @Inject constructor(
 
         // Сохраняем данные пользователя для отображения без повторного запроса
         val fullName = dto.fullName
-        localDataSource.saveUserName(fullName)
+        localDataSource.savePersonName(fullName)
         localDataSource.saveAuthState(true)
         Timber.d("Login successful for user: $fullName")
 
@@ -113,7 +113,7 @@ class AuthRepositoryImpl @Inject constructor(
         token?.let { jwt ->
             val userId = jwtParser.getUserIdFromToken(jwt)
             if (userId != null) {
-                localDataSource.saveUserId(userId)
+                localDataSource.savePersonId(userId)
                 Timber.d("UserId $userId extracted from JWT")
             } else {
                 Timber.w("Failed to extract userId from JWT")

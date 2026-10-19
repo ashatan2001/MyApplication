@@ -5,9 +5,7 @@ import com.example.data.dto.TaskResponseDto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
 import retrofit2.http.Body
-import retrofit2.http.GET
 import retrofit2.http.POST
-import retrofit2.http.Path
 
 /**
  * Retrofit API для операций c заявками на производство ЖБИ.

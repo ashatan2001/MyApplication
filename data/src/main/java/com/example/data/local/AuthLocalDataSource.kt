@@ -32,7 +32,7 @@ class AuthLocalDataSource @Inject constructor(
     private val USER_NAME_KEY = stringPreferencesKey("user_name")
 
 
-    suspend fun saveUserId(userId: Int) {
+    suspend fun savePersonId(userId: Int) {
         context.authDataStore.edit { it[USER_ID_KEY] = userId
         }
     }
@@ -41,7 +41,7 @@ class AuthLocalDataSource @Inject constructor(
         return context.authDataStore.data.first()[USER_ID_KEY]
     }
 
-    suspend fun saveUserName(userName: String) {
+    suspend fun savePersonName(userName: String) {
         context.authDataStore.edit { it[USER_NAME_KEY] = userName}
     }
 

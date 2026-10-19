@@ -20,7 +20,7 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun createTask(task: TaskRequest): TaskResult {
         val requestDto = task.toDto()
         val responseDto = safeRepositoryCall(
-            contextMessage = "Ошибка при получении точки выгрузки бетона",
+            contextMessage = "Ошибка при создании заявки",
             onAuthError = { localDataSource.clearSession() },
         ) {
             remoteDataSource.createTask(requestDto)

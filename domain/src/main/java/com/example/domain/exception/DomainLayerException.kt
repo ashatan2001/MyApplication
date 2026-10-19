@@ -35,18 +35,18 @@ sealed class DomainException(
  */
 class PersonNotFoundException(
     val personId: Int? = null,
-    message: String = "User not found",
+    message: String = "Пользователь не найден",
     cause: Throwable? = null
 ) : DomainException(errorCode = 2002, message = message, cause = cause)
 
 /**
- * Пользователь не найден в системе.
+ * Точка выгрузки бетона не найдена в системе.
  *
- * @param zone ID запрашиваемой точки загрузки бетона (для логирования).
+ * @param zone ID запрашиваемой точки выгрузки бетона (для логирования).
  */
 class DstPointNotFoundException(
     val zone: Int? = null,
-    message: String = "DstPoint not found",
+    message: String = "Точка выгрузки бетона не найдена",
     cause: Throwable? = null
 ) : DomainException(errorCode = 2002, message = message, cause = cause)
 
@@ -57,7 +57,7 @@ class DstPointNotFoundException(
  */
 class ValidationException(
     val field: String? = null,
-    message: String = "Validation error",
+    message: String = "Ошибка валидации",
     cause: Throwable? = null
 ) : DomainException(errorCode = 2003, message = message, cause = cause)
 
