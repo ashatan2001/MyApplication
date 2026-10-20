@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -15,6 +16,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.domain.model.Product
 
+/**
+ * Диалоговое окно создания заявки на отгрузку продукта.
+ * Отображает информацию о продукте и точке выгрузки, позволяет указать количество и номер паллеты.
+ *
+ * @param product Модель продукта для отгрузки.
+ * @param zone ID точки выгрузки.
+ * @param onDismiss Колбэк закрытия диалога без сохранения.
+ * @param onSubmit Колбэк отправки заявки с переданным количеством и номером паллеты.
+ */
 @Composable
 fun CreateTaskDialog(
     product: Product,
@@ -22,17 +32,30 @@ fun CreateTaskDialog(
     onDismiss: () -> Unit,
     onSubmit: (quantity: Float, pallete: String?) -> Unit
 ) {
-    var quantity by rememberSaveable { mutableStateOf(1f) }
+    var quantity by remember { mutableStateOf(product.quantity ?: 1f) }
     var pallete by rememberSaveable { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Заявка на отгрузку") },
+        title = {
+            Text(
+                text = "Заявка на отгрузку",
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Продукт: ${product.name}", style = MaterialTheme.typography.bodyMedium)
-                Text("Точка выгрузки: $zone", style = MaterialTheme.typography.bodyMedium)
-
+                // Информация о продукте
+                Text(
+                    text = "Продукт: ${product.name}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                // Информация о точке выгрузки
+                Text(
+                    text = "Точка выгрузки: $zone",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                // Поле ввода количества
                 OutlinedTextField(
                     value = quantity.toString(),
                     onValueChange = { it.toFloatOrNull()?.let { q -> quantity = q } },
@@ -41,11 +64,18 @@ fun CreateTaskDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-
+                // Поле ввода номера паллеты
                 OutlinedTextField(
                     value = pallete,
                     onValueChange = { pallete = it },
-                    label = { Text("Номер паллеты (необязательно)") },
+                    label = { Text("Номер паллеты") },
+                    supportingText = {
+                        Text(
+                            "Необязательное поле",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )

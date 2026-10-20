@@ -17,8 +17,8 @@ import kotlinx.serialization.Serializable
 @OptIn(InternalSerializationApi::class)
 @Serializable
 data class ProductDto (
-    @SerialName("ZoneNo") val zone: Int,
-    @SerialName("DepartmentID") val department: String,
+    @SerialName("ZoneNo") val zone: Int? = null,
+    @SerialName("DepartmentID") val department: String? = null,
     @SerialName("ProductID") val id: Long,
     @SerialName("ProductName") val name: String,
     @SerialName("ProductNo") val number: String? = null,

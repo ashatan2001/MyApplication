@@ -29,7 +29,8 @@ sealed class Routers(val route: String) {
             return "dst_point/$zoneId"
         }
     }
-    /** Экран списка продуктов, разрешенных для отгрузки в заданной точку выгрузки
+    /**
+     * Экран списка продуктов, разрешенных для отгрузки в заданной точке выгрузки
      */
     data object ProductList : Routers("product_list/{zoneId}") {
         const val ARG_ZONE_ID = "zoneId"

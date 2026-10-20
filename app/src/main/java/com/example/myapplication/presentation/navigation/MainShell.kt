@@ -1,6 +1,11 @@
 package com.example.myapplication.presentation.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -8,6 +13,13 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -52,6 +64,7 @@ fun MainShell(
                 isRootScreen = isRootScreen,
                 currentRoute = currentRoute,
                 onBackClick = { innerNavController.popBackStack() },
+                onSettingClick = { innerNavController.navigate(Routers.PersonInfo.route) },
                 onProfileClick = { innerNavController.navigate(Routers.PersonInfo.route) },
                 onLogoutClick = onLogout
             )
@@ -152,6 +165,7 @@ fun MainShell(
  * @param isRootScreen Флаг, указывающий, является ли текущий экран корневым.
  * @param currentRoute Текущий активный маршрут для отображения заголовка.
  * @param onBackClick Действие при нажатии на кнопку "Назад".
+ * @param onSettingClick Действие при нажатии на кнопку настройки.
  * @param onProfileClick Действие при нажатии на кнопку профиля.
  * @param onLogoutClick Действие при нажатии на кнопку выхода.
  */
@@ -161,24 +175,82 @@ private fun MainTopBar(
     isRootScreen: Boolean,
     currentRoute: String?,
     onBackClick: () -> Unit,
+    onSettingClick: () -> Unit,
     onProfileClick: () -> Unit,
     onLogoutClick: () -> Unit
+
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     TopAppBar(
-        title = { Text(getScreenTitle(currentRoute)) },
+        title = {
+            Text(
+                text = getScreenTitle(currentRoute),
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                ),
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        },
         navigationIcon = {
             if (!isRootScreen) {
                 IconButton(onClick = onBackClick) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Назад"
+                    )
                 }
             }
+            else Spacer(modifier = Modifier.size(48.dp))
         },
         actions = {
-            IconButton(onClick = onProfileClick) {
-                Icon(Icons.Default.Person, contentDescription = "Профиль")
+            IconButton(onClick = onSettingClick) {
+                Icon(Icons.Default.Settings, contentDescription = "Настройки")
             }
-            IconButton(onClick = onLogoutClick) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Выйти")
+
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = "Ещё"
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Профиль") },
+                        onClick = {
+                            menuExpanded = false
+                            onProfileClick()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null
+                            )
+                        }
+                    )
+
+                    HorizontalDivider()
+
+                    DropdownMenuItem(
+                        text = { Text("Выйти") },
+                        onClick = {
+                            menuExpanded = false
+                            onLogoutClick()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -199,6 +271,7 @@ private fun MainTopBar(
  * @param currentRoute Текущий активный маршрут для подсветки выбранного элемента.
  * @param onHomeClick Действие при выборе вкладки "Главная".
  * @param onDstPointListClick Действие при выборе вкладки "Заказ".
+ * @param onQueueClick Действие при выборе вкладки "Очередь".
  * @param onArchiveClick Действие при выборе вкладки "Архив".
  */
 @Composable
@@ -245,9 +318,10 @@ private fun MainBottomBar(
  */
 private fun getScreenTitle(route: String?): String = when (route) {
     Routers.Home.route -> "Главная"
-    Routers.DstPointList.route -> "Точки выгрузки"
+    Routers.DstPointList.route -> "Зоны выгрузки бетона"
+    Routers.ProductList.route -> "Продукты для отгрузки"
     Routers.Queue.route -> "Очередь заявок на отгрузку"
     Routers.Archive.route -> "Архивы"
     Routers.PersonInfo.route -> "Профиль"
-    else -> "MyApplication"
+    else -> ""
 }

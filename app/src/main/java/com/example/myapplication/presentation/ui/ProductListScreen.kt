@@ -1,14 +1,21 @@
 package com.example.myapplication.presentation.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -23,8 +30,8 @@ import com.example.myapplication.presentation.viewmodel.ProductListViewModel
 
 /**
  * Экран списка продуктов, разрешенных для отгрузки в конкретной зоне.
- *
- * Отображает таблицу продуктов. При нажатии на продукт открывает диалог создания заявки ([CreateTaskDialog]).
+ * Отображает таблицу продуктов с полем поиска. При нажатии на продукт или иконку заказа
+ * открывает диалог создания заявки ([CreateTaskDialog]).
  * Удален собственный [Scaffold], навигация "Назад" обрабатывается глобальной панелью [MainShell].
  *
  * @param onBack Колбэк для возврата на предыдущий экран (используется [MainShell]).
@@ -39,6 +46,7 @@ fun ProductListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedProduct by viewModel.selectedProduct.collectAsStateWithLifecycle()
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.loadProductList(zone)
@@ -50,20 +58,53 @@ fun ProductListScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
             is ProductListUiState.Success -> {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    stickyHeader { TableHeader() }
-                    if (state.productList.isEmpty()) {
-                        item {
-                            Text(
-                                text = "Список продуктов пуст",
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    } else {
-                        items(items = state.productList, key = { product -> product.name }) { product ->
-                            ProductRow(product = product, onClick = { viewModel.onProductClick(product) })
-                            HorizontalDivider()
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Поле поиска
+                    SearchField(
+                        text = "Наименование продукта",
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+
+                    // Фильтрация списка
+                    val filteredList = state.productList.filter { product ->
+                        product.name.contains(searchQuery.trim(), ignoreCase = true) ||
+                                product.number?.contains(searchQuery.trim(), ignoreCase = true) == true
+                    }
+
+                    // Отображение списка
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        stickyHeader { TableHeader() }
+
+                        if (filteredList.isEmpty()) {
+                            item {
+                                Text(
+                                    text = if (searchQuery.isNotEmpty())
+                                        "Ничего не найдено по запросу \"$searchQuery\""
+                                    else
+                                        "Список продуктов пуст",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            items(
+                                items = filteredList,
+                                key = { product -> product.id }
+                            ) { product ->
+                                ProductRow(
+                                    product = product,
+                                    onClick = { viewModel.onProductClick(product) }
+                                )
+                                HorizontalDivider()
+                            }
                         }
                     }
                 }
@@ -80,12 +121,19 @@ fun ProductListScreen(
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(48.dp)
                     )
-                    Text(text = state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
-                    Button(onClick = { viewModel.loadProductList(zone) }) { Text("Повторить") }
+                    Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Button(onClick = { viewModel.loadProductList(zone) }) {
+                        Text("Повторить")
+                    }
                 }
             }
         }
 
+        // Диалог создания заявки
         selectedProduct?.let { product ->
             CreateTaskDialog(
                 product = product,
@@ -100,34 +148,62 @@ fun ProductListScreen(
 }
 
 /**
- * Отдельная строка списка продуктов с кнопкой заказа.
+ * Отдельная строка списка продуктов с иконкой заказа.
+ * При нажатии на строку или иконку вызывает колбэк для открытия диалога создания заявки.
  *
  * @param product Модель данных продукта.
- * @param onClick Действие при нажатии на строку или кнопку заказа.
+ * @param onClick Действие при нажатии на строку или иконку заказа.
  */
 @Composable
 private fun ProductRow(product: Product, onClick: () -> Unit) {
-    Surface(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        color = MaterialTheme.colorScheme.surface
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 16.dp, vertical = 6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Номер продукта
             Text(
-                text = product.number.toString(),
-                modifier = Modifier.weight(2f),
-                style = MaterialTheme.typography.bodyMedium,
+                text = product.number?: "---",
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+
+            // Наименование продукта
             Text(
                 text = product.name,
-                modifier = Modifier.weight(7f),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                modifier = Modifier
+                    .weight(4f)
+                    .padding(end = 8.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
-            Button(onClick = onClick, modifier = Modifier.padding(start = 8.dp)) {
-                Text("Заказать")
+
+            // Иконка заказа
+            IconButton(
+                onClick = onClick,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AddCircle,
+                    contentDescription = "Заказать ${product.name}",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
             }
         }
     }
@@ -138,14 +214,21 @@ private fun ProductRow(product: Product, onClick: () -> Unit) {
  */
 @Composable
 private fun TableHeader() {
-    Surface(color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Код",
-                modifier = Modifier.weight(2f),
+                text = "Номер",
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -153,13 +236,17 @@ private fun TableHeader() {
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "Наименование продукта",
-                modifier = Modifier.weight(7f),
+                text = "Наименование",
+                modifier = Modifier
+                    .weight(4f)
+                    .padding(end = 8.dp),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.width(24.dp))
+            Spacer(modifier = Modifier.width(40.dp))
         }
     }
 }

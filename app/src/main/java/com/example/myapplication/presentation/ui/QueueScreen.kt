@@ -199,7 +199,7 @@ private fun LoadRow(load: Load) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = load.documentNum?.let { "Нкл: $it" } ?: "",
+                    text = load.status,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
