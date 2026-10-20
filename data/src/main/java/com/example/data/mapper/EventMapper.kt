@@ -1,12 +1,8 @@
 package com.example.data.mapper
 
 import com.example.data.dto.EventDto
-import com.example.data.util.DateFormatters
 import com.example.data.util.parseDate
 import com.example.domain.model.Event
-import timber.log.Timber
-import java.time.LocalDateTime
-import java.time.format.DateTimeParseException
 
 /**
  * Маппер архива событий между DTO и доменной моделью.

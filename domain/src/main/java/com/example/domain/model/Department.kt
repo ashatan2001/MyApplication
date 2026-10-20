@@ -9,5 +9,5 @@ package com.example.domain.model
 
 data class Department (
     val id: String,
-    val name: String
+    val name: String?
 )

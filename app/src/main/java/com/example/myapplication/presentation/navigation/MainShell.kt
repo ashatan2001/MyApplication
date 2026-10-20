@@ -4,18 +4,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LibraryAdd
-import androidx.compose.material.icons.filled.PendingActions
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -110,6 +104,8 @@ fun MainShell(
                     }
                 )
             }
+
+            composable(Routers.Queue.route) { QueueScreen() }
 
             composable(Routers.Archive.route) { ArchiveScreen() }
 

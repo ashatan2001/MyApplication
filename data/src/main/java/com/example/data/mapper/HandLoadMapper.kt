@@ -1,12 +1,8 @@
 package com.example.data.mapper
 
 import com.example.data.dto.HandLoadDto
-import com.example.data.util.DateFormatters
 import com.example.data.util.parseDate
 import com.example.domain.model.HandLoad
-import timber.log.Timber
-import java.time.LocalDateTime
-import java.time.format.DateTimeParseException
 
 /**
  * Маппер ручной загрузки между DTO и доменной моделью.

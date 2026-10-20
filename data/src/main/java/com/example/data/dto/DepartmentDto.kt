@@ -14,5 +14,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DepartmentDto (
     @SerialName("DepartmentID") val id: String,
-    @SerialName("DepartmentName") val name: String
+    @SerialName("DepartmentName") val name: String? = null
 )

@@ -72,7 +72,7 @@ class QueueViewModel @Inject constructor(
             _uiState.value = QueueUiState.Loading
             when (val result = getLoadQueueUseCase()) {
                 is CustomResult.Success -> {
-                    Timber.d("Список точек выгрузки бетона успешно загружен")
+                    Timber.d("Очередь заявок на отгрузку успешно загружена")
                     _uiState.value = QueueUiState.Success(result.data.groupByTerminal())
                 }
                 is CustomResult.Error -> {

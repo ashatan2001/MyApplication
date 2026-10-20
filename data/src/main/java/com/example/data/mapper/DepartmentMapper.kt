@@ -1,9 +1,7 @@
 package com.example.data.mapper
 
 import com.example.data.dto.DepartmentDto
-import com.example.data.dto.TerminalDto
 import com.example.domain.model.Department
-import com.example.domain.model.Terminal
 
 
 /**
