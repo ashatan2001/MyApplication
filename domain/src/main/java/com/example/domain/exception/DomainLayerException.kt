@@ -1,14 +1,7 @@
 package com.example.domain.exception
 
 /**
- * Базовое исключение доменного слоя.
- *
- * Все исключения приложения наследуются от этого класса,
- * что позволяет перехватывать их единым блоком в UseCase/ViewModel.
- *
- * @param errorCode Внутренний код ошибки для логирования и аналитики.
- * @param message Человекочитаемое сообщение об ошибке.
- * @param cause Исходное исключение, вызвавшее данное.
+ * Базовое исключение приложения.
  */
 open class AppException(
     val errorCode: Int? = null,
@@ -18,9 +11,6 @@ open class AppException(
 
 /**
  * sealed-иерархия доменных исключений.
- *
- * Позволяет использовать исчерпывающий `when` для обработки
- * конкретных бизнес-ошибок без `else`-ветки.
  */
 sealed class DomainException(
     errorCode: Int? = null,
@@ -28,78 +18,50 @@ sealed class DomainException(
     cause: Throwable? = null
 ) : AppException(errorCode, message, cause)
 
-/**
- * Пользователь не найден в системе.
- *
- * @param personId ID запрашиваемого пользователя (для логирования).
- */
 class PersonNotFoundException(
     val personId: Int? = null,
     message: String = "Пользователь не найден",
     cause: Throwable? = null
 ) : DomainException(errorCode = 2002, message = message, cause = cause)
 
-/**
- * Точка выгрузки бетона не найдена в системе.
- *
- * @param zone ID запрашиваемой точки выгрузки бетона (для логирования).
- */
 class DstPointNotFoundException(
     val zone: Int? = null,
     message: String = "Точка выгрузки бетона не найдена",
     cause: Throwable? = null
 ) : DomainException(errorCode = 2002, message = message, cause = cause)
 
-/**
- * Точка выгрузки бетона не найдена в системе.
- */
 class LoadNotFoundException(
     message: String = "Заявки на отгрузку не найдены",
     cause: Throwable? = null
 ) : DomainException(errorCode = 2002, message = message, cause = cause)
 
-/**
- * Ошибка валидации пользовательского ввода.
- *
- * @param field Название поля, не прошедшего валидацию (например, "login", "password").
- */
 class ValidationException(
     val field: String? = null,
     message: String = "Ошибка валидации",
     cause: Throwable? = null
 ) : DomainException(errorCode = 2003, message = message, cause = cause)
 
-/** Отсутствует подключение к интернету. */
 class NetworkConnectionException(
     message: String = "Нет подключения к интернету",
     cause: Throwable? = null
 ) : DomainException(message = message, cause = cause)
 
-/** Сервер недоступен (таймаут, 5xx). */
 class ServerUnavailableException(
     message: String = "Ошибка сервера",
     cause: Throwable? = null
 ) : DomainException(message = message, cause = cause)
 
-/** Неверный логин или пароль. */
 class AuthenticationFailedException(
-    message: String = "Неверные учетные данные",
+    message: String = "Ошибка авторизации",
     cause: Throwable? = null
 ) : DomainException(message = message, cause = cause)
 
-/** Сессия истекла, требуется повторная авторизация. */
 class SessionExpiredDomainException(
     message: String = "Сессия истекла",
     cause: Throwable? = null
 ) : DomainException(message = message, cause = cause)
 
-/**
- * Ошибка, возвращённая API сервера.
- *
- * @param errorNumber Код ошибки из тела ответа сервера (отличается от [errorCode]).
- */
 class ServerApiException(
-    val errorNumber: Int,
     message: String,
     cause: Throwable? = null
 ) : DomainException(message = message, cause = cause)

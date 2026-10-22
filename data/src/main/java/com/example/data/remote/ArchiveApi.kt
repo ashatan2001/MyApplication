@@ -41,8 +41,8 @@ interface ArchiveApi {
     suspend fun getEvents(
         @Query(value = "startdate", encoded = true) startDate: String,
         @Query(value = "enddate", encoded = true) endDate: String,
-        @Query("page")      page: Int,
-        @Query("records")   records: Int
+        @Query("page") page: Int,
+        @Query("records") records: Int
     ): Response<ArchiveDto<EventDto>>
 
     /**
@@ -69,7 +69,7 @@ interface ArchiveApi {
     suspend fun getHandLoads(
         @Query(value = "startdate", encoded = true) startDate: String,
         @Query(value = "enddate", encoded = true) endDate: String,
-        @Query("page")      page: Int,
-        @Query("records")   records: Int
+        @Query("page") page: Int,
+        @Query("records") records: Int
     ): Response<ArchiveDto<HandLoadDto>>
 }

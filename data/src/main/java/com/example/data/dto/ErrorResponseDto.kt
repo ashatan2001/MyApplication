@@ -3,6 +3,7 @@ package com.example.data.dto
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Тело ответа сервера при ошибке.
@@ -20,5 +21,7 @@ data class ErrorResponseDto(
     @SerialName("ErrorNo")
     val errorNumber: Int? = null,
     @SerialName("Message")
-    val message: String? = null
+    val message: String? = null,
+    @SerialName("data")
+    val data: JsonObject? = null
 )

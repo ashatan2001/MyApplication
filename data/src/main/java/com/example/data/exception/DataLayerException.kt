@@ -1,5 +1,6 @@
 package com.example.data.exception
 
+import com.example.data.dto.ErrorResponseDto
 import com.example.domain.exception.AppException
 
 /**
@@ -42,6 +43,7 @@ class ServerException(
 class ApiException(
     val errorNumber: Int,
     message: String,
+    val errors: List<ErrorResponseDto> = emptyList(),
     cause: Throwable? = null
 ) : DataLayerException(errorCode = errorNumber, message = message, cause = cause)
 
