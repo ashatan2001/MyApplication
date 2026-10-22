@@ -6,13 +6,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -20,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.Load
+import com.example.domain.model.LoadStatus
 import com.example.domain.model.Terminal
 import com.example.myapplication.presentation.viewmodel.QueueUiState
 import com.example.myapplication.presentation.viewmodel.QueueViewModel
@@ -193,22 +202,20 @@ private fun LoadRow(load: Load) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = load.product?.name ?: "---",
+                    text = load.product?.name ?: "?",
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = load.status,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
+
             Text(
                 text = "${load.quality} ${load.terminal?.measure ?: ""}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
+
+            StatusIcon(load.status)
         }
     }
 }
@@ -239,4 +246,35 @@ private fun TableHeader() {
             )
         }
     }
+}
+
+/**
+ * Визуальные обозначения статусов.
+ */
+@Composable
+fun StatusIcon(status: LoadStatus) {
+    val icon = when (status) {
+        LoadStatus.IN_QUEUE -> Icons.Default.Schedule
+        LoadStatus.COMPLETED -> Icons.Default.CheckCircle
+        LoadStatus.DEFECT -> Icons.Default.Error
+        LoadStatus.CANCELLED -> Icons.Default.Cancel
+        LoadStatus.WEIGHED -> Icons.Default.Scale
+        LoadStatus.UNKNOWN -> Icons.AutoMirrored.Filled.Help
+    }
+
+    val color = when (status) {
+        LoadStatus.IN_QUEUE -> Color(0xFF2196F3)
+        LoadStatus.COMPLETED -> Color(0xFF4CAF50)
+        LoadStatus.DEFECT -> Color(0xFFF44336)
+        LoadStatus.CANCELLED -> Color(0xFF9E9E9E)
+        LoadStatus.WEIGHED -> Color(0xFFFF9800)
+        LoadStatus.UNKNOWN -> Color(0xFF795548)
+    }
+
+    Icon(
+        imageVector = icon,
+        contentDescription = status.name,
+        tint = color,
+        modifier = Modifier.size(24.dp)
+    )
 }
