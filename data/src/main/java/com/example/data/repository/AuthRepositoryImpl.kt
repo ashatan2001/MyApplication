@@ -50,7 +50,7 @@ class AuthRepositoryImpl @Inject constructor(
                 // При ошибке авторизации очищаем локальные данные
                 cookieJar.clear()
                 localDataSource.clearSession()
-                Timber.w("Auth error during login, session cleared")
+                Timber.w("Ошибка авторизации при входе, сессия очищена")
             }
         ) {
             remoteDataSource.login(username, password)
@@ -63,7 +63,7 @@ class AuthRepositoryImpl @Inject constructor(
         val fullName = dto.fullName
         localDataSource.savePersonName(fullName)
         localDataSource.saveAuthState(true)
-        Timber.d("Login successful for user: $fullName")
+        Timber.d("Вход выполнен успешно для пользователя: $fullName")
 
         return dto.toDomain()
     }
@@ -85,11 +85,11 @@ class AuthRepositoryImpl @Inject constructor(
         try {
             remoteDataSource.logout()
         } catch (e: Exception) {
-            Timber.w(e, "Network error during logout, proceeding with local cleanup")
+            Timber.w(e, "Сетевая ошибка при выходе, выполняем локальную очистку")
         } finally {
             cookieJar.clear()
             localDataSource.clearSession()
-            Timber.d("Session fully cleared")
+            Timber.d("Сессия полностью очищена")
         }
     }
 
@@ -114,11 +114,11 @@ class AuthRepositoryImpl @Inject constructor(
             val userId = jwtParser.getUserIdFromToken(jwt)
             if (userId != null) {
                 localDataSource.savePersonId(userId)
-                Timber.d("UserId $userId extracted from JWT")
+                Timber.d("UserId $userId извлечён из JWT")
             } else {
-                Timber.w("Failed to extract userId from JWT")
+                Timber.w("Не удалось извлечь userId из JWT")
             }
-        } ?: Timber.w("Access token not found after login")
+        } ?: Timber.w("Access-токен не найден после входа")
     }
 
     // endregion

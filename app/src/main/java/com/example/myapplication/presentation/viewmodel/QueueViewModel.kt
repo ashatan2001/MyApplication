@@ -7,7 +7,9 @@ import com.example.domain.exception.NetworkConnectionException
 import com.example.domain.exception.SessionExpiredDomainException
 import com.example.domain.model.Load
 import com.example.domain.model.Terminal
+import com.example.domain.usecase.DeleteLoadByIdUseCase
 import com.example.domain.usecase.GetLoadQueueUseCase
+import com.example.domain.usecase.UpdateLoadByIdUseCase
 import com.example.domain.util.CustomResult
 import com.example.domain.util.groupByTerminal
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,11 +46,20 @@ sealed class QueueUiState {
 @HiltViewModel
 class QueueViewModel @Inject constructor(
     private val getLoadQueueUseCase: GetLoadQueueUseCase,
+    private val updateLoadByIdUseCase: UpdateLoadByIdUseCase,
+    private val deleteLoadByIdUseCase: DeleteLoadByIdUseCase,
     private val authEventBus: AuthEventBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<QueueUiState>(QueueUiState.Loading)
     val uiState: StateFlow<QueueUiState> = _uiState.asStateFlow()
+
+    /**
+     * Флаг, указывающий на выполнение сетевой операции (изменение или удаление).
+     * Используется для блокировки повторных нажатий в UI.
+     */
+    private val _isProcessing = MutableStateFlow(false)
+    val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
 
     init {
         Timber.d("QueueViewModel инициализирован")
@@ -93,6 +104,42 @@ class QueueViewModel @Inject constructor(
                     }
                     _uiState.value = QueueUiState.Error(message)
                 }
+            }
+        }
+    }
+
+    /**
+     * Инициирует процесс изменения выбранной заявки.
+     *
+     * @param load Заявка для изменения.
+     */
+    fun updateLoad(load: Load) {
+        Timber.d("Инициализация изменения заявки: ${load.id}")
+        viewModelScope.launch {
+            _isProcessing.value = true
+            try {
+                // TODO: Вызов UseCase для редактирования, например: updateLoadUseCase(load)
+                // После успеха: loadQueue()
+            } finally {
+                _isProcessing.value = false
+            }
+        }
+    }
+
+    /**
+     * Инициирует процесс удаления выбранной заявки.
+     *
+     * @param load Заявка для удаления.
+     */
+    fun deleteLoad(load: Load) {
+        Timber.d("Инициализация удаления заявки: ${load.id}")
+        viewModelScope.launch {
+            _isProcessing.value = true
+            try {
+                deleteLoadByIdUseCase(load.id.toString())
+                loadQueue()
+            } finally {
+                _isProcessing.value = false
             }
         }
     }

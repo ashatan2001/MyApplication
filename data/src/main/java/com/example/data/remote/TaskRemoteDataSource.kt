@@ -6,7 +6,7 @@ import com.example.data.util.safeApiCall
 import javax.inject.Inject
 
 /**
- * Сервис-обертка над Retrofit API для операций с продуктами, разрешенными для отгрузки.
+ * Сервис-обертка над Retrofit API для операций с заявками на отгрузку.
  *
  * Изолирует детали сетевых запросов (сериализация, обработка ошибок)
  * от репозитория. Все методы обёрнуты в [safeApiCall], который
@@ -16,9 +16,9 @@ class TaskRemoteDataSource @Inject constructor(
     private val api: TaskApi
 ) {
     /**
-     * Загружает список продуктов, разрешенных для отгрузки в заданную точку выгрузки
+     * Создает заявку на отгрузку
      *
-     * @param task код точки выгрузки бетона
+     * @param task данные заявки
      * @return [TaskResponseDto] при успехе.
      */
     suspend fun createTask(task: TaskRequestDto): TaskResponseDto = safeApiCall { api.createTask(task) }

@@ -2,25 +2,22 @@ package com.example.myapplication.presentation.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Help
-import androidx.compose.material.icons.filled.Scale
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +43,7 @@ fun QueueScreen(
     viewModel: QueueViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isProcessing by viewModel.isProcessing.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.loadQueue()
@@ -64,7 +62,12 @@ fun QueueScreen(
                         textAlign = TextAlign.Center
                     )
                 } else {
-                    TerminalGroupedList(loadsByTerminal = state.loadsByTerminal)
+                    TerminalGroupedList(
+                        loadsByTerminal = state.loadsByTerminal,
+                        onEdit = { viewModel.updateLoad(it) },
+                        onDelete = { viewModel.deleteLoad(it) },
+                        isProcessing = isProcessing
+                    )
                 }
             }
             is QueueUiState.Error -> {
@@ -88,24 +91,40 @@ fun QueueScreen(
                 }
             }
         }
+
+        // Глобальный индикатор загрузки поверх экрана при выполнении действий
+        if (isProcessing) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = Color.Black.copy(alpha = 0.3f)
+            ) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+        }
     }
 }
 
 /**
- * Список терминалов с раскрывающимися вложенными списками заявок.
- *
- * @param loadsByTerminal Сгруппированные по терминалу заявки.
- */
+* Список терминалов с раскрывающимися вложенными списками заявок.
+*
+* @param loadsByTerminal Сгруппированные по терминалу заявки.
+* @param onEdit Колбэк для действия "Изменить".
+* @param onDelete Колбэк для действия "Удалить".
+* @param isProcessing Флаг активной сетевой операции для блокировки UI.
+*/
 @Composable
-private fun TerminalGroupedList(loadsByTerminal: Map<Terminal, List<Load>>) {
-    // Состояние раскрытых терминалов (ключ — id терминала)
+private fun TerminalGroupedList(
+    loadsByTerminal: Map<Terminal, List<Load>>,
+    onEdit: (Load) -> Unit,
+    onDelete: (Load) -> Unit,
+    isProcessing: Boolean
+) {
     val expandedTerminals = remember { mutableStateMapOf<String, Boolean>() }
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         stickyHeader { TableHeader() }
 
         loadsByTerminal.forEach { (terminal, loads) ->
-            // Заголовок терминала (кликабельный)
             item(key = "terminal_${terminal.id}") {
                 TerminalHeader(
                     terminal = terminal,
@@ -117,10 +136,14 @@ private fun TerminalGroupedList(loadsByTerminal: Map<Terminal, List<Load>>) {
                 )
             }
 
-            // Вложенный список заявок (раскрывается по клику)
             if (expandedTerminals[terminal.id] == true) {
                 items(items = loads, key = { load -> load.id }) { load ->
-                    LoadRow(load = load)
+                    LoadRow(
+                        load = load,
+                        onEdit = onEdit,
+                        onDelete = onDelete,
+                        isProcessing = isProcessing
+                    )
                     HorizontalDivider()
                 }
             }
@@ -188,34 +211,103 @@ private fun TerminalHeader(
 
 /**
  * Строка отдельной заявки в раскрывающемся списке.
+ * Поддерживает долгое удержание для вызова контекстного меню (DropdownMenu).
  *
  * @param load Модель данных заявки.
+ * @param onEdit Колбэк действия редактирования.
+ * @param onDelete Колбэк действия удаления.
+ * @param isProcessing Флаг блокировки взаимодействий во время сетевого запроса.
  */
 @Composable
-private fun LoadRow(load: Load) {
-    Surface(modifier = Modifier.fillMaxWidth()) {
-        Row(
+private fun LoadRow(
+    load: Load,
+    onEdit: (Load) -> Unit,
+    onDelete: (Load) -> Unit,
+    isProcessing: Boolean
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 32.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = load.product?.name ?: "?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                .combinedClickable(
+                    onClick = {
+                        // Здесь можно добавить логику обычного клика, например, переход на детальный экран
+                    },
+                    onLongClick = {
+                        if (!isProcessing) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            showMenu = true
+                        }
+                    }
                 )
-            }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Заявка №${load.id}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = load.product?.name ?: "Без наименования",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
-            Text(
-                text = "${load.quality} ${load.terminal?.measure ?: ""}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                Text(
+                    text = "${load.quality} ${load.terminal?.measure ?: ""}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+                StatusIcon(load.status)
+            }
+        }
+
+        // Контекстное меню, привязанное к строке
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Изменить") },
+                onClick = {
+                    showMenu = false
+                    onEdit(load)
+                },
+                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                enabled = !isProcessing
             )
 
-            StatusIcon(load.status)
+            HorizontalDivider()
+
+            DropdownMenuItem(
+                text = { Text("Удалить", color = MaterialTheme.colorScheme.error) },
+                onClick = {
+                    showMenu = false
+                    onDelete(load)
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
+                enabled = !isProcessing
+            )
         }
     }
 }

@@ -1,14 +1,11 @@
 package com.example.data.remote
 
 import com.example.data.dto.LoadDto
+import com.example.data.dto.LoadIdResponseDto
 import com.example.data.dto.TaskRequestDto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.PUT
-import retrofit2.http.Path
-import retrofit2.http.Query
+import retrofit2.http.*
 
 /**
  * Retrofit API для управления очередью транспортных средств на отгрузочных терминалах.
@@ -73,8 +70,9 @@ interface QueueApi {
     /**
      * Изменение заявки в очереди на отгрузку по коду заявки.
      *
-     * @param loadid Код изменяемой заявки.
-     * @return [Response<List<LoadDto>>] с данными заявки, находящейся в очереди.
+     * @param loadId Код изменяемой заявки.
+     * @param body новые данные заявки.
+     * @return [Response<LoadIdResponseDto>] с кодом заявки, находящейся в очереди.
      *
      * Коды ответов сервера:
      * - 200 — успешное выполнение команды (в теле запроса JSON)
@@ -87,15 +85,16 @@ interface QueueApi {
      */
     @PUT("/api/queue/{loadid}")
     suspend fun putLoadById(
-        @Path("loadid") loadid: String,
+        @Path("loadid") loadId: String,
         @Body body: TaskRequestDto
-    ): Response<List<LoadDto>>
+    ): Response<LoadIdResponseDto>
 
     /**
      * Управление очередностью отгрузки по коду заявки.
      *
-     * @param loadid Код изменяемой заявки.
-     * @return [Response<List<LoadDto>>] с данными заявки, находящейся в очереди.
+     * @param loadId Код изменяемой заявки.
+     * @param number Номер заявки в очереди.
+     * @return [Response<LoadIdResponseDto>] с кодом заявки, находящейся в очереди.
      *
      * Коды ответов сервера:
      * - 200 — успешное выполнение команды (в теле запроса JSON)
@@ -106,10 +105,29 @@ interface QueueApi {
      * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
      * - 5xx — внутренняя ошибка сервера
      */
-    @PUT("/api/queue/{loadid}/queueno ")
+    @PUT("/api/queue/{loadid}/queueno")
     suspend fun putQueueNumLoadById(
-        @Path("loadid") loadid: String,
+        @Path("loadid") loadId: String,
         @Query("num") number: Int
-    ): Response<List<LoadDto>>
+    ): Response<LoadIdResponseDto>
 
+    /**
+     * Управление заявки на отгрузку по коду заявки.
+     *
+     * @param loadId Код изменяемой заявки.
+     * @return [Unit], так как тело ответа не требуется.
+     *
+     * Коды ответов сервера:
+     * - 200 — успешное выполнение команды (в теле запроса JSON)
+     * - 400 — некорректно сформирован запрос или невозможно проверить права пользователя
+     * - 401 — необходимо выполнить вход в систему
+     * - 403 — пользователь не имеет необходимых прав на просмотр информации об очереди на отгрузку
+     * - 404 — заявка не найдена в базе данных
+     * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
+     * - 5xx — внутренняя ошибка сервера
+     */
+    @DELETE("/api/queue/{loadid}")
+    suspend fun deleteLoadById(
+        @Path("loadid") loadId: String,
+    ): Response<Unit>
 }
