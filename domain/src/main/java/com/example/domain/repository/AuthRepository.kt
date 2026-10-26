@@ -21,7 +21,6 @@ interface AuthRepository {
      * @param username Логин пользователя.
      * @param password Пароль пользователя.
      * @return [AuthSuccess] с информацией об успешной авторизации.
-     * @throws Exception при сетевых ошибках, ошибках сервера или неверных учетных данных.
      */
     suspend fun login(username: String, password: String): AuthSuccess
 
@@ -31,8 +30,6 @@ interface AuthRepository {
      * Вызывается автоматически при получении 401/419 от сервера.
      * При успехе обновляет локальные токены.
      * При ошибке очищает локальную сессию и эмитирует [AuthState.Unauthenticated].
-     *
-     * @throws Exception если обновление токена невозможно (токен отозван, сеть недоступна).
      */
     suspend fun refreshToken()
 
@@ -42,9 +39,6 @@ interface AuthRepository {
      * Выполняет сетевой запрос на инвалидацию токена (если возможно),
      * затем **всегда** очищает локальные токены/куки, даже если сетевой запрос не удался.
      * После очистки эмитирует [AuthState.Unauthenticated] в [getAuthState].
-     *
-     * @throws Exception только при критических ошибках локального хранилища.
-     *         Сетевые ошибки не пробрасываются.
      */
     suspend fun logout()
 

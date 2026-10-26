@@ -12,7 +12,6 @@ interface TaskRepository {
      *
      * @param task данные добавляемой заявки
      * @return [TaskResult] ответ сервера при успешном создании заявки.
-     * @throws com.example.domain.exception.NetworkException при отсутствии соединения.
      */
     suspend fun createTask(task: TaskRequest): TaskResult
 }

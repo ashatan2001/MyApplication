@@ -3,7 +3,7 @@ package com.example.myapplication.presentation
 import com.example.domain.model.Event
 import com.example.domain.model.HandLoad
 
-// Типы архивов из вашего ArchiveApi
+// Типы архивов из ArchiveApi
 enum class ArchiveType(val title: String) {
     EVENTS("Архив событий"),
     HAND_LOADS("Архив ручных отгрузок")

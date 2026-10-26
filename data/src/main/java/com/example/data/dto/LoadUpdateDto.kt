@@ -13,8 +13,6 @@ import kotlinx.serialization.Serializable
  * @property queueNum Номер в очереди (только для заявок в очереди).
  * @property status Статус заявки (0 - в очереди, 1 - выполнена, -1 - брак, -2 - аннулирована, 3 - взвешена).
  * @property statusName Наименование статуса заявки.
- * @property arrivalDate Дата и время прибытия на площадку.
- * @property departDate Дата и время убытия.
  * @property transport Информация о транспортном средстве.
  * @property terminal Информация об отгрузочном терминале.
  * @property product Информация о продукте.
@@ -34,7 +32,5 @@ data class LoadUpdateDto(
     @SerialName("LoadDocNo") val documentNum: String? = null,
     @SerialName("LoadDate") val date: String,
     @SerialName("AutoInfo") val transport: TransportDto? = null,
-    @SerialName("ArrivalDate") val arrivalDate: String? = null,
-    @SerialName("DepartDate") val departDate: String? = null,
 )
 

@@ -18,7 +18,6 @@ class PersonRemoteDataSource @Inject constructor(
      *
      * @param id Уникальный идентификатор пользователя.
      * @return [PersonDto] при успехе.
-     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
     suspend fun getPersonInfo(id: Int): PersonDto = safeApiCall { api.getPerson(id) }
 }

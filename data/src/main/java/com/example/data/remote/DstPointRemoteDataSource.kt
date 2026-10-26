@@ -19,7 +19,6 @@ class DstPointRemoteDataSource @Inject constructor(
      *
      * @param zoneId код точки выгрузки бетона
      * @return [DstPointDto] при успехе.
-     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
     suspend fun getDstPoint(zoneId: Int): DstPointDto = safeApiCall { api.getDstPoint(zoneId) }
 
@@ -27,7 +26,6 @@ class DstPointRemoteDataSource @Inject constructor(
      * Загружает список точек выгрузки бетона.
      *
      * @return [List<DstPointDto>] при успехе.
-     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
     suspend fun getDstPointList(): List<DstPointDto> = safeApiCall { api.getDstPointList() }
 }

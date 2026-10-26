@@ -19,7 +19,6 @@ class ProductRemoteDataSource @Inject constructor(
      *
      * @param zone код точки выгрузки бетона
      * @return [List<ProductDto>] при успехе.
-     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
     suspend fun getProductList(zone: Int): List<ProductDto> = safeApiCall { api.getProductList(zone) }
 }

@@ -20,7 +20,6 @@ class TaskRemoteDataSource @Inject constructor(
      *
      * @param task код точки выгрузки бетона
      * @return [TaskResponseDto] при успехе.
-     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
     suspend fun createTask(task: TaskRequestDto): TaskResponseDto = safeApiCall { api.createTask(task) }
 }

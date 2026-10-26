@@ -11,7 +11,6 @@ interface ProductRepository {
      *
      * @param zone код точки выгрузки бетона
      * @return [List<Product>] список продуктов, разрешенных для отгрузки в заданную точку выгрузки.
-     * @throws com.example.domain.exception.NetworkException при отсутствии соединения.
      */
     suspend fun getProductList(zone: Int): List<Product>
 }

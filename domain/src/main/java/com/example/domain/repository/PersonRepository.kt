@@ -11,8 +11,6 @@ interface PersonRepository {
      * Возвращает полную информацию о текущем авторизованном пользователе.
      *
      * @return [Person] с данными профиля.
-     * @throws com.example.domain.exception.PersonNotFoundException если пользователь не найден.
-     * @throws com.example.domain.exception.NetworkException при отсутствии соединения.
      */
     suspend fun getPersonInfo(): Person
 

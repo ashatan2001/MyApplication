@@ -20,7 +20,6 @@ class ArchiveRemoteDataSource @Inject constructor(
      * Загружает архив событий
      *
      * @return [ArchiveDto<EventDto>] при успехе.
-     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
     suspend fun getEventArchive(
         startDate: String,

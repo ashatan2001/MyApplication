@@ -18,6 +18,6 @@ data class TaskRequestDto (
     @SerialName("qty") val quantity:  Float,
     @SerialName("zoneno") val zone: Int,
     @SerialName("palleteno") val pallete: String? = null,
-    @SerialName("productid") val product: Long,
+    @SerialName("productid") val product: Long
 ){
 }

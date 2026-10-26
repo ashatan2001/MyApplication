@@ -18,7 +18,6 @@ class QueueRemoteDataSource @Inject constructor(
      * Загружает заявки на отгрузку, находящиеся в очереди.
      *
      * @return [List<LoadDto>] при успехе.
-     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
     suspend fun getLoads(): List<LoadDto> = safeApiCall {
         api.getLoads() }
@@ -28,7 +27,6 @@ class QueueRemoteDataSource @Inject constructor(
      *
      * @param terminalId Код отгрузочного терминала.
      * @return [List<LoadDto>] при успехе.
-     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
     suspend fun getLoadsByTerminalId(terminalId: String): List<LoadDto> = safeApiCall {
         api.getLoadsByTerminalId(terminalId) }
@@ -38,7 +36,6 @@ class QueueRemoteDataSource @Inject constructor(
      *
      * @param terminalNum Номер отгрузочного терминала.
      * @return [List<LoadDto>] при успехе.
-     * @throws com.example.data.exception.DataLayerException и наследники при ошибке.
      */
     suspend fun getLoadsByTerminalNum(terminalNum: Int): List<LoadDto> = safeApiCall {
         api.getLoadsByTerminalNum(terminalNum) }
