@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,6 +30,13 @@ import com.example.myapplication.presentation.ui.*
 import com.example.myapplication.presentation.util.WindowSize
 import com.example.myapplication.presentation.util.rememberWindowSize
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
+
+/**
+ * Фиксированная высота верхней панели приложения.
+ * Не зависит от размера экрана и длины заголовка: заголовок ограничен одной строкой,
+ * поэтому панель не «прыгает» при переключении разделов и на разных устройствах.
+ */
+private val TopBarHeight = 64.dp
 
 /**
  * Главная оболочка приложения (Shell), обеспечивающая постоянство UI-элементов.
@@ -223,13 +232,13 @@ private fun MainTopBar(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     TopAppBar(
+        modifier = Modifier.height(TopBarHeight),
         title = {
             Text(
                 text = getScreenTitle(currentRoute),
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                ),
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onPrimary
             )
         },
@@ -327,17 +336,23 @@ private fun MainBottomBar(
 }
 
 /**
- * Вспомогательная функция для получения заголовка экрана на основе текущего маршрута.
+ * Возвращает заголовок экрана с учётом класса размера окна:
+ * на узких экранах ([WindowSize.COMPACT]) используется короткая формулировка,
+ * чтобы заголовок помещался в одну строку без обрезки.
  *
- * @param route Строковое представление текущего маршрута.
- * @return Строка с названием экрана для отображения в [TopAppBar].
+ * @param route Текущий маршрут.
+ * @return Заголовок для [TopAppBar].
  */
-private fun getScreenTitle(route: String?): String = when (route) {
-    Routers.Home.route -> "Главная"
-    Routers.DstPointList.route -> "Зоны выгрузки бетона"
-    Routers.ProductList.route -> "Продукты для отгрузки"
-    Routers.Queue.route -> "Очередь заявок на отгрузку"
-    Routers.Archive.route -> "Архивы"
-    Routers.PersonInfo.route -> "Профиль"
-    else -> " "
+@Composable
+private fun getScreenTitle(route: String?): String {
+    val isCompact = rememberWindowSize() == WindowSize.COMPACT
+    return when (route) {
+        Routers.Home.route -> "Главная"
+        Routers.DstPointList.route -> if (isCompact) "Зоны выгрузки" else "Зоны выгрузки бетона"
+        Routers.ProductList.route -> if (isCompact) "Продукты" else "Продукты для отгрузки"
+        Routers.Queue.route -> if (isCompact) "Очередь" else "Очередь заявок на отгрузку"
+        Routers.Archive.route -> "Архивы"
+        Routers.PersonInfo.route -> "Профиль"
+        else -> " "
+    }
 }
