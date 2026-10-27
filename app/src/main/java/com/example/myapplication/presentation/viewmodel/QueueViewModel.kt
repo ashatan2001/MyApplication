@@ -118,8 +118,9 @@ class QueueViewModel @Inject constructor(
         viewModelScope.launch {
             _isProcessing.value = true
             try {
-                // TODO: Вызов UseCase для редактирования, например: updateLoadUseCase(load)
-                // После успеха: loadQueue()
+                // TODO
+                // updateLoadByIdUseCase(load.id.toString(), result)
+                //loadQueue()
             } finally {
                 _isProcessing.value = false
             }

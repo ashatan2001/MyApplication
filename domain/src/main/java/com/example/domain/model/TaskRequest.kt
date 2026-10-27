@@ -11,7 +11,7 @@ package com.example.domain.model
 
 data class TaskRequest (
     val quantity: Float,
-    val zone: Int,
+    val zone: Int?,
     val pallete: String? = null,
     val product: Long
 )

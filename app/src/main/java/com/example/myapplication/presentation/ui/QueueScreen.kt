@@ -1,6 +1,7 @@
 package com.example.myapplication.presentation.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -94,11 +95,17 @@ fun QueueScreen(
 
         // Глобальный индикатор загрузки поверх экрана при выполнении действий
         if (isProcessing) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = Color.Black.copy(alpha = 0.3f)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)),
+                contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(48.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    strokeWidth = 4.dp
+                )
             }
         }
     }
