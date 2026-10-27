@@ -3,7 +3,7 @@ package com.example.myapplication.presentation.ui
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -22,63 +21,88 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.presentation.ArchiveRow
 import com.example.myapplication.presentation.ArchiveScreenState
 import com.example.myapplication.presentation.ArchiveType
+import com.example.myapplication.presentation.util.DateTimeFormatters.parseToMillis
+import com.example.myapplication.presentation.util.WindowSize
+import com.example.myapplication.presentation.util.rememberWindowSize
 import com.example.myapplication.presentation.viewmodel.ArchiveViewModel
-import java.text.SimpleDateFormat
-import java.util.*
 
+/** Ширина боковой панели формы на больших экранах. */
+private val FormPanelWidth = 340.dp
+
+/** Ширина фиксированной колонки с датой в таблице. */
+private val DateColumnWidth = 160.dp
+
+/**
+ * Экран архива с адаптивной версткой:
+ * - [WindowSize.COMPACT] — форма над таблицей, колонки таблицы со горизонтальной прокруткой;
+ * - [WindowSize.MEDIUM] — то же, но поля дат размещаются в две колонки для экономии высоты;
+ * - [WindowSize.EXPANDED] — форма в боковой панели слева, таблица занимает оставшуюся ширину,
+ *   колонки таблицы растягиваются пропорционально без прокрутки, если хватает места.
+ *
+ * @param viewModel [ArchiveViewModel] для управления состоянием экрана.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArchiveScreen(
     viewModel: ArchiveViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val windowSize = rememberWindowSize()
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
-        ArchiveForm(
-            state = state,
-            onTypeChange = viewModel::updateType,
-            onRecordsChange = viewModel::updateRecords,
-            onLoadClick = viewModel::loadArchive,
-            onShowStartPicker = { showStartPicker = true },
-            onShowEndPicker = { showEndPicker = true }
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (state.isLoading && state.rows.isEmpty()) {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(modifier = Modifier.size(32.dp))
-            }
-        } else if (state.error != null && state.rows.isEmpty()) {
-            Text(
-                text = state.error!!,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                fontSize = 13.sp
+    when (windowSize) {
+        // Планшет ландшафт: форма слева, таблица справа
+        WindowSize.EXPANDED -> Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ArchiveForm(
+                state = state,
+                modifier = Modifier
+                    .width(FormPanelWidth)
+                    .fillMaxHeight()
+                    .verticalScroll(rememberScrollState()),
+                onTypeChange = viewModel::updateType,
+                onRecordsChange = viewModel::updateRecords,
+                onLoadClick = viewModel::loadArchive,
+                onShowStartPicker = { showStartPicker = true },
+                onShowEndPicker = { showEndPicker = true }
             )
-        } else {
-            ArchiveTable(
-                type = state.selectedType,
-                rows = state.rows,
-                isLoadingMore = state.isLoadingMore,
-                onLoadMore = viewModel::loadNextPage,
-                hasNextPage = state.currentPage < state.totalPages
+            VerticalDivider(modifier = Modifier.fillMaxHeight())
+            ArchiveContent(
+                state = state,
+                modifier = Modifier.weight(1f),
+                onPreviousPage = viewModel::previousPage,
+                onNextPage = viewModel::nextPage,
+                onClearError = viewModel::clearError
             )
         }
-
-        if (state.error != null && state.rows.isNotEmpty()) {
-            Snackbar(
-                modifier = Modifier.padding(top = 4.dp),
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                action = { TextButton(onClick = { viewModel.clearError() }) { Text("OK", fontSize = 12.sp) } }
-            ) {
-                Text(state.error!!, fontSize = 12.sp)
-            }
+        // Телефон и планшет портрет: форма над таблицей
+        else -> Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            ArchiveForm(
+                state = state,
+                modifier = Modifier.fillMaxWidth(),
+                onTypeChange = viewModel::updateType,
+                onRecordsChange = viewModel::updateRecords,
+                onLoadClick = viewModel::loadArchive,
+                onShowStartPicker = { showStartPicker = true },
+                onShowEndPicker = { showEndPicker = true }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            ArchiveContent(
+                state = state,
+                modifier = Modifier.weight(1f),
+                onPreviousPage = viewModel::previousPage,
+                onNextPage = viewModel::nextPage,
+                onClearError = viewModel::clearError
+            )
         }
     }
 
@@ -104,111 +128,91 @@ fun ArchiveScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Область вывода результата: индикатор загрузки, ошибка либо таблица с пагинацией.
+ *
+ * @param state Текущее состояние экрана.
+ * @param modifier Модификатор контейнера.
+ * @param onPreviousPage Переход на предыдущую страницу.
+ * @param onNextPage Переход на следующую страницу.
+ * @param onClearError Сброс сообщения об ошибке.
+ */
 @Composable
-private fun NativeDateTimePickerDialog(
-    initialDateMillis: Long = System.currentTimeMillis(),
-    onDismiss: () -> Unit,
-    onDateTimeSelected: (String) -> Unit
+private fun ArchiveContent(
+    state: ArchiveScreenState,
+    modifier: Modifier = Modifier,
+    onPreviousPage: () -> Unit,
+    onNextPage: () -> Unit,
+    onClearError: () -> Unit
 ) {
-    var showTimePicker by remember { mutableStateOf(false) }
-    var selectedDateMillis by remember { mutableStateOf(initialDateMillis) }
-
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialDateMillis
-    )
-
-    if (!showTimePicker) {
-        // Шаг 1: Выбор даты
-        DatePickerDialog(
-            onDismissRequest = onDismiss,
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { selectedDateMillis = it }
-                    showTimePicker = true
-                }) {
-                    Text("Далее")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) {
-                    Text("Отмена")
-                }
+    Column(modifier = modifier) {
+        if (state.isLoading && state.rows.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(32.dp))
             }
-        ) {
-            DatePicker(
-                state = datePickerState,
-                title = { Text("Выберите дату") }
+        } else if (state.error != null && state.rows.isEmpty()) {
+            Text(
+                text = state.error!!,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                fontSize = 13.sp
+            )
+        } else {
+            ArchiveTable(
+                type = state.selectedType,
+                rows = state.rows,
+                isLoadingPage = state.isLoadingPage,
+                currentPage = state.currentPage,
+                totalPages = state.totalPages,
+                onPreviousPage = onPreviousPage,
+                onNextPage = onNextPage,
+                modifier = Modifier.weight(1f)
             )
         }
-    } else {
-        // Шаг 2: Выбор времени
-        val calendar = Calendar.getInstance().apply {
-            timeInMillis = selectedDateMillis
-        }
-        val timePickerState = rememberTimePickerState(
-            initialHour = calendar.get(Calendar.HOUR_OF_DAY),
-            initialMinute = calendar.get(Calendar.MINUTE),
-            is24Hour = true
-        )
-
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("Выберите время") },
-            text = {
-                TimePicker(
-                    state = timePickerState,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val date = Date(selectedDateMillis)
-                    val dateFormatter = SimpleDateFormat("dd.MM.yyyy", Locale.US)
-                    val dateStr = dateFormatter.format(date)
-
-                    val timeStr = String.format(Locale.US, "%02d:%02d:00", timePickerState.hour, timePickerState.minute)
-
-                    onDateTimeSelected("$dateStr $timeStr")
-                }) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) {
-                    Text("Отмена")
-                }
+        if (state.error != null && state.rows.isNotEmpty()) {
+            Snackbar(
+                modifier = Modifier.padding(top = 4.dp),
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                action = { TextButton(onClick = onClearError) { Text("OK", fontSize = 12.sp) } }
+            ) {
+                Text(state.error!!, fontSize = 12.sp)
             }
-        )
+        }
     }
 }
 
-private fun parseToMillis(dateStr: String): Long {
-    return try {
-        val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault())
-        formatter.parse(dateStr)?.time ?: System.currentTimeMillis()
-    } catch (e: Exception) {
-        System.currentTimeMillis()
-    }
-}
-
+/**
+ * Форма фильтров архива. На [WindowSize.MEDIUM] поля дат размещаются в две колонки.
+ *
+ * @param state Текущее состояние экрана.
+ * @param modifier Модификатор контейнера формы.
+ * @param onTypeChange Смена типа архива.
+ * @param onRecordsChange Смена количества записей на странице.
+ * @param onLoadClick Запуск загрузки архива.
+ * @param onShowStartPicker Открытие диалога выбора даты начала.
+ * @param onShowEndPicker Открытие диалога выбора даты окончания.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ArchiveForm(
     state: ArchiveScreenState,
+    modifier: Modifier = Modifier,
     onTypeChange: (ArchiveType) -> Unit,
     onRecordsChange: (String) -> Unit,
     onLoadClick: () -> Unit,
     onShowStartPicker: () -> Unit,
     onShowEndPicker: () -> Unit
 ) {
+    val windowSize = rememberWindowSize()
     var typeExpanded by remember { mutableStateOf(false) }
     var recordsExpanded by remember { mutableStateOf(false) }
-
     val recordsOptions = listOf("25", "50", "100", "200")
     val shape = RoundedCornerShape(8.dp)
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = !typeExpanded }) {
             OutlinedTextField(
                 value = state.selectedType.title,
@@ -230,23 +234,25 @@ private fun ArchiveForm(
             }
         }
 
-        Text("Дата и время начала", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        WheelPickerButton(
-            value = state.startDate.ifBlank { "дд.мм.гггг чч:мм:сс" },
-            icon = Icons.Default.CalendarToday,
-            onClick = onShowStartPicker,
-            shape = shape,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Text("Дата и время окончания", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        WheelPickerButton(
-            value = state.endDate.ifBlank { "дд.мм.гггг чч:мм:сс" },
-            icon = Icons.Default.CalendarToday,
-            onClick = onShowEndPicker,
-            shape = shape,
-            modifier = Modifier.fillMaxWidth()
-        )
+        if (windowSize == WindowSize.MEDIUM) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DateField(
+                    label = "Дата и время начала",
+                    value = state.startDate,
+                    onClick = onShowStartPicker,
+                    modifier = Modifier.weight(1f)
+                )
+                DateField(
+                    label = "Дата и время окончания",
+                    value = state.endDate,
+                    onClick = onShowEndPicker,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        } else {
+            DateField("Дата и время начала", state.startDate, onShowStartPicker, Modifier.fillMaxWidth())
+            DateField("Дата и время окончания", state.endDate, onShowEndPicker, Modifier.fillMaxWidth())
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             ExposedDropdownMenuBox(expanded = recordsExpanded, onExpandedChange = { recordsExpanded = !recordsExpanded }) {
@@ -268,7 +274,6 @@ private fun ArchiveForm(
                     }
                 }
             }
-
             Button(
                 onClick = onLoadClick,
                 enabled = !state.isLoading,
@@ -286,124 +291,215 @@ private fun ArchiveForm(
     }
 }
 
+/**
+ * Подписанное поле выбора даты/времени периода.
+ *
+ * @param label Подпись над полем.
+ * @param value Текущее значение даты (пустое — показывается плейсхолдер).
+ * @param onClick Открытие диалога выбора.
+ * @param modifier Модификатор контейнера поля.
+ */
 @Composable
-private fun WheelPickerButton(
+private fun DateField(
+    label: String,
     value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
-    shape: RoundedCornerShape,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        onClick = onClick,
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        modifier = modifier
-            .height(44.dp)
-            .border(width = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), shape = shape)
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
-        ) {
-            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = value, fontSize = 13.sp, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
-        }
+    Column(modifier = modifier) {
+        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        PickerFieldButton(
+            value = value.ifBlank { "дд.мм.гггг чч:мм:сс" },
+            icon = Icons.Default.CalendarToday,
+            onClick = onClick,
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
+/** Описание колонки таблицы: заголовок и базовая ширина. */
+private data class TableColumn(val title: String, val width: Dp)
+
+/**
+ * Возвращает описание колонок таблицы для выбранного типа архива.
+ *
+ * @param type Тип архива.
+ * @return Список колонок с заголовками и базовыми ширинами.
+ */
+private fun tableColumns(type: ArchiveType): List<TableColumn> = when (type) {
+    ArchiveType.EVENTS -> listOf(
+        TableColumn("Сотрудник", 150.dp),
+        TableColumn("Оборудование", 200.dp),
+        TableColumn("Упр. служба", 150.dp),
+        TableColumn("Место", 150.dp),
+        TableColumn("Класс", 120.dp),
+        TableColumn("Текст", 250.dp)
+    )
+    ArchiveType.HAND_LOADS -> listOf(
+        TableColumn("Место", 150.dp),
+        TableColumn("Статус", 120.dp),
+        TableColumn("Оборудование", 150.dp),
+        TableColumn("Вместимость дозатора, кг", 200.dp),
+        TableColumn("Компонент", 150.dp)
+    )
+}
+
+/**
+ * Извлекает текстовые значения ячеек строки таблицы.
+ *
+ * @param row Строка архива.
+ * @return Список значений ячеек в порядке колонок [tableColumns].
+ */
+private fun cellValues(row: ArchiveRow): List<String> = when (row) {
+    is ArchiveRow.EventRow -> listOf(
+        row.event.person?.fullName ?: "—",
+        row.event.equipment?.name ?: "—",
+        row.event.deviceName ?: "—",
+        row.event.workPlaceName ?: "—",
+        row.event.className ?: "—",
+        row.event.text ?: "—"
+    )
+    is ArchiveRow.HandLoadRow -> listOf(
+        row.handLoad.workPlaceName ?: "—",
+        row.handLoad.status.toString(),
+        row.handLoad.equipment?.name ?: "—",
+        row.handLoad.equipmentCapacity.toString(),
+        row.handLoad.component?.name ?: "—"
+    )
+}
+
+/**
+ * Извлекает строковое представление даты события для фиксированной колонки.
+ *
+ * @param row Строка архива.
+ * @return Дата в формате "дд.мм.гггг чч:мм:сс".
+ */
+private fun dateText(row: ArchiveRow): String = when (row) {
+    is ArchiveRow.EventRow -> row.event.date.toString().replace("T", " ")
+    is ArchiveRow.HandLoadRow -> row.handLoad.date.toString().replace("T", " ")
+}
+
+/**
+ * Таблица архива с постраничной навигацией.
+ *
+ * Поведение колонок адаптивное: если доступная ширина экрана не меньше суммарной
+ * ширины колонок, колонки растягиваются пропорционально базовым ширинам ([Modifier.weight]);
+ * иначе таблица прокручивается горизонтально общим [ScrollState] для шапки и строк.
+ *
+ * @param type Тип архива, определяющий набор колонок.
+ * @param rows Строки текущей страницы.
+ * @param isLoadingPage Флаг загрузки страницы (оверлей с индикатором).
+ * @param currentPage Номер текущей страницы.
+ * @param totalPages Общее количество страниц.
+ * @param onPreviousPage Переход на предыдущую страницу.
+ * @param onNextPage Переход на следующую страницу.
+ * @param modifier Модификатор контейнера таблицы.
+ */
 @Composable
 private fun ArchiveTable(
     type: ArchiveType,
     rows: List<ArchiveRow>,
-    isLoadingMore: Boolean,
-    onLoadMore: () -> Unit,
-    hasNextPage: Boolean
+    isLoadingPage: Boolean,
+    currentPage: Int,
+    totalPages: Int,
+    onPreviousPage: () -> Unit,
+    onNextPage: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    val columns = remember(type) { tableColumns(type) }
+    val requiredWidth = DateColumnWidth + columns.fold(0.dp) { acc, column -> acc + column.width }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TableHeader(type = type, scrollState = scrollState)
-        HorizontalDivider()
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        // Хватает ли ширины экрана, чтобы показать таблицу без прокрутки
+        val stretch = maxWidth >= requiredWidth
 
-        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-            items(rows, key = {
-                when (it) {
-                    is ArchiveRow.EventRow -> "event_${it.event.id}"
-                    is ArchiveRow.HandLoadRow -> "handload_${it.handLoad.id}"
-                }
-            }) { row ->
-                TableRow(
-                    row = row,
-                    type = type,
-                    scrollState = scrollState
-                )
-            }
-            if (isLoadingMore) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(12.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(modifier = Modifier.size(28.dp))
+        Column(modifier = Modifier.fillMaxWidth()) {
+            TableHeader(columns = columns, stretch = stretch, scrollState = scrollState)
+            HorizontalDivider()
+
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    itemsIndexed(
+                        items = rows,
+                        key = { index, row ->
+                            when (row) {
+                                is ArchiveRow.EventRow -> "event_${row.event.id}_$index"
+                                is ArchiveRow.HandLoadRow -> "handload_${row.handLoad.id}_$index"
+                            }
+                        }
+                    ) { _, row ->
+                        TableRow(row = row, columns = columns, stretch = stretch, scrollState = scrollState)
                     }
                 }
-            }
-            if (hasNextPage && !isLoadingMore) {
-                item {
-                    Button(
-                        onClick = onLoadMore,
-                        modifier = Modifier.fillMaxWidth().padding(8.dp).clip(RoundedCornerShape(8.dp)),
-                        shape = RoundedCornerShape(8.dp)
+                // Оверлей лоадера при переключении страниц
+                if (isLoadingPage) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("Загрузить ещё", fontSize = 13.sp)
+                        CircularProgressIndicator(modifier = Modifier.size(48.dp))
                     }
                 }
             }
+
+            PaginationRow(
+                currentPage = currentPage,
+                totalPages = totalPages,
+                isLoadingPage = isLoadingPage,
+                centered = stretch,
+                onPreviousPage = onPreviousPage,
+                onNextPage = onNextPage
+            )
         }
     }
 }
 
+/**
+ * Шапка таблицы. В режиме [stretch] колонки растягиваются на всю ширину,
+ * иначе прокручиваются горизонтально синхронно со строками.
+ */
 @Composable
-private fun TableHeader(type: ArchiveType, scrollState: ScrollState) {
+private fun TableHeader(
+    columns: List<TableColumn>,
+    stretch: Boolean,
+    scrollState: ScrollState
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(vertical = 8.dp)
     ) {
-        // Фиксированная колонка "Дата"
-        HeaderCell("Дата и время", width = 160.dp)
-
-        // Прокручиваемая часть
-        Row(
-            modifier = Modifier.horizontalScroll(scrollState)
-        ) {
-            when (type) {
-                ArchiveType.EVENTS -> {
-                    HeaderCell("Сотрудник", 150.dp)
-                    HeaderCell("Оборудование", 200.dp)
-                    HeaderCell("Упр. служба", 150.dp)
-                    HeaderCell("Место", 150.dp)
-                    HeaderCell("Класс", 120.dp)
-                    HeaderCell("Текст", 250.dp)
-                }
-                ArchiveType.HAND_LOADS -> {
-                    HeaderCell("Место", 150.dp)
-                    HeaderCell("Статус", 120.dp)
-                    HeaderCell("Оборудование", 150.dp)
-                    HeaderCell("Вместимость дозатора, кг", 200.dp)
-                    HeaderCell("Компонент", 150.dp)
+        HeaderCell("Дата и время", Modifier.width(DateColumnWidth))
+        if (stretch) {
+            columns.forEach { column ->
+                HeaderCell(column.title, Modifier.weight(column.width.value))
+            }
+        } else {
+            Row(modifier = Modifier.horizontalScroll(scrollState)) {
+                columns.forEach { column ->
+                    HeaderCell(column.title, Modifier.width(column.width))
                 }
             }
         }
     }
 }
 
+/**
+ * Ячейка шапки таблицы.
+ *
+ * @param text Заголовок колонки.
+ * @param modifier Модификатор, задающий ширину или вес колонки.
+ */
 @Composable
-private fun HeaderCell(text: String, width: Dp) {
+private fun HeaderCell(text: String, modifier: Modifier) {
     Text(
         text = text,
-        modifier = Modifier.width(width).padding(horizontal = 8.dp),
+        modifier = modifier.padding(horizontal = 8.dp),
         fontWeight = FontWeight.Bold,
         fontSize = 12.sp,
         maxLines = 1,
@@ -411,68 +507,111 @@ private fun HeaderCell(text: String, width: Dp) {
     )
 }
 
+/**
+ * Строка таблицы. Фиксированная колонка даты + ячейки данных,
+ * растягиваемые или прокручиваемые в зависимости от режима [stretch].
+ */
 @Composable
-private fun TableRow(row: ArchiveRow, type: ArchiveType, scrollState: ScrollState) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-    ) {
+private fun TableRow(
+    row: ArchiveRow,
+    columns: List<TableColumn>,
+    stretch: Boolean,
+    scrollState: ScrollState
+) {
+    val values = cellValues(row)
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Box(
-            modifier = Modifier
-                .width(160.dp)
-                .padding(horizontal = 8.dp),
+            modifier = Modifier.width(DateColumnWidth).padding(horizontal = 8.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(
-                text = when (row) {
-                    is ArchiveRow.EventRow -> row.event.date.toString().replace("T", " ")
-                    is ArchiveRow.HandLoadRow -> row.handLoad.date.toString().replace("T", " ")
-                },
+                text = dateText(row),
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
-
-        Row(
-            modifier = Modifier.horizontalScroll(scrollState)
-        ) {
-            when (row) {
-                is ArchiveRow.EventRow -> {
-                    CellText(row.event.person?.fullName ?: "—", 150.dp)
-                    CellText(row.event.equipment?.name ?: "—", 200.dp)
-                    CellText(row.event.deviceName ?: "—", 150.dp)
-                    CellText(row.event.workPlaceName ?: "—", 150.dp)
-                    CellText(row.event.className ?: "—", 120.dp)
-                    CellText(row.event.text ?: "—", 250.dp)
-                }
-
-                is ArchiveRow.HandLoadRow -> {
-                    CellText(row.handLoad.workPlaceName ?: "—", 150.dp)
-                    CellText(row.handLoad.status.toString(), 150.dp)
-                    CellText(row.handLoad.equipment?.name ?: "—", 200.dp)
-                    CellText(row.handLoad.equipmentCapacity.toString(), 150.dp)
-                    CellText(row.handLoad.component?.name ?: "—", 200.dp)
+        if (stretch) {
+            values.forEachIndexed { index, text ->
+                CellText(text, Modifier.weight(columns[index].width.value))
+            }
+        } else {
+            Row(modifier = Modifier.horizontalScroll(scrollState)) {
+                values.forEachIndexed { index, text ->
+                    CellText(text, Modifier.width(columns[index].width))
                 }
             }
         }
     }
 }
 
+/**
+ * Ячейка данных таблицы.
+ *
+ * @param text Значение ячейки.
+ * @param modifier Модификатор, задающий ширину или вес колонки.
+ */
 @Composable
-private fun CellText(text: String, width: Dp) {
-    Box(
+private fun CellText(text: String, modifier: Modifier) {
+    Box(modifier = modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.CenterStart) {
+        Text(text = text, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/**
+ * Панель постраничной навигации.
+ * На широких экранах ([centered] = true) элементы группируются по центру,
+ * на узких — разводятся по краям.
+ *
+ * @param currentPage Номер текущей страницы.
+ * @param totalPages Общее количество страниц.
+ * @param isLoadingPage Флаг загрузки страницы.
+ * @param centered Режим центрированного расположения элементов.
+ * @param onPreviousPage Переход на предыдущую страницу.
+ * @param onNextPage Переход на следующую страницу.
+ */
+@Composable
+private fun PaginationRow(
+    currentPage: Int,
+    totalPages: Int,
+    isLoadingPage: Boolean,
+    centered: Boolean,
+    onPreviousPage: () -> Unit,
+    onNextPage: () -> Unit
+) {
+    Row(
         modifier = Modifier
-            .width(width)
-            .padding(horizontal = 8.dp),
-        contentAlignment = Alignment.CenterStart
+            .fillMaxWidth()
+            .padding(vertical = 8.dp, horizontal = if (centered) 16.dp else 0.dp),
+        horizontalArrangement = if (centered) {
+            Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
+        } else {
+            Arrangement.SpaceBetween
+        },
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = text,
-            fontSize = 12.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        OutlinedButton(
+            onClick = onPreviousPage,
+            enabled = !isLoadingPage && currentPage > 1,
+            modifier = Modifier.height(40.dp)
+        ) {
+            Text("Назад", fontSize = 13.sp)
+        }
+        if (isLoadingPage) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        } else {
+            Text(
+                text = "Страница $currentPage из $totalPages",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        OutlinedButton(
+            onClick = onNextPage,
+            enabled = !isLoadingPage && currentPage < totalPages,
+            modifier = Modifier.height(40.dp)
+        ) {
+            Text("Вперед", fontSize = 13.sp)
+        }
     }
 }

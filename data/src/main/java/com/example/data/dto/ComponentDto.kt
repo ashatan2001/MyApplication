@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ComponentDto (
     @SerialName("CompID") val id: Long,
-    @SerialName("CompNo") val number: String,
-    @SerialName("CompName") val name: String,
-    @SerialName("CompQty") val quantity: Float,
+    @SerialName("CompNo") val number: String? = null,
+    @SerialName("CompName") val name: String? = null,
+    @SerialName("CompQty") val quantity: Float? = null,
 )

@@ -1,6 +1,8 @@
 package com.example.myapplication.presentation.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -20,7 +22,21 @@ import com.example.myapplication.presentation.viewmodel.AuthUiState
 import com.example.myapplication.presentation.viewmodel.AuthViewModel
 
 /**
+ * Максимальная ширина формы авторизации.
+ *
+ * На телефонах (экран уже этого значения) форма занимает всю доступную ширину.
+ * На планшетах и широких экранах форма ограничивается этой шириной
+ * и центрируется, чтобы поля не растягивались на весь дисплей.
+ */
+private val AuthFormMaxWidth = 480.dp
+
+/**
  * Экран авторизации с формой логина и пароля.
+ *
+ * Ширина формы адаптивная: на телефонах поля занимают всю ширину экрана,
+ * на планшетах и в ландшафтной ориентации форма центрируется и ограничивается
+ * значением [AuthFormMaxWidth]. При открытой клавиатуре или на низких экранах
+ * форма прокручивается вертикально.
  *
  * @param onNavigateToHome Вызывается после успешного входа для перехода на главный экран.
  * @param viewModel [AuthViewModel] для управления состоянием и обработки событий.
@@ -39,7 +55,7 @@ fun AuthScreen(
     /**
      * Собираем одноразовые события (навигация) через Channel.
      * LaunchedEffect(Unit) гарантирует, что событие обработается один раз,
-     * даже при пересоздании композиции (например, при повороте экрана).
+     * даже при пересоздании композиции.
      */
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -50,78 +66,82 @@ fun AuthScreen(
     }
 
     Scaffold { innerPadding ->
-        Column(
+
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .verticalScroll(rememberScrollState())
+                .imePadding(),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "Авторизация",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Логин") },
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Иконка пользователя") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = uiState !is AuthUiState.Loading,
-                isError = uiState is AuthUiState.Error
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Пароль") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (passwordVisible) "Скрыть пароль" else "Показать пароль"
-                        )
-                    }
-                },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = uiState !is AuthUiState.Loading,
-                isError = uiState is AuthUiState.Error
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            Button(
-                onClick = { viewModel.login(username, password) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = uiState !is AuthUiState.Loading &&
-                        username.isNotBlank() && password.isNotBlank()
+            Column(
+                modifier = Modifier
+                    .widthIn(max = AuthFormMaxWidth) // ограничение ширины для планшета
+                    .fillMaxWidth()                   // на телефоне — вся ширина экрана
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (uiState is AuthUiState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Войти")
-                }
-            }
-
-            if (uiState is AuthUiState.Error) {
-                Spacer(Modifier.height(16.dp))
                 Text(
-                    text = (uiState as AuthUiState.Error).message,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
+                    text = "Авторизация",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(bottom = 32.dp)
                 )
+
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Логин") },
+                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Иконка пользователя") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = uiState !is AuthUiState.Loading,
+                    isError = uiState is AuthUiState.Error
+                )
+                Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Пароль") },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (passwordVisible) "Скрыть пароль" else "Показать пароль"
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = uiState !is AuthUiState.Loading,
+                    isError = uiState is AuthUiState.Error
+                )
+                Spacer(Modifier.height(24.dp))
+                Button(
+                    onClick = { viewModel.login(username, password) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uiState !is AuthUiState.Loading &&
+                            username.isNotBlank() && password.isNotBlank()
+                ) {
+                    if (uiState is AuthUiState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Войти")
+                    }
+                }
+                if (uiState is AuthUiState.Error) {
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = (uiState as AuthUiState.Error).message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
     }

@@ -11,7 +11,7 @@ package com.example.domain.model
 
 data class Component (
     val id: Long,
-    val name: String,
+    val name: String?,
     val number: String?,
     val quantity: Float?
 )

@@ -1,7 +1,9 @@
 package com.example.myapplication.presentation.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -23,14 +25,17 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.myapplication.presentation.ui.*
+import com.example.myapplication.presentation.util.WindowSize
+import com.example.myapplication.presentation.util.rememberWindowSize
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
 
 /**
  * Главная оболочка приложения (Shell), обеспечивающая постоянство UI-элементов.
  *
- * Содержит единый [Scaffold] с закрепленными верхней панелью ([MainTopBar])
- * и нижней навигационной панелью ([MainBottomBar]). Внутри размещает вложенный
- * [NavHost] для переключения между основными экранами приложения без перерисовки панелей.
+ * Адаптивная навигация:
+ * - на телефонах ([WindowSize.COMPACT]) — нижняя панель [MainBottomBar];
+ * - на планшетах ([WindowSize.MEDIUM], [WindowSize.EXPANDED]) — боковая панель [MainNavigationRail],
+ *   до которой удобно дотягиваться большим пальцем при удержании планшета.
  *
  * @param onLogout Колбэк для завершения сессии пользователя.
  * @param sessionViewModel [SessionViewModel] для глобального управления сессией.
@@ -40,6 +45,9 @@ fun MainShell(
     onLogout: () -> Unit,
     sessionViewModel: SessionViewModel = hiltViewModel()
 ) {
+    val windowSize = rememberWindowSize()
+    val useSideNavigation = windowSize != WindowSize.COMPACT
+
     val innerNavController = rememberNavController()
     val navBackStackEntry by innerNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -51,6 +59,18 @@ fun MainShell(
         Routers.Queue.route,
         Routers.Archive.route
     )
+
+    /**
+     * Единый обработчик переключения разделов верхнего уровня
+     * с сохранением состояния каждого раздела (saveState/restoreState).
+     */
+    val navigateToTopLevel: (String) -> Unit = { route ->
+        innerNavController.navigate(route) {
+            popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -64,97 +84,125 @@ fun MainShell(
             )
         },
         bottomBar = {
-            MainBottomBar(
-                currentRoute = currentRoute,
-                onHomeClick = {
-                    innerNavController.navigate(Routers.Home.route) {
-                        popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onDstPointListClick = {
-                    innerNavController.navigate(Routers.DstPointList.route) {
-                        popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onQueueClick = {
-                    innerNavController.navigate(Routers.Queue.route) {
-                        popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onArchiveClick = {
-                    innerNavController.navigate(Routers.Archive.route) {
-                        popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            )
+            if (!useSideNavigation) {
+                MainBottomBar(
+                    currentRoute = currentRoute,
+                    onHomeClick = { navigateToTopLevel(Routers.Home.route) },
+                    onDstPointListClick = { navigateToTopLevel(Routers.DstPointList.route) },
+                    onQueueClick = { navigateToTopLevel(Routers.Queue.route) },
+                    onArchiveClick = { navigateToTopLevel(Routers.Archive.route) }
+                )
+            }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = innerNavController,
-            startDestination = Routers.Home.route,
-            modifier = androidx.compose.ui.Modifier.padding(innerPadding)
-        ) {
-            composable(Routers.Home.route) { HomeScreen() }
-
-            composable(Routers.DstPointList.route) {
-                DstPointListScreen(
-                    onProductList = { zoneId ->
-                        innerNavController.navigate(Routers.ProductList.createRoute(zoneId))
-                    }
+        Row(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            if (useSideNavigation) {
+                MainNavigationRail(
+                    currentRoute = currentRoute,
+                    onHomeClick = { navigateToTopLevel(Routers.Home.route) },
+                    onDstPointListClick = { navigateToTopLevel(Routers.DstPointList.route) },
+                    onQueueClick = { navigateToTopLevel(Routers.Queue.route) },
+                    onArchiveClick = { navigateToTopLevel(Routers.Archive.route) }
                 )
             }
-
-            composable(Routers.Queue.route) { QueueScreen() }
-
-            composable(Routers.Archive.route) { ArchiveScreen() }
-
-            composable(Routers.PersonInfo.route) {
-                PersonScreen(
-                    onBack = { innerNavController.popBackStack() },
-                    viewModel = hiltViewModel()
-                )
-            }
-
-            composable(
-                route = Routers.ProductList.route,
-                arguments = listOf(navArgument(Routers.ProductList.ARG_ZONE_ID) { type = NavType.IntType })
-            ) { backStackEntry ->
-                val zone = backStackEntry.arguments?.getInt(Routers.ProductList.ARG_ZONE_ID) ?: return@composable
-                ProductListScreen(
-                    onBack = { innerNavController.popBackStack() },
-                    zone = zone,
-                    viewModel = hiltViewModel()
-                )
-            }
-
-            composable(
-                route = Routers.DstPoint.route,
-                arguments = listOf(navArgument(Routers.DstPoint.ARG_ZONE_ID) { type = NavType.IntType })
-            ) { backStackEntry ->
-                val zoneId = backStackEntry.arguments?.getInt(Routers.DstPoint.ARG_ZONE_ID) ?: return@composable
-                DstPointScreen(
-                    onBack = { innerNavController.popBackStack() },
-                    zoneId = zoneId,
-                    viewModel = hiltViewModel()
-                )
+            NavHost(
+                navController = innerNavController,
+                startDestination = Routers.Home.route,
+                modifier = Modifier.weight(1f).fillMaxSize()
+            ) {
+                composable(Routers.Home.route) { HomeScreen() }
+                composable(Routers.DstPointList.route) {
+                    DstPointListScreen(
+                        onProductList = { zoneId ->
+                            innerNavController.navigate(Routers.ProductList.createRoute(zoneId))
+                        }
+                    )
+                }
+                composable(Routers.Queue.route) { QueueScreen() }
+                composable(Routers.Archive.route) { ArchiveScreen() }
+                composable(Routers.PersonInfo.route) {
+                    PersonScreen(
+                        onBack = { innerNavController.popBackStack() },
+                        viewModel = hiltViewModel()
+                    )
+                }
+                composable(
+                    route = Routers.ProductList.route,
+                    arguments = listOf(navArgument(Routers.ProductList.ARG_ZONE_ID) { type = NavType.IntType })
+                ) { backStackEntry ->
+                    val zone = backStackEntry.arguments?.getInt(Routers.ProductList.ARG_ZONE_ID) ?: return@composable
+                    ProductListScreen(
+                        onBack = { innerNavController.popBackStack() },
+                        zone = zone,
+                        viewModel = hiltViewModel()
+                    )
+                }
+                composable(
+                    route = Routers.DstPoint.route,
+                    arguments = listOf(navArgument(Routers.DstPoint.ARG_ZONE_ID) { type = NavType.IntType })
+                ) { backStackEntry ->
+                    val zoneId = backStackEntry.arguments?.getInt(Routers.DstPoint.ARG_ZONE_ID) ?: return@composable
+                    DstPointScreen(
+                        onBack = { innerNavController.popBackStack() },
+                        zoneId = zoneId,
+                        viewModel = hiltViewModel()
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * Верхняя панель приложения.
+ * Боковая навигационная панель для планшетов.
+ * Дублирует разделы нижней панели, но размещена у левого края экрана.
  *
+ * @param currentRoute Текущий активный маршрут для подсветки выбранного элемента.
+ * @param onHomeClick Действие при выборе раздела "Главная".
+ * @param onDstPointListClick Действие при выборе раздела "Заказ".
+ * @param onQueueClick Действие при выборе раздела "Очередь".
+ * @param onArchiveClick Действие при выборе раздела "Архив".
+ */
+@Composable
+private fun MainNavigationRail(
+    currentRoute: String?,
+    onHomeClick: () -> Unit,
+    onDstPointListClick: () -> Unit,
+    onQueueClick: () -> Unit,
+    onArchiveClick: () -> Unit
+) {
+    NavigationRail {
+        NavigationRailItem(
+            icon = { Icon(Icons.Default.Home, contentDescription = "Главная") },
+            label = { Text("Главная", fontSize = 12.sp) },
+            selected = currentRoute == Routers.Home.route,
+            onClick = onHomeClick
+        )
+        NavigationRailItem(
+            icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
+            label = { Text("Заказ", fontSize = 12.sp) },
+            selected = currentRoute == Routers.DstPointList.route ||
+                    currentRoute?.startsWith("product_list") == true,
+            onClick = onDstPointListClick
+        )
+        NavigationRailItem(
+            icon = { Icon(Icons.Default.PendingActions, contentDescription = "Очередь") },
+            label = { Text("Очередь", fontSize = 12.sp) },
+            selected = currentRoute == Routers.Queue.route,
+            onClick = onQueueClick
+        )
+        NavigationRailItem(
+            icon = { Icon(Icons.Default.Archive, contentDescription = "Архив") },
+            label = { Text("Архив", fontSize = 12.sp) },
+            selected = currentRoute == Routers.Archive.route,
+            onClick = onArchiveClick
+        )
+    }
+}
+
+/**
+ * Верхняя панель приложения.
  * Динамически отображает кнопку "Назад" только для вложенных экранов.
- * Кнопки профиля и выхода доступны на всех экранах внутри оболочки.
  *
  * @param isRootScreen Флаг, указывающий, является ли текущий экран корневым.
  * @param currentRoute Текущий активный маршрут для отображения заголовка.
@@ -172,10 +220,8 @@ private fun MainTopBar(
     onSettingClick: () -> Unit,
     onProfileClick: () -> Unit,
     onLogoutClick: () -> Unit
-
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-
     TopAppBar(
         title = {
             Text(
@@ -190,59 +236,37 @@ private fun MainTopBar(
         navigationIcon = {
             if (!isRootScreen) {
                 IconButton(onClick = onBackClick) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Назад"
-                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                 }
+            } else {
+                Spacer(modifier = Modifier.size(48.dp))
             }
-            else Spacer(modifier = Modifier.size(48.dp))
         },
         actions = {
             IconButton(onClick = onSettingClick) {
                 Icon(Icons.Default.Settings, contentDescription = "Настройки")
             }
-
             Box {
                 IconButton(onClick = { menuExpanded = true }) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "Ещё"
-                    )
+                    Icon(Icons.Default.MoreVert, contentDescription = "Ещё")
                 }
-
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }
-                ) {
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                     DropdownMenuItem(
                         text = { Text("Профиль") },
                         onClick = {
                             menuExpanded = false
                             onProfileClick()
                         },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = null
-                            )
-                        }
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }
                     )
-
                     HorizontalDivider()
-
                     DropdownMenuItem(
                         text = { Text("Выйти") },
                         onClick = {
                             menuExpanded = false
                             onLogoutClick()
                         },
-                        leadingIcon = {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ExitToApp,
-                                contentDescription = null
-                            )
-                        }
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) }
                     )
                 }
             }
@@ -257,10 +281,7 @@ private fun MainTopBar(
 }
 
 /**
- * Нижняя навигационная панель.
- *
- * Обеспечивает переключение между тремя основными разделами приложения.
- * Использует `saveState` и `restoreState` для сохранения состояния прокрутки и данных при переключении.
+ * Нижняя навигационная панель для телефонов.
  *
  * @param currentRoute Текущий активный маршрут для подсветки выбранного элемента.
  * @param onHomeClick Действие при выборе вкладки "Главная".
@@ -286,7 +307,8 @@ private fun MainBottomBar(
         NavigationBarItem(
             icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
             label = { Text("Заказ") },
-            selected = currentRoute == Routers.DstPointList.route || currentRoute?.startsWith("product_list") == true,
+            selected = currentRoute == Routers.DstPointList.route ||
+                    currentRoute?.startsWith("product_list") == true,
             onClick = onDstPointListClick
         )
         NavigationBarItem(
@@ -317,5 +339,5 @@ private fun getScreenTitle(route: String?): String = when (route) {
     Routers.Queue.route -> "Очередь заявок на отгрузку"
     Routers.Archive.route -> "Архивы"
     Routers.PersonInfo.route -> "Профиль"
-    else -> ""
+    else -> " "
 }
