@@ -121,7 +121,9 @@ fun AuthScreen(
                 Spacer(Modifier.height(24.dp))
                 Button(
                     onClick = { viewModel.login(username, password) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
                     enabled = uiState !is AuthUiState.Loading &&
                             username.isNotBlank() && password.isNotBlank()
                 ) {

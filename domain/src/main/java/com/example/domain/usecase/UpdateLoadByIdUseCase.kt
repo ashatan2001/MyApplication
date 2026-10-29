@@ -1,8 +1,6 @@
 package com.example.domain.usecase
 
 import com.example.domain.exception.AppException
-import com.example.domain.exception.LoadNotFoundException
-import com.example.domain.model.Load
 import com.example.domain.model.TaskRequest
 import com.example.domain.repository.QueueRepository
 import com.example.domain.util.CustomResult

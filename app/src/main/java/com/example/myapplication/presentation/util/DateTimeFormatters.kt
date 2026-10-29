@@ -1,8 +1,7 @@
 package com.example.myapplication.presentation.util
 
-import android.annotation.SuppressLint
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 
 object DateTimeFormatters {
     const val PATTERN_DATE_TIME = "dd.MM.yyyy HH:mm:ss"

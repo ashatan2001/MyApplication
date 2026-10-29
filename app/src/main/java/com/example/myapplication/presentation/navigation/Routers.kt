@@ -1,11 +1,15 @@
 package com.example.myapplication.presentation.navigation
 
+/** Маршруты со светлым фоном под статус-баром: иконки статус-бара тёмные. */
+val lightStatusBarRoutes: Set<String> = setOf(Routers.Splash.route, Routers.UserAuth.route)
+
 /**
  * Централизованное управление маршрутами приложения.
  * Использование [sealed] гарантирует исчерпывающий `when` и защиту
  * от опечаток в строковых литералах маршрутов.
  */
 sealed class Routers(val route: String) {
+
     /** Стартовый экран. Определяет, авторизован ли пользователь. */
     data object Splash : Routers("splash")
 
