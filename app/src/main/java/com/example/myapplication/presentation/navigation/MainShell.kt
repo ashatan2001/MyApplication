@@ -25,17 +25,11 @@ import com.example.myapplication.presentation.util.WindowSize
 import com.example.myapplication.presentation.util.rememberWindowSize
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
 
-
 /**
  * Главная оболочка приложения (Shell), обеспечивающая постоянство UI-элементов.
- *
  * Адаптивная навигация:
- * - на телефонах ([WindowSize.COMPACT]) — нижняя панель [MainBottomBar];
- * - на планшетах ([WindowSize.MEDIUM], [WindowSize.EXPANDED]) — боковая панель [MainNavigationRail],
- *   до которой удобно дотягиваться большим пальцем при удержании планшета.
- *
- * @param onLogout Колбэк для завершения сессии пользователя.
- * @param sessionViewModel [SessionViewModel] для глобального управления сессией.
+ * на телефонах ([WindowSize.COMPACT]) — нижняя панель [MainBottomBar];
+ * на планшетах ([WindowSize.MEDIUM], [WindowSize.EXPANDED]) — боковая панель [MainNavigationRail].
  */
 @Composable
 fun MainShell(
@@ -44,7 +38,6 @@ fun MainShell(
 ) {
     val windowSize = rememberWindowSize()
     val useSideNavigation = windowSize != WindowSize.COMPACT
-
     val innerNavController = rememberNavController()
     val navBackStackEntry by innerNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -74,6 +67,7 @@ fun MainShell(
             MainTopBar(
                 isRootScreen = isRootScreen,
                 currentRoute = currentRoute,
+                useSideNavigation = useSideNavigation, // Передаем флаг для расчета отступа
                 onBackClick = { innerNavController.popBackStack() },
                 onSettingClick = { innerNavController.navigate(Routers.PersonInfo.route) },
                 onProfileClick = { innerNavController.navigate(Routers.PersonInfo.route) },
@@ -152,13 +146,6 @@ fun MainShell(
 
 /**
  * Боковая навигационная панель для планшетов.
- * Дублирует разделы нижней панели, но размещена у левого края экрана.
- *
- * @param currentRoute Текущий активный маршрут для подсветки выбранного элемента.
- * @param onHomeClick Действие при выборе раздела "Главная".
- * @param onDstPointListClick Действие при выборе раздела "Заказ".
- * @param onQueueClick Действие при выборе раздела "Очередь".
- * @param onArchiveClick Действие при выборе раздела "Архив".
  */
 @Composable
 private fun MainNavigationRail(
@@ -202,26 +189,25 @@ private fun MainNavigationRail(
 /**
  * Верхняя панель приложения.
  * Динамически отображает кнопку "Назад" только для вложенных экранов.
- *
- * @param isRootScreen Флаг, указывающий, является ли текущий экран корневым.
- * @param currentRoute Текущий активный маршрут для отображения заголовка.
- * @param onBackClick Действие при нажатии на кнопку "Назад".
- * @param onSettingClick Действие при нажатии на кнопку настройки.
- * @param onProfileClick Действие при нажатии на кнопку профиля.
- * @param onLogoutClick Действие при нажатии на кнопку выхода.
+ * Имеет отступ слева при использовании боковой панели, чтобы не перекрывать её.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainTopBar(
     isRootScreen: Boolean,
     currentRoute: String?,
+    useSideNavigation: Boolean,
     onBackClick: () -> Unit,
     onSettingClick: () -> Unit,
     onProfileClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+
     TopAppBar(
+        // Сдвигаем TopAppBar вправо на ширину боковой панели, если она активна.
+        // Это защищает и заголовок, и стрелку "Назад" от наложения на NavigationRail.
+        modifier = Modifier.padding(start = if (useSideNavigation) NavigationRailWidth else 0.dp),
         title = {
             Text(
                 text = getScreenTitle(currentRoute),
@@ -280,12 +266,6 @@ private fun MainTopBar(
 
 /**
  * Нижняя навигационная панель для телефонов.
- *
- * @param currentRoute Текущий активный маршрут для подсветки выбранного элемента.
- * @param onHomeClick Действие при выборе вкладки "Главная".
- * @param onDstPointListClick Действие при выборе вкладки "Заказ".
- * @param onQueueClick Действие при выборе вкладки "Очередь".
- * @param onArchiveClick Действие при выборе вкладки "Архив".
  */
 @Composable
 private fun MainBottomBar(
@@ -325,12 +305,7 @@ private fun MainBottomBar(
 }
 
 /**
- * Возвращает заголовок экрана с учётом класса размера окна:
- * на узких экранах ([WindowSize.COMPACT]) используется короткая формулировка,
- * чтобы заголовок помещался в одну строку без обрезки.
- *
- * @param route Текущий маршрут.
- * @return Заголовок для [TopAppBar].
+ * Возвращает заголовок экрана с учётом класса размера окна.
  */
 @Composable
 private fun getScreenTitle(route: String?): String {
@@ -342,6 +317,6 @@ private fun getScreenTitle(route: String?): String {
         Routers.Queue.route -> if (isCompact) "Очередь" else "Очередь заявок на отгрузку"
         Routers.Archive.route -> "Архивы"
         Routers.PersonInfo.route -> "Профиль"
-        else -> " "
+        else -> ""
     }
 }
