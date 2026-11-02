@@ -18,13 +18,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.data.util.DateFormatters
 import com.example.myapplication.presentation.ArchiveRow
 import com.example.myapplication.presentation.ArchiveScreenState
 import com.example.myapplication.presentation.ArchiveType
+import com.example.myapplication.presentation.util.DateTimeFormatters.LOCALE
 import com.example.myapplication.presentation.util.DateTimeFormatters.parseToMillis
 import com.example.myapplication.presentation.util.WindowSize
 import com.example.myapplication.presentation.util.rememberWindowSize
 import com.example.myapplication.presentation.viewmodel.ArchiveViewModel
+import java.text.SimpleDateFormat
+import java.time.LocalDateTime
 
 /** Ширина боковой панели формы на больших экранах. */
 private val FormPanelWidth = 340.dp
@@ -34,11 +38,10 @@ private val DateColumnWidth = 160.dp
 
 /**
  * Экран архива с адаптивной версткой:
- * - [WindowSize.COMPACT] — форма над таблицей, колонки таблицы со горизонтальной прокруткой;
- * - [WindowSize.MEDIUM] — то же, но поля дат размещаются в две колонки для экономии высоты;
- * - [WindowSize.EXPANDED] — форма в боковой панели слева, таблица занимает оставшуюся ширину,
- *   колонки таблицы растягиваются пропорционально без прокрутки, если хватает места.
- *
+ * [WindowSize.COMPACT] — форма над таблицей, колонки таблицы со горизонтальной прокруткой;
+ * [WindowSize.MEDIUM] — то же, но поля дат размещаются в две колонки для экономии высоты;
+ * [WindowSize.EXPANDED] — форма в боковой панели слева, таблица занимает оставшуюся ширину,
+ * колонки таблицы растягиваются пропорционально без прокрутки, если хватает места.
  * @param viewModel [ArchiveViewModel] для управления состоянием экрана.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -130,7 +133,6 @@ fun ArchiveScreen(
 
 /**
  * Область вывода результата: индикатор загрузки, ошибка либо таблица с пагинацией.
- *
  * @param state Текущее состояние экрана.
  * @param modifier Модификатор контейнера.
  * @param onPreviousPage Переход на предыдущую страницу.
@@ -186,7 +188,6 @@ private fun ArchiveContent(
 
 /**
  * Форма фильтров архива. На [WindowSize.MEDIUM] поля дат размещаются в две колонки.
- *
  * @param state Текущее состояние экрана.
  * @param modifier Модификатор контейнера формы.
  * @param onTypeChange Смена типа архива.
@@ -233,7 +234,6 @@ private fun ArchiveForm(
                 }
             }
         }
-
         if (windowSize == WindowSize.MEDIUM) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DateField(
@@ -253,7 +253,6 @@ private fun ArchiveForm(
             DateField("Дата и время начала", state.startDate, onShowStartPicker, Modifier.fillMaxWidth())
             DateField("Дата и время окончания", state.endDate, onShowEndPicker, Modifier.fillMaxWidth())
         }
-
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             ExposedDropdownMenuBox(expanded = recordsExpanded, onExpandedChange = { recordsExpanded = !recordsExpanded }) {
                 OutlinedTextField(
@@ -293,7 +292,6 @@ private fun ArchiveForm(
 
 /**
  * Подписанное поле выбора даты/времени периода.
- *
  * @param label Подпись над полем.
  * @param value Текущее значение даты (пустое — показывается плейсхолдер).
  * @param onClick Открытие диалога выбора.
@@ -309,7 +307,7 @@ private fun DateField(
     Column(modifier = modifier) {
         Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         PickerFieldButton(
-            value = value.ifBlank { "дд.мм.гггг чч:мм:сс" },
+            value = value.ifBlank { "дд.мм.гггг чч:мм" },
             icon = Icons.Default.CalendarToday,
             onClick = onClick,
             shape = RoundedCornerShape(8.dp),
@@ -323,7 +321,6 @@ private data class TableColumn(val title: String, val width: Dp)
 
 /**
  * Возвращает описание колонок таблицы для выбранного типа архива.
- *
  * @param type Тип архива.
  * @return Список колонок с заголовками и базовыми ширинами.
  */
@@ -347,7 +344,6 @@ private fun tableColumns(type: ArchiveType): List<TableColumn> = when (type) {
 
 /**
  * Извлекает текстовые значения ячеек строки таблицы.
- *
  * @param row Строка архива.
  * @return Список значений ячеек в порядке колонок [tableColumns].
  */
@@ -360,6 +356,7 @@ private fun cellValues(row: ArchiveRow): List<String> = when (row) {
         row.event.className ?: "—",
         row.event.text ?: "—"
     )
+
     is ArchiveRow.HandLoadRow -> listOf(
         row.handLoad.workPlaceName ?: "—",
         row.handLoad.status.toString(),
@@ -371,22 +368,28 @@ private fun cellValues(row: ArchiveRow): List<String> = when (row) {
 
 /**
  * Извлекает строковое представление даты события для фиксированной колонки.
- *
  * @param row Строка архива.
  * @return Дата в формате "дд.мм.гггг чч:мм:сс".
  */
-private fun dateText(row: ArchiveRow): String = when (row) {
-    is ArchiveRow.EventRow -> row.event.date.toString().replace("T", " ")
-    is ArchiveRow.HandLoadRow -> row.handLoad.date.toString().replace("T", " ")
+private fun dateText(row: ArchiveRow): String {
+    val formatter = DateFormatters.DISPLAY_DATE_TIME
+    return when (row) {
+        is ArchiveRow.EventRow -> {
+            if (row.event.date == LocalDateTime.MIN) "Дата не указана"
+            else row.event.date.format(formatter)
+        }
+        is ArchiveRow.HandLoadRow -> {
+            if (row.handLoad.date == LocalDateTime.MIN) "Дата не указана"
+            else row.handLoad.date.format(formatter)
+        }
+    }
 }
 
 /**
  * Таблица архива с постраничной навигацией.
- *
  * Поведение колонок адаптивное: если доступная ширина экрана не меньше суммарной
  * ширины колонок, колонки растягиваются пропорционально базовым ширинам ([Modifier.weight]);
  * иначе таблица прокручивается горизонтально общим [ScrollState] для шапки и строк.
- *
  * @param type Тип архива, определяющий набор колонок.
  * @param rows Строки текущей страницы.
  * @param isLoadingPage Флаг загрузки страницы (оверлей с индикатором).
@@ -418,7 +421,6 @@ private fun ArchiveTable(
         Column(modifier = Modifier.fillMaxWidth()) {
             TableHeader(columns = columns, stretch = stretch, scrollState = scrollState)
             HorizontalDivider()
-
             Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
                     itemsIndexed(
@@ -445,7 +447,6 @@ private fun ArchiveTable(
                     }
                 }
             }
-
             PaginationRow(
                 currentPage = currentPage,
                 totalPages = totalPages,
@@ -491,7 +492,6 @@ private fun TableHeader(
 
 /**
  * Ячейка шапки таблицы.
- *
  * @param text Заголовок колонки.
  * @param modifier Модификатор, задающий ширину или вес колонки.
  */
@@ -547,7 +547,6 @@ private fun TableRow(
 
 /**
  * Ячейка данных таблицы.
- *
  * @param text Значение ячейки.
  * @param modifier Модификатор, задающий ширину или вес колонки.
  */
@@ -562,7 +561,6 @@ private fun CellText(text: String, modifier: Modifier) {
  * Панель постраничной навигации.
  * На широких экранах ([centered] = true) элементы группируются по центру,
  * на узких — разводятся по краям.
- *
  * @param currentPage Номер текущей страницы.
  * @param totalPages Общее количество страниц.
  * @param isLoadingPage Флаг загрузки страницы.

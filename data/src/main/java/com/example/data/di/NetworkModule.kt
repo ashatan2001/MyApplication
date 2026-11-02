@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.data.BuildConfig
 import com.example.data.network.CustomCookieJar
+import com.example.data.network.DynamicBaseUrlInterceptor
 import com.example.data.network.HeadersInterceptor
 import com.example.data.network.TokenInterceptor
 import com.example.data.remote.*
@@ -26,13 +27,11 @@ import javax.inject.Qualifier
 import javax.inject.Singleton
 
 // region Квалификаторы
-
 /**
  * Квалификаторы разделяют два набора HTTP-клиентов:
- * - [Base] — для публичных запросов без авторизации.
- * - [Auth] — для запросов, требующих куки и автообновление токена.
+ * - [BaseOkHttp] / [BaseRetrofit] — для публичных запросов без авторизации.
+ * - [AuthOkHttp] / [AuthRetrofit] — для запросов, требующих куки и автообновление токена.
  */
-
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class BaseOkHttp
@@ -48,7 +47,6 @@ annotation class BaseRetrofit
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class AuthRetrofit
-
 // endregion
 
 /** Локальное хранилище кук аутентификации через DataStore. */
@@ -56,13 +54,12 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 /**
  * Модуль сетевых зависимостей.
- *
  * Предоставляет два изолированных HTTP-стека:
  * - **Base** — без кук и токен-интерсептора (регистрация, публичные эндпоинты).
  * - **Auth** — с [CustomCookieJar] и [TokenInterceptor] для авторизованных запросов.
  *
- * Разделение необходимо, чтобы [TokenInterceptor] не перехватывал запросы на обновление токена,
- * что привело бы к бесконечной рекурсии.
+ * В оба клиента добавлен [DynamicBaseUrlInterceptor] **первым** в цепочке,
+ * что позволяет динамически менять адрес сервера без пересоздания клиентов.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -82,17 +79,21 @@ object NetworkModule {
         return context.dataStore
     }
 
-
     /**
      * Базовый OkHttpClient без аутентификации.
-     * Используется для эндпоинтов, не требующих авторизации.
+     *
+     * Порядок интерсепторов:
+     * 1. [DynamicBaseUrlInterceptor] — подменяет хост/порт на актуальный.
+     * 2. [HeadersInterceptor] — добавляет общие заголовки (Accept с версией API).
      */
     @Provides
     @Singleton
     @BaseOkHttp
     fun provideBaseOkHttpClient(
+        dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor,
         headersInterceptor: HeadersInterceptor
     ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(dynamicBaseUrlInterceptor)
         .addInterceptor(headersInterceptor)
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
@@ -101,8 +102,8 @@ object NetworkModule {
     /**
      * OkHttpClient с аутентификацией.
      *
-     * Порядок интерсепторов важен:
-     * 1. [CustomCookieJar] — добавляет куки из хранилища.
+     * Порядок интерсепторов критически важен:
+     * 1. [DynamicBaseUrlInterceptor] — подменяет хост/порт на актуальный.
      * 2. [HeadersInterceptor] — добавляет общие заголовки.
      * 3. [TokenInterceptor] — перехватывает 401/419 и обновляет токен.
      * 4. [HttpLoggingInterceptor] — логирование (только в DEBUG).
@@ -112,6 +113,7 @@ object NetworkModule {
     @AuthOkHttp
     fun provideAuthOkHttpClient(
         cookieJar: CustomCookieJar,
+        dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor,
         headersInterceptor: HeadersInterceptor,
         tokenInterceptor: TokenInterceptor
     ): OkHttpClient {
@@ -121,11 +123,10 @@ object NetworkModule {
             else
                 HttpLoggingInterceptor.Level.NONE
         }
-
         Log.d("LOGIN_DEBUG", "[NetworkModule] provideAuthOkHttpClient")
-
         return OkHttpClient.Builder()
             .cookieJar(cookieJar)
+            .addInterceptor(dynamicBaseUrlInterceptor)
             .addInterceptor(headersInterceptor)
             .addInterceptor(tokenInterceptor)
             .addInterceptor(loggingInterceptor)
@@ -134,7 +135,12 @@ object NetworkModule {
             .build()
     }
 
-    /** Retrofit для публичных API без аутентификации. */
+    /**
+     * Retrofit для публичных API без аутентификации.
+     *
+     * [BuildConfig.BASE_URL] используется только для инициализации Retrofit.
+     * Реальный хост подменяется [DynamicBaseUrlInterceptor] перед отправкой запроса.
+     */
     @Provides
     @Singleton
     @BaseRetrofit
@@ -147,7 +153,12 @@ object NetworkModule {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 
-    /** Retrofit для защищённых API с аутентификацией через куки. */
+    /**
+     * Retrofit для защищённых API с аутентификацией через куки.
+     *
+     * [BuildConfig.BASE_URL] используется только для инициализации Retrofit.
+     * Реальный хост подменяется [DynamicBaseUrlInterceptor] перед отправкой запроса.
+     */
     @Provides
     @Singleton
     @AuthRetrofit

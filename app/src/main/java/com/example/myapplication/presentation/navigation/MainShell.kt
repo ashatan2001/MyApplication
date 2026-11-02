@@ -27,9 +27,13 @@ import com.example.myapplication.presentation.viewmodel.SessionViewModel
 
 /**
  * Главная оболочка приложения (Shell), обеспечивающая постоянство UI-элементов.
+ *
  * Адаптивная навигация:
- * на телефонах ([WindowSize.COMPACT]) — нижняя панель [MainBottomBar];
- * на планшетах ([WindowSize.MEDIUM], [WindowSize.EXPANDED]) — боковая панель [MainNavigationRail].
+ * - на телефонах ([WindowSize.COMPACT]) — нижняя панель [MainBottomBar];
+ * - на планшетах ([WindowSize.MEDIUM], [WindowSize.EXPANDED]) — боковая панель [MainNavigationRail].
+ *
+ * @param onLogout Колбэк для выхода из системы.
+ * @param sessionViewModel ViewModel для управления сессией пользователя.
  */
 @Composable
 fun MainShell(
@@ -67,9 +71,9 @@ fun MainShell(
             MainTopBar(
                 isRootScreen = isRootScreen,
                 currentRoute = currentRoute,
-                useSideNavigation = useSideNavigation, // Передаем флаг для расчета отступа
+                useSideNavigation = useSideNavigation,
                 onBackClick = { innerNavController.popBackStack() },
-                onSettingClick = { innerNavController.navigate(Routers.PersonInfo.route) },
+                onSettingClick = { innerNavController.navigate(Routers.Settings.route) },
                 onProfileClick = { innerNavController.navigate(Routers.PersonInfo.route) },
                 onLogoutClick = onLogout
             )
@@ -96,12 +100,14 @@ fun MainShell(
                     onArchiveClick = { navigateToTopLevel(Routers.Archive.route) }
                 )
             }
+
             NavHost(
                 navController = innerNavController,
                 startDestination = Routers.Home.route,
                 modifier = Modifier.weight(1f).fillMaxSize()
             ) {
                 composable(Routers.Home.route) { HomeScreen() }
+
                 composable(Routers.DstPointList.route) {
                     DstPointListScreen(
                         onProductList = { zoneId ->
@@ -109,30 +115,45 @@ fun MainShell(
                         }
                     )
                 }
+
                 composable(Routers.Queue.route) { QueueScreen() }
+
                 composable(Routers.Archive.route) { ArchiveScreen() }
+
                 composable(Routers.PersonInfo.route) {
                     PersonScreen(
                         onBack = { innerNavController.popBackStack() },
                         viewModel = hiltViewModel()
                     )
                 }
+
+                composable(Routers.Settings.route) {
+                    SettingsScreen()
+                }
+
                 composable(
                     route = Routers.ProductList.route,
-                    arguments = listOf(navArgument(Routers.ProductList.ARG_ZONE_ID) { type = NavType.IntType })
+                    arguments = listOf(
+                        navArgument(Routers.ProductList.ARG_ZONE_ID) { type = NavType.IntType }
+                    )
                 ) { backStackEntry ->
-                    val zone = backStackEntry.arguments?.getInt(Routers.ProductList.ARG_ZONE_ID) ?: return@composable
+                    val zone = backStackEntry.arguments?.getInt(Routers.ProductList.ARG_ZONE_ID)
+                        ?: return@composable
                     ProductListScreen(
                         onBack = { innerNavController.popBackStack() },
                         zone = zone,
                         viewModel = hiltViewModel()
                     )
                 }
+
                 composable(
                     route = Routers.DstPoint.route,
-                    arguments = listOf(navArgument(Routers.DstPoint.ARG_ZONE_ID) { type = NavType.IntType })
+                    arguments = listOf(
+                        navArgument(Routers.DstPoint.ARG_ZONE_ID) { type = NavType.IntType }
+                    )
                 ) { backStackEntry ->
-                    val zoneId = backStackEntry.arguments?.getInt(Routers.DstPoint.ARG_ZONE_ID) ?: return@composable
+                    val zoneId = backStackEntry.arguments?.getInt(Routers.DstPoint.ARG_ZONE_ID)
+                        ?: return@composable
                     DstPointScreen(
                         onBack = { innerNavController.popBackStack() },
                         zoneId = zoneId,
@@ -146,6 +167,12 @@ fun MainShell(
 
 /**
  * Боковая навигационная панель для планшетов.
+ *
+ * @param currentRoute Текущий активный маршрут.
+ * @param onHomeClick Колбэк перехода на главную.
+ * @param onDstPointListClick Колбэк перехода к списку точек выгрузки.
+ * @param onQueueClick Колбэк перехода к очереди заявок.
+ * @param onArchiveClick Колбэк перехода к архивам.
  */
 @Composable
 private fun MainNavigationRail(
@@ -155,9 +182,7 @@ private fun MainNavigationRail(
     onQueueClick: () -> Unit,
     onArchiveClick: () -> Unit
 ) {
-    NavigationRail(
-        modifier = Modifier.width(NavigationRailWidth)
-    ) {
+    NavigationRail(modifier = Modifier.width(NavigationRailWidth)) {
         NavigationRailItem(
             icon = { Icon(Icons.Default.Home, contentDescription = "Главная") },
             label = { Text("Главная", fontSize = 12.sp) },
@@ -189,7 +214,14 @@ private fun MainNavigationRail(
 /**
  * Верхняя панель приложения.
  * Динамически отображает кнопку "Назад" только для вложенных экранов.
- * Имеет отступ слева при использовании боковой панели, чтобы не перекрывать её.
+ *
+ * @param isRootScreen Признак корневого экрана (не показывать "Назад").
+ * @param currentRoute Текущий маршрут для формирования заголовка.
+ * @param useSideNavigation Используется ли боковая панель (для отступов).
+ * @param onBackClick Колбэк кнопки "Назад".
+ * @param onSettingClick Колбэк перехода к настройкам.
+ * @param onProfileClick Колбэк перехода к профилю.
+ * @param onLogoutClick Колбэк выхода из системы.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -204,22 +236,26 @@ private fun MainTopBar(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
+    // Отступ слева для контента, если используется боковая панель
+    val startPadding = if (useSideNavigation) NavigationRailWidth else 0.dp
+
     TopAppBar(
-        // Сдвигаем TopAppBar вправо на ширину боковой панели, если она активна.
-        // Это защищает и заголовок, и стрелку "Назад" от наложения на NavigationRail.
-        modifier = Modifier.padding(start = if (useSideNavigation) NavigationRailWidth else 0.dp),
         title = {
             Text(
                 text = getScreenTitle(currentRoute),
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.padding(start = startPadding)
             )
         },
         navigationIcon = {
             if (!isRootScreen) {
-                IconButton(onClick = onBackClick) {
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier.padding(start = startPadding)
+                ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                 }
             } else {
@@ -234,7 +270,10 @@ private fun MainTopBar(
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(Icons.Default.MoreVert, contentDescription = "Ещё")
                 }
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
                     DropdownMenuItem(
                         text = { Text("Профиль") },
                         onClick = {
@@ -250,7 +289,9 @@ private fun MainTopBar(
                             menuExpanded = false
                             onLogoutClick()
                         },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) }
+                        leadingIcon = {
+                            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
+                        }
                     )
                 }
             }
@@ -266,6 +307,12 @@ private fun MainTopBar(
 
 /**
  * Нижняя навигационная панель для телефонов.
+ *
+ * @param currentRoute Текущий активный маршрут.
+ * @param onHomeClick Колбэк перехода на главную.
+ * @param onDstPointListClick Колбэк перехода к списку точек выгрузки.
+ * @param onQueueClick Колбэк перехода к очереди заявок.
+ * @param onArchiveClick Колбэк перехода к архивам.
  */
 @Composable
 private fun MainBottomBar(
@@ -306,6 +353,9 @@ private fun MainBottomBar(
 
 /**
  * Возвращает заголовок экрана с учётом класса размера окна.
+ *
+ * @param route Текущий маршрут.
+ * @return Локализованная строка заголовка.
  */
 @Composable
 private fun getScreenTitle(route: String?): String {
@@ -317,6 +367,7 @@ private fun getScreenTitle(route: String?): String {
         Routers.Queue.route -> if (isCompact) "Очередь" else "Очередь заявок на отгрузку"
         Routers.Archive.route -> "Архивы"
         Routers.PersonInfo.route -> "Профиль"
+        Routers.Settings.route -> "Настройки"
         else -> ""
     }
 }

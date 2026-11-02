@@ -2,6 +2,7 @@ package com.example.data.mapper
 
 import com.example.data.dto.ArchiveDto
 import com.example.data.util.DateFormatters
+import com.example.data.util.parseDate
 import com.example.domain.model.Archive
 import timber.log.Timber
 import java.time.LocalDateTime
@@ -18,10 +19,3 @@ fun <T, R> ArchiveDto<T>.toDomain(itemMapper: (T) -> R): Archive<R> = Archive(
     records = records,
     data = data.map(itemMapper)
 )
-
-private fun parseDate(raw: String): LocalDateTime = try {
-    LocalDateTime.parse(raw.trim(), DateFormatters.SERVER_DATE_TIME)
-} catch (e: DateTimeParseException) {
-    Timber.e(e, "Ошибка парсинга даты события: '$raw'")
-    throw IllegalArgumentException("Неверный формат даты: $raw", e)
-}

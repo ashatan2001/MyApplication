@@ -16,6 +16,9 @@ sealed class Routers(val route: String) {
     /** Экран входа (логин/пароль). */
     data object UserAuth : Routers("user_auth")
 
+    /** Экран настроек. */
+    data object Settings : Routers("settings")
+
     /** Главный экран с приветствием и боковым меню. */
     data object Home : Routers("home")
 

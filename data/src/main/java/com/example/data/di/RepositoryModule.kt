@@ -38,6 +38,9 @@ abstract class RepositoryModule {
     abstract fun bindPersonRepository(impl: PersonRepositoryImpl): PersonRepository
 
     @Binds
+    abstract fun bindSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository
+
+    @Binds
     abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
 
     @Binds

@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.presentation.util.DateTimeFormatters.LOCALE
 import com.example.myapplication.presentation.util.DateTimeFormatters.PATTERN_DATE
-import com.example.myapplication.presentation.util.DateTimeFormatters.PATTERN_TIME
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -48,10 +47,7 @@ fun NativeDateTimePickerDialog(
                 }
             }
         ) {
-            DatePicker(
-                state = datePickerState,
-                title = { Text("Выберите дату") }
-            )
+            DatePicker(state = datePickerState)
         }
     } else {
         // Шаг 2: Выбор времени
@@ -75,12 +71,23 @@ fun NativeDateTimePickerDialog(
             },
             confirmButton = {
                 TextButton(onClick = {
+                    // Обновляем календарь выбранным временем
+                    calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                    calendar.set(Calendar.MINUTE, timePickerState.minute)
+                    calendar.set(Calendar.SECOND, 0)
+                    calendar.set(Calendar.MILLISECOND, 0)
+                    selectedDateMillis = calendar.timeInMillis
+
+                    // Форматируем дату и время
                     val date = Date(selectedDateMillis)
                     val dateFormatter = SimpleDateFormat(PATTERN_DATE, LOCALE)
                     val dateStr = dateFormatter.format(date)
 
-                    val timeStr = String.format(LOCALE, PATTERN_TIME, timePickerState.hour, timePickerState.minute)
+                    // Формат времени с секундами для сервера (секунды всегда 00)
+                    val timeFormatter = SimpleDateFormat("HH:mm:ss", LOCALE)
+                    val timeStr = timeFormatter.format(date)
 
+                    // Передаем полный формат "dd.MM.yyyy HH:mm:ss"
                     onDateTimeSelected("$dateStr $timeStr")
                 }) {
                     Text("OK")
@@ -116,9 +123,19 @@ fun PickerFieldButton(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
         ) {
-            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = value, fontSize = 13.sp, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                text = value,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
