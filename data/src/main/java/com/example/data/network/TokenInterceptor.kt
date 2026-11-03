@@ -63,7 +63,7 @@ class TokenInterceptor @Inject constructor(
         synchronized(lock) {
             Timber.d("Попытка обновления токена...")
             val refreshRequest = Request.Builder()
-                .url(request.url.newBuilder().encodedPath("/auth/get-token").build())
+                .url(request.url.newBuilder().encodedQuery(null).build())
                 .get()
                 .build()
             try {

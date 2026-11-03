@@ -13,6 +13,12 @@ sealed class Routers(val route: String) {
     /** Стартовый экран. Определяет, авторизован ли пользователь. */
     data object Splash : Routers("splash")
 
+    /**
+     * Главная оболочка приложения с адаптивной навигацией (нижняя или боковая панель).
+     * Добавление этого маршрута устраняет использование магических строк в коде навигации.
+     */
+    data object MainShell : Routers("main_shell")
+
     /** Экран входа (логин/пароль). */
     data object UserAuth : Routers("user_auth")
 

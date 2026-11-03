@@ -38,7 +38,7 @@ fun NavGraph(
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                navController.navigateClearingBackStack("main_shell")
+                navController.navigateClearingBackStack(Routers.MainShell.route)
             }
             is AuthState.Unauthenticated -> {
                 navController.navigateClearingBackStack(Routers.UserAuth.route)
@@ -60,12 +60,12 @@ fun NavGraph(
         composable(Routers.UserAuth.route) {
             AuthScreen(
                 onNavigateToHome = {
-                    navController.navigateClearingBackStack("main_shell")
+                    navController.navigateClearingBackStack(Routers.MainShell.route)
                 }
             )
         }
 
-        composable("main_shell") {
+        composable(Routers.MainShell.route) {
             MainShell(onLogout = onLogout)
         }
     }

@@ -44,16 +44,13 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme {
                 val viewModel: SessionViewModel = hiltViewModel()
                 val snackbarHostState = remember { SnackbarHostState() }
-                val scope = rememberCoroutineScope()
 
                 LaunchedEffect(Unit) {
                     viewModel.logoutEvents.collect {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "Сессия истекла. Пожалуйста, войдите снова",
-                                duration = SnackbarDuration.Short
-                            )
-                        }
+                        snackbarHostState.showSnackbar(
+                            message = "Сессия истекла. Пожалуйста, войдите снова",
+                            duration = SnackbarDuration.Short
+                        )
                     }
                 }
 

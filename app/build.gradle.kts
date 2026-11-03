@@ -4,7 +4,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     id("com.github.skydoves.navgraph") version "0.2.1"
@@ -26,7 +26,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -53,10 +53,6 @@ kotlin {
 
     }
 }
-
-/*kapt {
-    correctErrorTypes = true
-}*/
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")

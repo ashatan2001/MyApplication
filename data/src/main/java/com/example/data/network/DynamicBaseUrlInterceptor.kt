@@ -70,25 +70,26 @@ class DynamicBaseUrlInterceptor @Inject constructor(
         val originalRequest = chain.request()
         val originalUrl = originalRequest.url
 
-        // Безопасный парсинг. toHttpUrlOrNull() возвращает null при некорректном формате
         val targetHttpUrl = cachedBaseUrl.toHttpUrlOrNull()
-
-        // Если парсинг не удался, пропускаем запрос без изменений
         if (targetHttpUrl == null) {
             Timber.w("DynamicBaseUrlInterceptor: не удалось распарсить '$cachedBaseUrl', запрос без изменений")
             return chain.proceed(originalRequest)
         }
 
-        // Формируем новый URL, заменяя только схему, хост и порт.
-        // Путь и query-параметры сохраняются оригинальными.
-        val newUrl = originalUrl.newBuilder()
+        val newUrlBuilder = originalUrl.newBuilder()
             .scheme(targetHttpUrl.scheme)
             .host(targetHttpUrl.host)
             .port(targetHttpUrl.port)
-            .build()
+
+        val targetPath = targetHttpUrl.encodedPath
+        if (targetPath.isNotEmpty() && targetPath != "/") {
+            val cleanTargetPath = targetPath.trimEnd('/')
+            val originalPath = originalUrl.encodedPath
+            newUrlBuilder.encodedPath(cleanTargetPath + originalPath)
+        }
 
         val newRequest = originalRequest.newBuilder()
-            .url(newUrl)
+            .url(newUrlBuilder.build())
             .build()
 
         return chain.proceed(newRequest)
