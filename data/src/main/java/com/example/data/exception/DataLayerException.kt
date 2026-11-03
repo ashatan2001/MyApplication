@@ -60,11 +60,17 @@ class CacheException(
     cause: Throwable? = null
 ) : DataLayerException(errorCode = 1003, message = message, cause = cause)
 
-/** HTTP 401/403. Сессия отсутствует или токен недействителен. */
+/** HTTP 401. Токен отсутствует/протух — перехватывается [com.example.data.network.TokenInterceptor] для автообновления. */
 class UnauthorizedException(
-    message: String = "Unauthorized or Forbidden",
+    message: String = "Unauthorized",
     cause: Throwable? = null
 ) : DataLayerException(errorCode = 401, message = message, cause = cause)
+
+/** HTTP 403. Доступ запрещён политикой сервера (переавторизация не поможет). */
+class ForbiddenException(
+    message: String = "Forbidden",
+    cause: Throwable? = null
+) : DataLayerException(errorCode = 403, message = message, cause = cause)
 
 /** Общее исключение для ошибок доступа к данным без конкретной категории. */
 class DataException(

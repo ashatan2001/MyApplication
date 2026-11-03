@@ -24,6 +24,11 @@ class TokenInterceptor @Inject constructor(
     private val dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor
 ) : Interceptor {
 
+    private companion object {
+        /** Относительный путь эндпоинта обновления токена (относительно базового URL). */
+        const val REFRESH_TOKEN_PATH = "auth/get-token"
+    }
+
     /** Блокировка для предотвращения race condition при параллельных попытках обновления токена. */
     private val lock = Any()
 
@@ -43,7 +48,7 @@ class TokenInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
-        val response = chain.proceed(request)
+        var response = chain.proceed(request)
 
         if (response.code != 419 && response.code != 401) {
             return response
@@ -52,26 +57,24 @@ class TokenInterceptor @Inject constructor(
         Timber.w("Перехвачен код ответа ${response.code} для ${request.url.encodedPath}")
 
         // Защита от бесконечного цикла: игнорируем ошибки самого запроса на обновление токена.
-        if (request.url.encodedPath.endsWith("/auth/get-token")) {
+        if (isRefreshRequest(request)) {
             Timber.e("Ошибка обновления токена: бесконечный цикл предотвращён")
             response.close()
             cookieJar.clear()
-            return response
+            return chain.proceed(request)
         }
 
-        // Только один поток выполняет обновление при одновременных 401 от нескольких запросов
+        // Только один поток выполняет обновление при одновременных 401/419 от нескольких запросов
         synchronized(lock) {
             Timber.d("Попытка обновления токена...")
-            val refreshRequest = Request.Builder()
-                .url(request.url.newBuilder().encodedQuery(null).build())
-                .get()
-                .build()
+            val refreshRequest = buildRefreshRequest(request)
             try {
                 refreshClient.newCall(refreshRequest).execute().use { refreshResponse ->
                     if (refreshResponse.isSuccessful) {
                         Timber.d("Токен успешно обновлён. Повтор исходного запроса.")
+                        // Обязательно освобождаем ресурсы перехваченного ответа до повтора.
                         response.close()
-                        return chain.proceed(request)
+                        response = chain.proceed(request)
                     } else {
                         Timber.w("Не удалось обновить токен. Код ответа: ${refreshResponse.code}")
                         cookieJar.clear()
@@ -83,5 +86,27 @@ class TokenInterceptor @Inject constructor(
             }
         }
         return response
+    }
+
+    /** Проверяет, является ли запрос вызовом эндпоинта обновления токена. */
+    private fun isRefreshRequest(request: Request): Boolean =
+        request.url.encodedPath.endsWith(REFRESH_TOKEN_PATH)
+
+    /**
+     * Строит запрос на обновление токена: GET на фиксированный путь [REFRESH_TOKEN_PATH]
+     * того же хоста, что и исходный бизнес-запрос. Путь и query бизнес-запроса
+     * (например `/api/secure-data?x=1`) НЕ используются как URL обновления —
+     * иначе запрос уходил бы в сам бизнес-эндпоинт вместо `/auth/get-token`.
+     */
+    private fun buildRefreshRequest(originalRequest: Request): Request {
+        val refreshUrl = originalRequest.url.newBuilder()
+            .encodedPath("/$REFRESH_TOKEN_PATH")
+            .query(null)
+            .build()
+
+        return Request.Builder()
+            .url(refreshUrl)
+            .get()
+            .build()
     }
 }

@@ -75,15 +75,16 @@ class AuthViewModel @Inject constructor(
                     }
                     is CustomResult.Error -> {
                         val e = result.exception
-                        Timber.e(e, "Ошибка авторизации. Тип: ${e?.javaClass?.simpleName}")
+                        Timber.e(e, "Ошибка авторизации. Тип: ${e.javaClass.simpleName}")
 
                         val message: String = when (e) {
-                            is AuthenticationFailedException -> e.message ?: "Сессия истекла. Пожалуйста, войдите снова."
-                            is ServerApiException -> e.message ?: "Ошибка авторизации"
+                            is ValidationException -> e.message ?: "Ошибка валидации данных"
+                            is AuthenticationFailedException -> e.message ?: "Неверный логин или пароль"
+                            is ServerApiException -> e.message ?: "Ошибка на стороне сервера"
                             is NetworkConnectionException -> "Нет подключения к интернету"
-                            is ServerUnavailableException -> "Ошибка сервера, попробуйте позже"
+                            is ServerUnavailableException -> "Сервер недоступен, попробуйте позже"
                             is SessionExpiredDomainException -> e.message ?: "Сессия истекла"
-                            else -> e?.message ?: "Неизвестная ошибка"
+                            else -> e.message ?: "Неизвестная ошибка"
                         }
                         _uiState.value = AuthUiState.Error(message)
                     }
@@ -97,8 +98,7 @@ class AuthViewModel @Inject constructor(
 
     /**
      * Инициирует процесс выхода пользователя из системы.
-     *
-     * При сетевой ошибке всё равно выполняет локальный выход.
+     * При сетевой ошибке всё равно выполняет локальный выход и отправляет событие.
      */
     fun logout() {
         viewModelScope.launch {
@@ -108,7 +108,6 @@ class AuthViewModel @Inject constructor(
                 logoutUseCase()
                 _events.trySend(AuthEvent.LogoutSuccess)
             } catch (e: Exception) {
-                // Сетевая ошибка не блокирует выход — очистка всё равно выполняется
                 Timber.w(e, "Ошибка сетевого логаута, выполняем локальный выход")
                 _events.trySend(AuthEvent.LogoutSuccess)
             } finally {

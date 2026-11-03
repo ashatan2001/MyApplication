@@ -12,6 +12,7 @@ import com.example.domain.exception.ServerApiException
 import com.example.domain.model.AuthState
 import com.example.domain.model.AuthSuccess
 import com.example.domain.repository.AuthRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
@@ -84,6 +85,11 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun logout() {
         try {
             remoteDataSource.logout()
+        } catch (e: CancellationException) {
+            // Отмену coroutine MUST propagate — сначала гарантируем локальную очистку.
+            cookieJar.clear()
+            localDataSource.clearSession()
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Сетевая ошибка при выходе, выполняем локальную очистку")
         } finally {

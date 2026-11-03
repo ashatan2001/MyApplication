@@ -1,6 +1,5 @@
 package com.example.data.util
 
-import android.util.Log
 import com.example.data.dto.ErrorResponseDto
 import com.example.data.exception.*
 import com.example.domain.exception.*
@@ -8,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import retrofit2.Response
 import java.io.IOException
+import timber.log.Timber
 
 private val json = Json {
     ignoreUnknownKeys = true
@@ -16,27 +16,40 @@ private val json = Json {
 
 /**
  * Использовать, когда успешный ответ обязан содержать тело.
+ *
+ * Особые случаи:
+ * - 204 No Content: если передан [emptyValue], он возвращается без броска исключения;
+ *   иначе выбрасывается [NoDataException] (корректно пробрасывается наружу).
+ * - Пустое тело при успешном коде: аналогично — [emptyValue] или [DataParsingException].
  */
 suspend fun <T> safeApiCall(
     emptyValue: T? = null,
     block: suspend () -> Response<T>
 ): T {
-    return try {
-        val response = block()
+    val response = try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        throw NetworkException(cause = e)
+    }
 
+    return try {
         if (response.isSuccessful) {
             // 204 No Content — допустимый ответ для пустых данных
             if (response.code() == 204) {
                 emptyValue ?: throw NoDataException()
-            }
-
-            response.body()
-                ?: emptyValue
+            } else {
+                response.body() ?: emptyValue
                 ?: throw DataParsingException(message = "Пустое тело ответа")
+            }
         } else {
             throw parseErrorBody(response.errorBody()?.string(), response.code())
         }
     } catch (e: CancellationException) {
+        throw e
+    } catch (e: NoDataException) {
+        // Семантически корректный случай "нет данных" — пробрасываем без переобёртки.
         throw e
     } catch (e: DataLayerException) {
         throw e
@@ -65,9 +78,16 @@ suspend fun <T> safeRepositoryCall(
     } catch (e: CancellationException) {
         throw e
     } catch (e: UnauthorizedException) {
+        // 401 после попытки автообновления токена => сессия реально истекла.
         onAuthError()
+        throw SessionExpiredDomainException(
+            message = e.message.orFallback("Сессия истекла"),
+            cause = e
+        )
+    } catch (e: ForbiddenException) {
+        // 403 — доступ запрещён политикой, переавторизация не поможет.
         throw AuthenticationFailedException(
-            message = e.message.orFallback("Ошибка авторизации"),
+            message = e.message.orFallback("Доступ запрещён"),
             cause = e
         )
     } catch (e: SessionExpiredException) {
@@ -96,6 +116,11 @@ suspend fun <T> safeRepositoryCall(
             message = e.message.orFallback("Ошибка API"),
             cause = e
         )
+        // Доменные исключения уже прошли маппинг — не оборачиваем их повторно.
+    } catch (e: DomainException) {
+        throw e
+    } catch (e: NoDataException) {
+        throw e
     } catch (e: DataLayerException) {
         if (e.errorCode == 404 && notFoundMapper != null) {
             throw notFoundMapper(e)
@@ -132,8 +157,7 @@ private fun parseErrorBody(body: String?, httpCode: Int): DataLayerException {
     val errors = parseErrors(body)
 
     if (errors.isEmpty()) {
-        Log.w(
-            "SafeApiCall",
+        Timber.w(
             "Не удалось распарсить тело ошибки ($httpCode): ${body.take(1000)}"
         )
         return mapHttpError(httpCode)
@@ -172,7 +196,9 @@ private fun httpException(
     errors: List<ErrorResponseDto> = emptyList(),
     cause: Throwable? = null
 ): DataLayerException = when (code) {
-    401, 403 -> UnauthorizedException(message = message, cause = cause)
+    // 401 — токен протух (обрабатывается TokenInterceptor), 403 — доступ запрещён политикой.
+    401 -> UnauthorizedException(message = message, cause = cause)
+    403 -> ForbiddenException(message = message, cause = cause)
     419 -> SessionExpiredException(message = message, cause = cause)
     404 -> DataLayerException(message = message, errorCode = 404, cause = cause)
     in 500..599 -> ServerException(httpCode = code, message = message, cause = cause)
