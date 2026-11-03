@@ -3,9 +3,7 @@ package com.example.myapplication.presentation.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,19 +12,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.myapplication.presentation.viewmodel.ServerConnectionStatus
 import com.example.myapplication.presentation.viewmodel.SettingsUiState
 import com.example.myapplication.presentation.viewmodel.SettingsViewModel
 
 /**
  * Экран настроек сервера.
- *
- * Позволяет пользователю изменить URL API-сервера или сбросить его
- * к значению по умолчанию. Изменения применяются немедленно для всех
- * новых запросов благодаря DynamicBaseUrlInterceptor.
- *
- * Экран не содержит собственной верхней панели: заголовок и кнопка «Назад»
- * отображаются общей панелью [com.example.myapplication.presentation.navigation.MainShell],
- * что исключает дублирование AppBar.
+ * Позволяет пользователю изменить URL API-сервера, протестировать подключение
+ * или сбросить настройки к значению по умолчанию. Изменения применяются
+ * немедленно для всех новых запросов благодаря DynamicBaseUrlInterceptor.
  *
  * @param viewModel [SettingsViewModel] для управления состоянием экрана.
  */
@@ -35,6 +29,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val connectionStatus by viewModel.connectionStatus.collectAsStateWithLifecycle()
 
     /** Локальное состояние текстового поля ввода URL. */
     var urlInput by remember { mutableStateOf("") }
@@ -66,8 +61,67 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             singleLine = true,
-            enabled = uiState !is SettingsUiState.Saving
+            enabled = uiState !is SettingsUiState.Saving && uiState !is SettingsUiState.Testing
         )
+
+        // Индикатор статуса подключения
+        when (connectionStatus) {
+            is ServerConnectionStatus.NotChecked -> {
+                // Не отображаем ничего, если проверка не выполнялась
+            }
+            is ServerConnectionStatus.Checking -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = "Проверка подключения...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            is ServerConnectionStatus.Connected -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "Сервер доступен",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Сервер доступен",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            is ServerConnectionStatus.Disconnected -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Error,
+                        contentDescription = "Сервер недоступен",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Сервер недоступен: ${(connectionStatus as ServerConnectionStatus.Disconnected).error}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
 
         // Отображение ошибок валидации и сохранения
         if (uiState is SettingsUiState.Error) {
@@ -96,10 +150,26 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Кнопка проверки подключения
+            OutlinedButton(
+                onClick = { viewModel.testConnection(urlInput) },
+                modifier = Modifier.weight(1f),
+                enabled = urlInput.isNotBlank() && uiState !is SettingsUiState.Saving && uiState !is SettingsUiState.Testing
+            ) {
+                Icon(
+                    Icons.Default.Wifi,
+                    contentDescription = "Проверить подключение",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Проверить")
+            }
+
+            // Кнопка сброса
             OutlinedButton(
                 onClick = { viewModel.resetToDefault() },
                 modifier = Modifier.weight(1f),
-                enabled = uiState !is SettingsUiState.Saving
+                enabled = uiState !is SettingsUiState.Saving && uiState !is SettingsUiState.Testing
             ) {
                 Icon(
                     Icons.Default.Refresh,
@@ -109,27 +179,30 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("По умолчанию")
             }
+        }
 
-            Button(
-                onClick = { viewModel.saveUrl(urlInput) },
-                modifier = Modifier.weight(1f),
-                enabled = uiState !is SettingsUiState.Saving
-            ) {
-                if (uiState is SettingsUiState.Saving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        Icons.Default.Save,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Сохранить")
-                }
+        // Кнопка сохранения
+        Button(
+            onClick = { viewModel.saveUrl(urlInput) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = urlInput.isNotBlank() && uiState !is SettingsUiState.Saving && uiState !is SettingsUiState.Testing
+        ) {
+            if (uiState is SettingsUiState.Saving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Сохранение...")
+            } else {
+                Icon(
+                    Icons.Default.Save,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Сохранить")
             }
         }
     }

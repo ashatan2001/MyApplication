@@ -57,7 +57,6 @@ kotlin {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
-    implementation(project(":data"))
     implementation(project(":domain"))
 
     // Android Core. Эти версии не требуют AGP 9 и SDK 37

@@ -18,10 +18,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.data.util.DateFormatters
 import com.example.myapplication.presentation.ArchiveRow
 import com.example.myapplication.presentation.ArchiveScreenState
 import com.example.myapplication.presentation.ArchiveType
+import com.example.myapplication.presentation.util.DateTimeFormatters
 import com.example.myapplication.presentation.util.DateTimeFormatters.LOCALE
 import com.example.myapplication.presentation.util.DateTimeFormatters.parseToMillis
 import com.example.myapplication.presentation.util.WindowSize
@@ -372,7 +372,7 @@ private fun cellValues(row: ArchiveRow): List<String> = when (row) {
  * @return Дата в формате "дд.мм.гггг чч:мм:сс".
  */
 private fun dateText(row: ArchiveRow): String {
-    val formatter = DateFormatters.DISPLAY_DATE_TIME
+    val formatter = DateTimeFormatters.dateTimeFormatter
     return when (row) {
         is ArchiveRow.EventRow -> {
             if (row.event.date == LocalDateTime.MIN) "Дата не указана"

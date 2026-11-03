@@ -2,105 +2,157 @@ package com.example.myapplication.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.domain.usecase.ManageServerSettingsUseCase
+import com.example.domain.exception.NetworkConnectionException
+import com.example.domain.exception.ServerApiException
+import com.example.domain.usecase.ObserveServerUrlUseCase
+import com.example.domain.usecase.ResetServerUrlUseCase
+import com.example.domain.usecase.SaveServerUrlUseCase
+import com.example.domain.usecase.TestConnectionUseCase
+import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 /**
- * Возможные состояния экрана настроек.
+ * Состояния экрана настроек сервера.
  */
 sealed class SettingsUiState {
-    /** Идет первоначальная загрузка текущего значения */
+    /** Загрузка текущих настроек */
     data object Loading : SettingsUiState()
 
-    /** Успешная загрузка или обновление, содержит текущий URL */
+    /** Успешная загрузка с текущим URL */
     data class Success(val currentUrl: String) : SettingsUiState()
 
-    /** Идет процесс сохранения или сброса */
+    /** Процесс сохранения */
     data object Saving : SettingsUiState()
 
-    /** Произошла ошибка, содержит сообщение для пользователя */
+    /** Процесс проверки подключения */
+    data object Testing : SettingsUiState()
+
+    /** Ошибка с сообщением */
     data class Error(val message: String) : SettingsUiState()
 }
 
 /**
- * ViewModel экрана настроек сервера.
- * Управляет состоянием UI и делегирует бизнес-логику в ManageServerSettingsUseCase.
+ * Статус подключения к серверу для UI-индикатора.
+ */
+sealed class ServerConnectionStatus {
+    /** Подключение не проверялось */
+    data object NotChecked : ServerConnectionStatus()
+
+    /** Проверка выполняется */
+    data object Checking : ServerConnectionStatus()
+
+    /** Сервер доступен */
+    data object Connected : ServerConnectionStatus()
+
+    /** Сервер недоступен */
+    data class Disconnected(val error: String) : ServerConnectionStatus()
+}
+
+/**
+ * ViewModel для управления состоянием экрана настроек сервера.
+ * Использует отдельные UseCase для каждой операции, соблюдая принципы чистой архитектуры.
  *
- * @param manageServerSettingsUseCase UseCase для управления настройками сервера.
+ * @param observeServerUrlUseCase UseCase для наблюдения за URL.
+ * @param saveServerUrlUseCase UseCase для сохранения URL.
+ * @param resetServerUrlUseCase UseCase для сброса URL.
+ * @param testConnectionUseCase UseCase для проверки подключения.
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val manageServerSettingsUseCase: ManageServerSettingsUseCase
+    private val observeServerUrlUseCase: ObserveServerUrlUseCase,
+    private val saveServerUrlUseCase: SaveServerUrlUseCase,
+    private val resetServerUrlUseCase: ResetServerUrlUseCase,
+    private val testConnectionUseCase: TestConnectionUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading)
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
+    private val _connectionStatus = MutableStateFlow<ServerConnectionStatus>(ServerConnectionStatus.NotChecked)
+    val connectionStatus: StateFlow<ServerConnectionStatus> = _connectionStatus.asStateFlow()
+
     init {
-        // Наблюдаем за изменениями URL через UseCase
+        loadCurrentSettings()
+    }
+
+    /**
+     * Загружает текущие настройки сервера из репозитория.
+     */
+    private fun loadCurrentSettings() {
         viewModelScope.launch {
-            manageServerSettingsUseCase.serverUrl.collect { url ->
+            observeServerUrlUseCase().collect { url ->
                 _uiState.value = SettingsUiState.Success(url)
             }
         }
     }
 
     /**
-     * Валидирует и сохраняет новый URL сервера.
+     * Сохраняет новый URL сервера.
      *
-     * @param inputUrl Строка, введенная пользователем.
+     * @param url Новый адрес сервера.
      */
-    fun saveUrl(inputUrl: String) {
-        val trimmedUrl = inputUrl.trim()
-
-        // Базовая валидация формата на уровне UI для мгновенной обратной связи
-        if (trimmedUrl.isBlank()) {
-            _uiState.value = SettingsUiState.Error("URL не может быть пустым")
-            return
-        }
-
-        if (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://")) {
-            _uiState.value = SettingsUiState.Error("URL должен начинаться с http:// или https://")
-            return
-        }
-
+    fun saveUrl(url: String) {
         viewModelScope.launch {
             _uiState.value = SettingsUiState.Saving
-            // Вызов UseCase как функции (благодаря operator fun invoke)
-            val result = manageServerSettingsUseCase(trimmedUrl)
-
-            result.fold(
-                onSuccess = {
-                    // Состояние Success обновится автоматически через collect в init
-                },
-                onFailure = { exception ->
-                    _uiState.value = SettingsUiState.Error("Ошибка сохранения: ${exception.message}")
-                }
-            )
+            try {
+                saveServerUrlUseCase(url)
+                // StateFlow из loadCurrentSettings сам обновит UI на Success
+            } catch (e: Exception) {
+                _uiState.value = SettingsUiState.Error(e.message ?: "Ошибка сохранения")
+            }
         }
     }
 
     /**
-     * Сбрасывает URL к значению по умолчанию через UseCase.
+     * Сбрасывает URL сервера к значению по умолчанию.
      */
     fun resetToDefault() {
         viewModelScope.launch {
-            _uiState.value = SettingsUiState.Saving
-            val result = manageServerSettingsUseCase.resetToDefault()
+            try {
+                resetServerUrlUseCase()
+                // StateFlow из loadCurrentSettings сам обновит UI
+            } catch (e: Exception) {
+                _uiState.value = SettingsUiState.Error(e.message ?: "Ошибка сброса")
+            }
+        }
+    }
 
-            result.fold(
-                onSuccess = {
-                    // Состояние Success обновится автоматически через collect в init
-                },
-                onFailure = { exception ->
-                    _uiState.value = SettingsUiState.Error("Ошибка сброса: ${exception.message}")
+    /**
+     * Тестирует подключение к указанному URL через [TestConnectionUseCase].
+     *
+     * @param url URL для проверки.
+     */
+    fun testConnection(url: String) {
+        viewModelScope.launch {
+            Timber.d("Начало проверки подключения к: $url")
+            _connectionStatus.value = ServerConnectionStatus.Checking
+
+            val result = testConnectionUseCase(url)
+
+            when (result) {
+                is CustomResult.Success -> {
+                    Timber.d("Подключение успешно установлено")
+                    _connectionStatus.value = ServerConnectionStatus.Connected
                 }
-            )
+                is CustomResult.Error -> {
+                    val e = result.exception
+                    Timber.e(e, "Ошибка при проверке подключения")
+
+                    val errorMessage = when (e) {
+                        is NetworkConnectionException -> "Нет подключения к интернету или хост не найден"
+                        is ServerApiException -> e.message ?: "Сервер вернул ошибку"
+                        else -> e?.message ?: "Неизвестная ошибка"
+                    }
+
+                    _connectionStatus.value = ServerConnectionStatus.Disconnected(errorMessage)
+                }
+            }
         }
     }
 }
