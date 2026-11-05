@@ -236,21 +236,25 @@ private fun MainTopBar(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
-    // Отступ слева для контента, если используется боковая панель
+    /** Отступ слева, компенсирующий ширину NavigationRail на планшетах. */
     val startPadding = if (useSideNavigation) NavigationRailWidth else 0.dp
 
     TopAppBar(
         title = {
+            // ВАЖНО: здесь больше НЕТ Modifier.padding(start = startPadding).
+            // Заголовок просто идёт сразу после слота navigationIcon.
             Text(
                 text = getScreenTitle(currentRoute),
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.padding(start = startPadding)
+                color = MaterialTheme.colorScheme.onPrimary
             )
         },
         navigationIcon = {
+            // Единственное место, где применяется отступ боковой панели.
+            // Ширина этого слота всегда одинакова: startPadding + 48.dp,
+            // поэтому заголовок никогда не "прыгает".
             if (!isRootScreen) {
                 IconButton(
                     onClick = onBackClick,
@@ -259,7 +263,9 @@ private fun MainTopBar(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                 }
             } else {
-                Spacer(modifier = Modifier.size(48.dp))
+                // На корневых экранах компенсируем и rail, и место под стрелку,
+                // чтобы заголовок стоял на той же позиции, что и со стрелкой.
+                Spacer(modifier = Modifier.width(startPadding + 48.dp))
             }
         },
         actions = {
