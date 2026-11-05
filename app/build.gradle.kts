@@ -7,17 +7,16 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
-    id("com.github.skydoves.navgraph") version "0.2.1"
 }
 
 android {
     namespace = "com.example.myapplication"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.myapplication"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -49,8 +48,10 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_21)
-        freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
-
+        freeCompilerArgs.addAll(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
+        )
     }
 }
 

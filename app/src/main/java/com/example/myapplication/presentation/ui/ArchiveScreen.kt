@@ -16,18 +16,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.presentation.ArchiveRow
 import com.example.myapplication.presentation.ArchiveScreenState
 import com.example.myapplication.presentation.ArchiveType
 import com.example.myapplication.presentation.util.DateTimeFormatters
-import com.example.myapplication.presentation.util.DateTimeFormatters.LOCALE
 import com.example.myapplication.presentation.util.DateTimeFormatters.parseToMillis
 import com.example.myapplication.presentation.util.WindowSize
 import com.example.myapplication.presentation.util.rememberWindowSize
 import com.example.myapplication.presentation.viewmodel.ArchiveViewModel
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 
 /** Ширина боковой панели формы на больших экранах. */
@@ -221,7 +220,10 @@ private fun ArchiveForm(
                 readOnly = true,
                 label = { Text("Тип архива", fontSize = 13.sp) },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor().clip(shape),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                    .clip(shape),
                 shape = shape,
                 textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
             )
@@ -260,7 +262,10 @@ private fun ArchiveForm(
                     onValueChange = {},
                     readOnly = true,
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = recordsExpanded) },
-                    modifier = Modifier.width(90.dp).menuAnchor().clip(shape),
+                    modifier = Modifier
+                        .width(90.dp)
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                        .clip(shape),
                     shape = shape,
                     textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
                 )
@@ -415,12 +420,12 @@ private fun ArchiveTable(
     val requiredWidth = DateColumnWidth + columns.fold(0.dp) { acc, column -> acc + column.width }
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        // Хватает ли ширины экрана, чтобы показать таблицу без прокрутки
-        val stretch = maxWidth >= requiredWidth
+        val stretch = this.maxWidth >= requiredWidth
 
         Column(modifier = Modifier.fillMaxWidth()) {
             TableHeader(columns = columns, stretch = stretch, scrollState = scrollState)
             HorizontalDivider()
+
             Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
                     itemsIndexed(
@@ -435,6 +440,7 @@ private fun ArchiveTable(
                         TableRow(row = row, columns = columns, stretch = stretch, scrollState = scrollState)
                     }
                 }
+
                 // Оверлей лоадера при переключении страниц
                 if (isLoadingPage) {
                     Box(
@@ -447,6 +453,7 @@ private fun ArchiveTable(
                     }
                 }
             }
+
             PaginationRow(
                 currentPage = currentPage,
                 totalPages = totalPages,

@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.example.data"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 26
@@ -24,7 +24,7 @@ android {
         }
         release {
             buildConfigField("String", "API_VERSION", "\"1.0.0\"")
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3080/\"")
+            buildConfigField("String", "BASE_URL", "\"https://api.your-production-domain.com/\"")
         }
     }
 
@@ -35,10 +35,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
-    }
-
-    testOptions {
-        unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -81,7 +77,6 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 }
 
-// Исправлено: явное указание платформе использовать JUnit 5, иначе тесты не будут запускаться
 tasks.withType<Test> {
     useJUnitPlatform()
 }

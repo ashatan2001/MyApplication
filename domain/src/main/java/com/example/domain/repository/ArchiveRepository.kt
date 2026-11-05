@@ -15,7 +15,6 @@ interface ArchiveRepository {
      * @param startDate Дата и время начала периода.
      * @param endDate Дата и время окончания периода.
      * @param pageNum Номер текущей страницы.
-     * @param pages Общее количество страниц за выбранный промежуток.
      * @param records Количество записей на одной странице.
      * @return [Archive<Event>] информация о событиях системы.
      */
