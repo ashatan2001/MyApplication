@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -39,12 +40,14 @@ private val AuthFormMaxWidth = 480.dp
  * форма прокручивается вертикально.
  *
  * @param onNavigateToHome Вызывается после успешного входа для перехода на главный экран.
+ * @param onNavigateToSettings Вызывается для перехода на экран настроек сервера.
  * @param viewModel [AuthViewModel] для управления состоянием и обработки событий.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
     onNavigateToHome: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -143,6 +146,22 @@ fun AuthScreen(
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium
                     )
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                // Кнопка для перехода к настройкам сервера
+                TextButton(
+                    onClick = onNavigateToSettings,
+                    enabled = uiState !is AuthUiState.Loading
+                ) {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Изменить сервер")
                 }
             }
         }

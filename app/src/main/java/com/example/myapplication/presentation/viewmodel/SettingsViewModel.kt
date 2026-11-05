@@ -10,9 +10,11 @@ import com.example.domain.usecase.SaveServerUrlUseCase
 import com.example.domain.usecase.TestConnectionUseCase
 import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -55,6 +57,14 @@ sealed class ServerConnectionStatus {
 }
 
 /**
+ * Одноразовые события для навигации из экрана настроек.
+ */
+sealed class SettingsEvent {
+    /** URL успешно сохранен, можно переходить к авторизации */
+    data object NavigateToAuth : SettingsEvent()
+}
+
+/**
  * ViewModel для управления состоянием экрана настроек сервера.
  * Использует отдельные UseCase для каждой операции, соблюдая принципы чистой архитектуры.
  *
@@ -77,6 +87,9 @@ class SettingsViewModel @Inject constructor(
     private val _connectionStatus = MutableStateFlow<ServerConnectionStatus>(ServerConnectionStatus.NotChecked)
     val connectionStatus: StateFlow<ServerConnectionStatus> = _connectionStatus.asStateFlow()
 
+    private val _events = Channel<SettingsEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
+
     init {
         loadCurrentSettings()
     }
@@ -94,6 +107,7 @@ class SettingsViewModel @Inject constructor(
 
     /**
      * Сохраняет новый URL сервера.
+     * После успешного сохранения отправляет событие для навигации на экран авторизации.
      *
      * @param url Новый адрес сервера.
      */
@@ -102,7 +116,8 @@ class SettingsViewModel @Inject constructor(
             _uiState.value = SettingsUiState.Saving
             try {
                 saveServerUrlUseCase(url)
-                // StateFlow из loadCurrentSettings сам обновит UI на Success
+                // Отправляем событие для навигации на экран авторизации
+                _events.send(SettingsEvent.NavigateToAuth)
             } catch (e: Exception) {
                 _uiState.value = SettingsUiState.Error(e.message ?: "Ошибка сохранения")
             }
@@ -147,7 +162,7 @@ class SettingsViewModel @Inject constructor(
                     val errorMessage = when (e) {
                         is NetworkConnectionException -> "Нет подключения к интернету или хост не найден"
                         is ServerApiException -> e.message ?: "Сервер вернул ошибку"
-                        else -> e?.message ?: "Неизвестная ошибка"
+                        else -> e.message ?: "Неизвестная ошибка"
                     }
 
                     _connectionStatus.value = ServerConnectionStatus.Disconnected(errorMessage)

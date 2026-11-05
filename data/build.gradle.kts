@@ -14,13 +14,13 @@ android {
 
     defaultConfig {
         minSdk = 26
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3080/\"")
+        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3082/\"")
     }
 
     buildTypes {
         debug {
             buildConfigField("String", "API_VERSION", "\"1.1.0-dev\"")
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3080/\"")
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3083/\"")
         }
         release {
             buildConfigField("String", "API_VERSION", "\"1.0.0\"")

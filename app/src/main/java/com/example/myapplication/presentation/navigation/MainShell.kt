@@ -12,6 +12,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -19,6 +20,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.domain.model.AuthState
 import com.example.myapplication.presentation.ui.*
 import com.example.myapplication.presentation.util.LayoutSize.NavigationRailWidth
 import com.example.myapplication.presentation.util.WindowSize
@@ -32,12 +34,17 @@ import com.example.myapplication.presentation.viewmodel.SessionViewModel
  * - на телефонах ([WindowSize.COMPACT]) — нижняя панель [MainBottomBar];
  * - на планшетах ([WindowSize.MEDIUM], [WindowSize.EXPANDED]) — боковая панель [MainNavigationRail].
  *
+ * Базовые разделы (Заказ, Очередь, Архив) блокируются (становятся светло-серыми)
+ * при отсутствии авторизации ([AuthState.Authenticated]).
+ *
  * @param onLogout Колбэк для выхода из системы.
+ * @param onLogin Колбэк для перехода на экран авторизации.
  * @param sessionViewModel ViewModel для управления сессией пользователя.
  */
 @Composable
 fun MainShell(
     onLogout: () -> Unit,
+    onLogin: () -> Unit,
     sessionViewModel: SessionViewModel = hiltViewModel()
 ) {
     val windowSize = rememberWindowSize()
@@ -45,6 +52,10 @@ fun MainShell(
     val innerNavController = rememberNavController()
     val navBackStackEntry by innerNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    // Определяем, авторизован ли пользователь.
+    val authState by sessionViewModel.authState.collectAsStateWithLifecycle()
+    val isAuthenticated = authState is AuthState.Authenticated
 
     // Определяем, является ли текущий экран корневым (для скрытия кнопки "Назад" в TopBar)
     val isRootScreen = currentRoute in listOf(
@@ -72,9 +83,11 @@ fun MainShell(
                 isRootScreen = isRootScreen,
                 currentRoute = currentRoute,
                 useSideNavigation = useSideNavigation,
+                isAuthenticated = isAuthenticated,
                 onBackClick = { innerNavController.popBackStack() },
                 onSettingClick = { innerNavController.navigate(Routers.Settings.route) },
                 onProfileClick = { innerNavController.navigate(Routers.PersonInfo.route) },
+                onLoginClick = onLogin,
                 onLogoutClick = onLogout
             )
         },
@@ -82,6 +95,7 @@ fun MainShell(
             if (!useSideNavigation) {
                 MainBottomBar(
                     currentRoute = currentRoute,
+                    isAuthenticated = isAuthenticated,
                     onHomeClick = { navigateToTopLevel(Routers.Home.route) },
                     onDstPointListClick = { navigateToTopLevel(Routers.DstPointList.route) },
                     onQueueClick = { navigateToTopLevel(Routers.Queue.route) },
@@ -94,6 +108,7 @@ fun MainShell(
             if (useSideNavigation) {
                 MainNavigationRail(
                     currentRoute = currentRoute,
+                    isAuthenticated = isAuthenticated,
                     onHomeClick = { navigateToTopLevel(Routers.Home.route) },
                     onDstPointListClick = { navigateToTopLevel(Routers.DstPointList.route) },
                     onQueueClick = { navigateToTopLevel(Routers.Queue.route) },
@@ -128,7 +143,17 @@ fun MainShell(
                 }
 
                 composable(Routers.Settings.route) {
-                    SettingsScreen()
+                    SettingsScreen(
+                        showTopBar = false,
+                        onNavigateToAuth = {
+                            if (isAuthenticated) {
+                                innerNavController.popBackStack()
+                            } else {
+                                onLogin()
+                            }
+                        },
+                        onBack = { innerNavController.popBackStack() }
+                    )
                 }
 
                 composable(
@@ -169,6 +194,8 @@ fun MainShell(
  * Боковая навигационная панель для планшетов.
  *
  * @param currentRoute Текущий активный маршрут.
+ * @param isAuthenticated Признак авторизации. Если false, недоступные разделы
+ *                        отображаются светло-серыми и игнорируют клики.
  * @param onHomeClick Колбэк перехода на главную.
  * @param onDstPointListClick Колбэк перехода к списку точек выгрузки.
  * @param onQueueClick Колбэк перехода к очереди заявок.
@@ -177,6 +204,7 @@ fun MainShell(
 @Composable
 private fun MainNavigationRail(
     currentRoute: String?,
+    isAuthenticated: Boolean,
     onHomeClick: () -> Unit,
     onDstPointListClick: () -> Unit,
     onQueueClick: () -> Unit,
@@ -194,19 +222,22 @@ private fun MainNavigationRail(
             label = { Text("Заказ", fontSize = 12.sp) },
             selected = currentRoute == Routers.DstPointList.route ||
                     currentRoute?.startsWith("product_list") == true,
-            onClick = onDstPointListClick
+            onClick = onDstPointListClick,
+            enabled = isAuthenticated
         )
         NavigationRailItem(
             icon = { Icon(Icons.Default.PendingActions, contentDescription = "Очередь") },
             label = { Text("Очередь", fontSize = 12.sp) },
             selected = currentRoute == Routers.Queue.route,
-            onClick = onQueueClick
+            onClick = onQueueClick,
+            enabled = isAuthenticated
         )
         NavigationRailItem(
             icon = { Icon(Icons.Default.Archive, contentDescription = "Архив") },
             label = { Text("Архив", fontSize = 12.sp) },
             selected = currentRoute == Routers.Archive.route,
-            onClick = onArchiveClick
+            onClick = onArchiveClick,
+            enabled = isAuthenticated
         )
     }
 }
@@ -214,13 +245,16 @@ private fun MainNavigationRail(
 /**
  * Верхняя панель приложения.
  * Динамически отображает кнопку "Назад" только для вложенных экранов.
+ * При отсутствии авторизации вместо меню "Профиль/Выйти" показывает кнопку "Войти".
  *
  * @param isRootScreen Признак корневого экрана (не показывать "Назад").
  * @param currentRoute Текущий маршрут для формирования заголовка.
  * @param useSideNavigation Используется ли боковая панель (для отступов).
+ * @param isAuthenticated Признак авторизации пользователя.
  * @param onBackClick Колбэк кнопки "Назад".
  * @param onSettingClick Колбэк перехода к настройкам.
  * @param onProfileClick Колбэк перехода к профилю.
+ * @param onLoginClick Колбэк перехода к экрану входа.
  * @param onLogoutClick Колбэк выхода из системы.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -229,9 +263,11 @@ private fun MainTopBar(
     isRootScreen: Boolean,
     currentRoute: String?,
     useSideNavigation: Boolean,
+    isAuthenticated: Boolean,
     onBackClick: () -> Unit,
     onSettingClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onLoginClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -241,8 +277,6 @@ private fun MainTopBar(
 
     TopAppBar(
         title = {
-            // ВАЖНО: здесь больше НЕТ Modifier.padding(start = startPadding).
-            // Заголовок просто идёт сразу после слота navigationIcon.
             Text(
                 text = getScreenTitle(currentRoute),
                 style = MaterialTheme.typography.titleLarge,
@@ -252,9 +286,6 @@ private fun MainTopBar(
             )
         },
         navigationIcon = {
-            // Единственное место, где применяется отступ боковой панели.
-            // Ширина этого слота всегда одинакова: startPadding + 48.dp,
-            // поэтому заголовок никогда не "прыгает".
             if (!isRootScreen) {
                 IconButton(
                     onClick = onBackClick,
@@ -263,8 +294,6 @@ private fun MainTopBar(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                 }
             } else {
-                // На корневых экранах компенсируем и rail, и место под стрелку,
-                // чтобы заголовок стоял на той же позиции, что и со стрелкой.
                 Spacer(modifier = Modifier.width(startPadding + 48.dp))
             }
         },
@@ -272,33 +301,40 @@ private fun MainTopBar(
             IconButton(onClick = onSettingClick) {
                 Icon(Icons.Default.Settings, contentDescription = "Настройки")
             }
-            Box {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Ещё")
+
+            if (isAuthenticated) {
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Ещё")
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Профиль") },
+                            onClick = {
+                                menuExpanded = false
+                                onProfileClick()
+                            },
+                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }
+                        )
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Выйти") },
+                            onClick = {
+                                menuExpanded = false
+                                onLogoutClick()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
+                            }
+                        )
+                    }
                 }
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Профиль") },
-                        onClick = {
-                            menuExpanded = false
-                            onProfileClick()
-                        },
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }
-                    )
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text("Выйти") },
-                        onClick = {
-                            menuExpanded = false
-                            onLogoutClick()
-                        },
-                        leadingIcon = {
-                            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
-                        }
-                    )
+            } else {
+                IconButton(onClick = onLoginClick) {
+                    Icon(Icons.Default.Login, contentDescription = "Войти")
                 }
             }
         },
@@ -315,6 +351,8 @@ private fun MainTopBar(
  * Нижняя навигационная панель для телефонов.
  *
  * @param currentRoute Текущий активный маршрут.
+ * @param isAuthenticated Признак авторизации. Если false, недоступные разделы
+ *                        отображаются светло-серыми и игнорируют клики.
  * @param onHomeClick Колбэк перехода на главную.
  * @param onDstPointListClick Колбэк перехода к списку точек выгрузки.
  * @param onQueueClick Колбэк перехода к очереди заявок.
@@ -323,6 +361,7 @@ private fun MainTopBar(
 @Composable
 private fun MainBottomBar(
     currentRoute: String?,
+    isAuthenticated: Boolean,
     onHomeClick: () -> Unit,
     onDstPointListClick: () -> Unit,
     onQueueClick: () -> Unit,
@@ -340,19 +379,22 @@ private fun MainBottomBar(
             label = { Text("Заказ") },
             selected = currentRoute == Routers.DstPointList.route ||
                     currentRoute?.startsWith("product_list") == true,
-            onClick = onDstPointListClick
+            onClick = onDstPointListClick,
+            enabled = isAuthenticated
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.PendingActions, contentDescription = "Очередь") },
             label = { Text("Очередь") },
             selected = currentRoute == Routers.Queue.route,
-            onClick = onQueueClick
+            onClick = onQueueClick,
+            enabled = isAuthenticated
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Archive, contentDescription = "Архив") },
             label = { Text("Архив") },
             selected = currentRoute == Routers.Archive.route,
-            onClick = onArchiveClick
+            onClick = onArchiveClick,
+            enabled = isAuthenticated
         )
     }
 }
@@ -373,7 +415,7 @@ private fun getScreenTitle(route: String?): String {
         Routers.Queue.route -> if (isCompact) "Очередь" else "Очередь заявок на отгрузку"
         Routers.Archive.route -> "Архивы"
         Routers.PersonInfo.route -> "Профиль"
-        Routers.Settings.route -> "Настройки"
+        Routers.Settings.route -> "Настройки сервера"
         else -> ""
     }
 }

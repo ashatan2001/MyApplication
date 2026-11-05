@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -25,7 +24,6 @@ import com.example.myapplication.presentation.util.StatusBarIconAppearance
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 
 /**
  * Точка входа в приложение.
@@ -77,8 +75,12 @@ class MainActivity : ComponentActivity() {
                         NavGraph(
                             navController = navController,
                             onLogout = {
-                                // Выход из системы: полная очистка стека и переход на экран авторизации
                                 navController.navigateClearingBackStack(Routers.UserAuth.route)
+                            },
+                            onLogin = {
+                                navController.navigate(Routers.UserAuth.route) {
+                                    launchSingleTop = true
+                                }
                             }
                         )
                     }
