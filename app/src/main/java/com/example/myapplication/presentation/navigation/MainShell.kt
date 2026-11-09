@@ -59,8 +59,9 @@ fun MainShell(
 
     // Определяем, является ли текущий экран корневым (для скрытия кнопки "Назад" в TopBar)
     val isRootScreen = currentRoute in listOf(
-        Routers.Home.route,
+        //Routers.Home.route,
         Routers.DstPointList.route,
+        Routers.BucketList.route,
         Routers.Queue.route,
         Routers.Archive.route
     )
@@ -96,8 +97,9 @@ fun MainShell(
                 MainBottomBar(
                     currentRoute = currentRoute,
                     isAuthenticated = isAuthenticated,
-                    onHomeClick = { navigateToTopLevel(Routers.Home.route) },
+                    //onHomeClick = { navigateToTopLevel(Routers.Home.route) },
                     onDstPointListClick = { navigateToTopLevel(Routers.DstPointList.route) },
+                    onBucketListClick = { navigateToTopLevel(Routers.BucketList.route) },
                     onQueueClick = { navigateToTopLevel(Routers.Queue.route) },
                     onArchiveClick = { navigateToTopLevel(Routers.Archive.route) }
                 )
@@ -109,8 +111,9 @@ fun MainShell(
                 MainNavigationRail(
                     currentRoute = currentRoute,
                     isAuthenticated = isAuthenticated,
-                    onHomeClick = { navigateToTopLevel(Routers.Home.route) },
+                    //onHomeClick = { navigateToTopLevel(Routers.Home.route) },
                     onDstPointListClick = { navigateToTopLevel(Routers.DstPointList.route) },
+                    onBucketListClick = { navigateToTopLevel(Routers.BucketList.route) },
                     onQueueClick = { navigateToTopLevel(Routers.Queue.route) },
                     onArchiveClick = { navigateToTopLevel(Routers.Archive.route) }
                 )
@@ -198,6 +201,7 @@ fun MainShell(
  *                        отображаются светло-серыми и игнорируют клики.
  * @param onHomeClick Колбэк перехода на главную.
  * @param onDstPointListClick Колбэк перехода к списку точек выгрузки.
+ * @param onBucketListClick Колбэк перехода к мониторингу состояния бетоновозных телег.
  * @param onQueueClick Колбэк перехода к очереди заявок.
  * @param onArchiveClick Колбэк перехода к архивам.
  */
@@ -205,18 +209,19 @@ fun MainShell(
 private fun MainNavigationRail(
     currentRoute: String?,
     isAuthenticated: Boolean,
-    onHomeClick: () -> Unit,
+    //onHomeClick: () -> Unit,
     onDstPointListClick: () -> Unit,
+    onBucketListClick: () -> Unit,
     onQueueClick: () -> Unit,
     onArchiveClick: () -> Unit
 ) {
     NavigationRail(modifier = Modifier.width(NavigationRailWidth)) {
-        NavigationRailItem(
+        /*NavigationRailItem(
             icon = { Icon(Icons.Default.Home, contentDescription = "Главная") },
             label = { Text("Главная", fontSize = 12.sp) },
             selected = currentRoute == Routers.Home.route,
             onClick = onHomeClick
-        )
+        )*/
         NavigationRailItem(
             icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
             label = { Text("Заказ", fontSize = 12.sp) },
@@ -230,6 +235,14 @@ private fun MainNavigationRail(
             label = { Text("Очередь", fontSize = 12.sp) },
             selected = currentRoute == Routers.Queue.route,
             onClick = onQueueClick,
+            enabled = isAuthenticated
+        )
+        NavigationRailItem(
+            icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
+            label = { Text("Заказ", fontSize = 12.sp) },
+            selected = currentRoute == Routers.DstPointList.route ||
+                    currentRoute?.startsWith("product_list") == true,
+            onClick = onDstPointListClick,
             enabled = isAuthenticated
         )
         NavigationRailItem(
@@ -356,24 +369,26 @@ private fun MainTopBar(
  * @param onHomeClick Колбэк перехода на главную.
  * @param onDstPointListClick Колбэк перехода к списку точек выгрузки.
  * @param onQueueClick Колбэк перехода к очереди заявок.
+ * @param onBucketListClick Колбэк перехода к мониторингу состояния бетоновозных телег.
  * @param onArchiveClick Колбэк перехода к архивам.
  */
 @Composable
 private fun MainBottomBar(
     currentRoute: String?,
     isAuthenticated: Boolean,
-    onHomeClick: () -> Unit,
+    //onHomeClick: () -> Unit,
     onDstPointListClick: () -> Unit,
     onQueueClick: () -> Unit,
+    onBucketListClick: () -> Unit,
     onArchiveClick: () -> Unit
 ) {
     NavigationBar {
-        NavigationBarItem(
+        /*NavigationBarItem(
             icon = { Icon(Icons.Default.Home, contentDescription = "Главная") },
             label = { Text("Главная") },
             selected = currentRoute == Routers.Home.route,
-            onClick = onHomeClick
-        )
+            onClick = onBucketListClick
+        )*/
         NavigationBarItem(
             icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
             label = { Text("Заказ") },
@@ -388,6 +403,12 @@ private fun MainBottomBar(
             selected = currentRoute == Routers.Queue.route,
             onClick = onQueueClick,
             enabled = isAuthenticated
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Inventory, contentDescription = "Телеги") },
+            label = { Text("Телеги") },
+            selected = currentRoute == Routers.BucketList.route,
+            onClick = onBucketListClick
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Archive, contentDescription = "Архив") },
@@ -413,6 +434,7 @@ private fun getScreenTitle(route: String?): String {
         Routers.DstPointList.route -> if (isCompact) "Зоны выгрузки" else "Зоны выгрузки бетона"
         Routers.ProductList.route -> if (isCompact) "Продукты" else "Продукты для отгрузки"
         Routers.Queue.route -> if (isCompact) "Очередь" else "Очередь заявок на отгрузку"
+        Routers.BucketList.route -> if (isCompact) "Телеги" else "Бетоновозные телеги"
         Routers.Archive.route -> "Архивы"
         Routers.PersonInfo.route -> "Профиль"
         Routers.Settings.route -> "Настройки сервера"

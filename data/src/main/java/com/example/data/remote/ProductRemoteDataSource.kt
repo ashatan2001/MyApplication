@@ -20,5 +20,5 @@ class ProductRemoteDataSource @Inject constructor(
      * @param zone код точки выгрузки бетона
      * @return [List<ProductDto>] при успехе.
      */
-    suspend fun getProductList(zone: Int): List<ProductDto> = safeApiCall { api.getProductList(zone) }
+    suspend fun getProductList(zone: Int): List<ProductDto> = safeApiCall { api.getProducts(zone) }
 }

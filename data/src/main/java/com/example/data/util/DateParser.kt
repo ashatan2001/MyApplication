@@ -25,18 +25,19 @@ object DateFormatters {
 }
 
 /**
- * Безопасно парсит строку даты в [LocalDateTime], используя единый формат сервера.
- * При ошибке парсинга логирует исключение через [Timber] и возвращает значение по умолчанию.
- * @param fallback Значение, которое будет возвращено в случае ошибки парсинга
- *            (по умолчанию [LocalDateTime.MIN]).
- * @return Распарсенная дата или [fallback].
+ * Безопасно парсит строку даты в [LocalDateTime].
+ * Пытается распарсить строку сначала в ISO-формате, затем в формате сервера.
+ *
+ * @param dateString Строка с датой для парсинга.
+ * @return Распарсенная дата или null, если строка пуста, равна null или не соответствует
+ *         ожидаемым форматам.
  */
-fun parseDate(dateString: String?, fallback: LocalDateTime = LocalDateTime.MIN): LocalDateTime {
+fun parseDate(dateString: String?): LocalDateTime? {
     if (dateString.isNullOrBlank()) {
-        return fallback
+        return null
     }
-    return try {
 
+    return try {
         val isoFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime.parse(dateString, isoFormatter)
     } catch (e: DateTimeParseException) {
@@ -44,7 +45,7 @@ fun parseDate(dateString: String?, fallback: LocalDateTime = LocalDateTime.MIN):
             LocalDateTime.parse(dateString, DateFormatters.SERVER_DATE_TIME)
         } catch (e2: DateTimeParseException) {
             Timber.e(e2, "Ошибка парсинга даты: '$dateString'")
-            fallback
+            null
         }
     }
 }

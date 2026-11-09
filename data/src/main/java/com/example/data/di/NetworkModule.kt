@@ -207,6 +207,12 @@ object NetworkModule {
     fun provideQueueApi(@AuthRetrofit retrofit: Retrofit): QueueApi =
         retrofit.create(QueueApi::class.java)
 
+    /** API для получения бетоновозных телег */
+    @Provides
+    @Singleton
+    fun provideBucketApi(@AuthRetrofit retrofit: Retrofit): BucketApi =
+        retrofit.create(BucketApi::class.java)
+
     /** API для получения архивов системы. */
     @Provides
     @Singleton

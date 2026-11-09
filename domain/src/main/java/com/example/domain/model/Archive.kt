@@ -13,8 +13,8 @@ import java.time.LocalDateTime
  * @property data Данные из архива
  */
 data class Archive<T>(
-    val startDate: LocalDateTime,
-    val endDate: LocalDateTime,
+    val startDate: LocalDateTime?,
+    val endDate: LocalDateTime?,
     val pageNum: Int,
     val pages: Int,
     val records: Int,

@@ -53,6 +53,9 @@ sealed class Routers(val route: String) {
         }
     }
 
+    /** Экран мониторинга состояния бетоновозных телег */
+    data object BucketList : Routers("bucket_list")
+
     /** Экран мониторинга очереди заявок на отгрузку */
     data object Queue : Routers("queue")
 

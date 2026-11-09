@@ -4,7 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -84,7 +85,7 @@ fun DstPointListScreen(
                             }
                         } else {
                             items(items = filteredList, key = { point -> point.zoneId }) { point ->
-                                TerminalRow(dstPoint = point, onClick = { onProductList(point.zoneId) })
+                                TerminalRow(dstPoint = point, onOrder = { onProductList(point.zoneId) }, onUnload = {})
                                 HorizontalDivider()
                             }
                         }
@@ -121,11 +122,16 @@ fun DstPointListScreen(
  * Реагирует на нажатие и вызывает переданный колбэк.
  *
  * @param dstPoint Модель данных точки выгрузки.
- * @param onClick Действие при нажатии на строку.
+ * @param onOrder Действие при нажатии на кнопку заказа.
+ * @param onUnload Действие при нажатии на кнопку отгрузки.
  */
 @Composable
-private fun TerminalRow(dstPoint: DstPoint, onClick: () -> Unit) {
-    Surface(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+private fun TerminalRow(
+    dstPoint: DstPoint,
+    onUnload: () -> Unit,
+    onOrder: () -> Unit
+) {
+    Surface(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -140,12 +146,42 @@ private fun TerminalRow(dstPoint: DstPoint, onClick: () -> Unit) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+
+            TextButton(
+                onClick = onUnload,
+                contentPadding = PaddingValues(horizontal = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocalShipping,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Отгрузить",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            TextButton(
+                onClick = onOrder,
+                contentPadding = PaddingValues(horizontal = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Inventory,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Заказ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

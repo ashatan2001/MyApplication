@@ -380,12 +380,10 @@ private fun dateText(row: ArchiveRow): String {
     val formatter = DateTimeFormatters.dateTimeFormatter
     return when (row) {
         is ArchiveRow.EventRow -> {
-            if (row.event.date == LocalDateTime.MIN) "Дата не указана"
-            else row.event.date.format(formatter)
+            row.event.date?.format(formatter) ?: "Дата не указана"
         }
         is ArchiveRow.HandLoadRow -> {
-            if (row.handLoad.date == LocalDateTime.MIN) "Дата не указана"
-            else row.handLoad.date.format(formatter)
+            row.handLoad.date?.format(formatter) ?: "Дата не указана"
         }
     }
 }

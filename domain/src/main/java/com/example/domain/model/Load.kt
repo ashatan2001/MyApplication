@@ -23,10 +23,9 @@ import java.time.LocalDateTime
  * @property accuracyMode Режим компенсации погрешностей дозирования.
  * @property department Информация о подразделении.
  */
-
 data class Load (
     val id: Long,
-    val date: LocalDateTime,
+    val date: LocalDateTime?,
     val documentNum: String?,
     val queueNum: Int?,
     val status: LoadStatus,
@@ -42,3 +41,18 @@ data class Load (
     val accuracyMode: String?,
     val department: Department?
 )
+
+/** Статус заявки на отгрузку. */
+enum class LoadStatus(val code: Int) {
+    IN_QUEUE(0),
+    COMPLETED(1),
+    DEFECT(-1),
+    CANCELLED(-2),
+    WEIGHED(3),
+    UNKNOWN(-99);
+
+    companion object {
+        /** Возвращает статус по коду сервера или [UNKNOWN]. */
+        fun fromCode(code: Int): LoadStatus = entries.find { it.code == code } ?: UNKNOWN
+    }
+}

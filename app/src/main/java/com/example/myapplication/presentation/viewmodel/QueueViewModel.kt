@@ -41,6 +41,8 @@ sealed class QueueUiState {
  * через [authEventBus] для корректного сброса состояния при выходе.»
  *
  * @param getLoadQueueUseCase UseCase для получения очереди заявок на отгрузку.
+ * @param updateLoadByIdUseCase UseCase для изменения выбранной заявки на отгрузку.
+ * @param deleteLoadByIdUseCase UseCase для удаления выбранной заявки на отгрузку.
  * @param authEventBus Шина событий для отслеживания выхода из системы.
  */
 @HiltViewModel

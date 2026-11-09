@@ -29,5 +29,5 @@ interface ProductApi {
      * - 5xx — внутренняя ошибка получения информации о продуктах, разрешенных для заданной зоны
      */
     @GET("api/apb/products/{zoneid}")
-    suspend fun getProductList(@Path("zoneid") zone: Int): Response<List<ProductDto>>
+    suspend fun getProducts(@Path("zoneid") zone: Int): Response<List<ProductDto>>
 }
