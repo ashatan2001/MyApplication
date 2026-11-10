@@ -18,8 +18,6 @@ import com.example.domain.usecase.ObserveServerUrlUseCase
 import com.example.myapplication.presentation.ui.AuthScreen
 import com.example.myapplication.presentation.ui.SettingsScreen
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
-import com.example.myapplication.presentation.viewmodel.SettingsEvent
-import com.example.myapplication.presentation.viewmodel.SettingsViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 

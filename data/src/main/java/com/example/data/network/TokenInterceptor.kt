@@ -1,5 +1,6 @@
 package com.example.data.network
 
+import com.example.data.network.TokenInterceptor.Companion.REFRESH_TOKEN_PATH
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request

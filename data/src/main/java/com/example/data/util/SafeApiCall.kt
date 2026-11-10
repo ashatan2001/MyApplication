@@ -6,8 +6,8 @@ import com.example.domain.exception.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import retrofit2.Response
-import java.io.IOException
 import timber.log.Timber
+import java.io.IOException
 
 private val json = Json {
     ignoreUnknownKeys = true

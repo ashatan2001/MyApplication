@@ -2,7 +2,6 @@ package com.example.myapplication
 
 import android.app.Application
 import android.util.Log
-import com.example.myapplication.BuildConfig // Исправлено: добавлен явный импорт сгенерированного класса
 import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.HiltAndroidApp

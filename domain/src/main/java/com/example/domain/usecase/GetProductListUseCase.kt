@@ -21,12 +21,10 @@ class GetProductListUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(zone: Int): CustomResult<List<Product>> {
         return try {
-            val dstPointList = repository.getProductList(zone)
-            CustomResult.Success(dstPointList)
+            val productList = repository.getProductList(zone)
+            CustomResult.Success(productList)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: DstPointNotFoundException) {
-            CustomResult.Success(emptyList())
         } catch (e: AppException) {
             CustomResult.Error(e)
         } catch (e: Exception) {

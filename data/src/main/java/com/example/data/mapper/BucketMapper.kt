@@ -4,9 +4,6 @@ import com.example.data.dto.BucketDto
 import com.example.data.util.parseDate
 import com.example.domain.model.Bucket
 import com.example.domain.model.BucketStatus
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 /**
  * Расширение для преобразования [BucketDto] в доменную модель [Bucket].

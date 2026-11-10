@@ -1,24 +1,50 @@
 package com.example.myapplication.presentation.ui
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Construction
+import androidx.compose.material.icons.filled.Downloading
+import androidx.compose.material.icons.filled.Handyman
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.PauseCircle
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SignalWifiOff
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,37 +53,28 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.Bucket
 import com.example.domain.model.BucketStatus
-import com.example.domain.model.Load
-import com.example.domain.model.LoadStatus
-import com.example.domain.model.Bucket
-import com.example.myapplication.presentation.viewmodel.QueueUiState
-import com.example.myapplication.presentation.viewmodel.QueueViewModel
+import com.example.myapplication.presentation.util.DateTimeFormatters
+import com.example.myapplication.presentation.viewmodel.BucketUiState
+import com.example.myapplication.presentation.viewmodel.BucketViewModel
 
 /**
  * Экран мониторинга бетоновозных телег.
+ * Отображает список телег с возможностью раскрытия детальной информации по каждой.
  *
- * Отображает список телег. При нажатии на строку телеги
- * раскрывается вложенный список с информацией об этой телеги.
- *
- * @param viewModel [QueueViewModel] для управления состоянием экрана.
+ * @param viewModel ViewModel для управления состоянием экрана.
  */
 @Composable
 fun BucketScreen(
-    viewModel: QueueViewModel = hiltViewModel()
+    viewModel: BucketViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isProcessing by viewModel.isProcessing.collectAsStateWithLifecycle()
-
-    LaunchedEffect(Unit) {
-        viewModel.loadQueue()
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
-            is QueueUiState.Loading -> {
+            is BucketUiState.Loading -> {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
-            is QueueUiState.Success -> {
+            is BucketUiState.Success -> {
                 if (state.bucketList.isEmpty()) {
                     Text(
                         text = "Бетоновозные телеги не найдены",
@@ -65,15 +82,10 @@ fun BucketScreen(
                         textAlign = TextAlign.Center
                     )
                 } else {
-                    BucketGroupedList(
-                        loadsByBucket = state.loadsByBucket,
-                        onEdit = { viewModel.updateLoad(it) },
-                        onDelete = { viewModel.deleteLoad(it) },
-                        isProcessing = isProcessing
-                    )
+                    BucketList(buckets = state.bucketList)
                 }
             }
-            is QueueUiState.Error -> {
+            is BucketUiState.Error -> {
                 Column(
                     modifier = Modifier.align(Alignment.Center).padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -88,197 +100,217 @@ fun BucketScreen(
                     Text(
                         text = state.message,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
                     )
-                    Button(onClick = { viewModel.loadQueue() }) { Text("Повторить") }
+                    Button(onClick = { viewModel.loadBucket() }) { Text("Повторить") }
                 }
-            }
-        }
-
-        // Глобальный индикатор загрузки поверх экрана при выполнении действий
-        if (isProcessing) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(48.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 4.dp
-                )
             }
         }
     }
 }
 
 /**
- * Заголовок группы терминала. При нажатии раскрывает/сворачивает список заявок.
+ * Список бетоновозных телег с возможностью раскрытия деталей.
  *
- * @param bucket Модель бетоновозной телеги.
- * @param isExpanded Признак раскрытого состояния.
- * @param onClick Колбэк нажатия на заголовок.
+ * @param buckets Список моделей телег.
  */
 @Composable
-private fun BucketHeader(
-    bucket: Bucket,
-    loadsCount: Int,
-    isExpanded: Boolean,
-    onClick: () -> Unit
-) {
+private fun BucketList(buckets: List<Bucket>) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(vertical = 8.dp)
+    ) {
+        items(buckets, key = { it.id }) { bucket ->
+            BucketItem(bucket = bucket)
+        }
+    }
+}
+
+/**
+ * Элемент списка бетоновозной телеги.
+ * В закрытом состоянии отображает имя, статус и флаг загруженности.
+ * В раскрытом состоянии отображает детальную информацию.
+ *
+ * @param bucket Модель бетоновозной телеги.
+ */
+@Composable
+private fun BucketItem(bucket: Bucket) {
+    var isExpanded by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 90f else 0f,
         label = "arrow_rotation"
     )
 
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = bucket.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "Заявок: $loadsCount",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+        Column {
+            // Заголовок (закрытое состояние)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = bucket.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Флаг загруженности
+                IsFullIcon(isFull = bucket.isFull)
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Статус
+                BucketStatusIcon(status = bucket.status)
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .rotate(rotation),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
-                modifier = Modifier
-                    .size(24.dp)
-                    .rotate(rotation),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
-            )
+
+            // Раскрытая информация
+            if (isExpanded) {
+                HorizontalDivider()
+                ExpandedBucketContent(bucket = bucket)
+            }
         }
     }
 }
 
 /**
- * Строка отдельной  в раскрывающемся списке.
- * Поддерживает долгое удержание для вызова контекстного меню (DropdownMenu).
+ * Иконка, отображающая флаг загруженности телеги.
  *
- * @param load Модель данных заявки.
- * @param onEdit Колбэк действия редактирования.
- * @param onDelete Колбэк действия удаления.
- * @param isProcessing Флаг блокировки взаимодействий во время сетевого запроса.
+ * @param isFull true, если телега загружена, false - если пуста.
  */
 @Composable
-private fun LoadRow(
-    load: Load,
-    onEdit: (Load) -> Unit,
-    onDelete: (Load) -> Unit,
-    isProcessing: Boolean
-) {
-    var showMenu by remember { mutableStateOf(false) }
-    val haptic = LocalHapticFeedback.current
+private fun IsFullIcon(isFull: Boolean) {
+    val (icon, color) = if (isFull) {
+        Icons.Default.Inventory2 to Color(0xFF4CAF50) // Зеленый (загружена)
+    } else {
+        Icons.Outlined.Inventory2 to Color(0xFF9E9E9E) // Серый (пуста)
+    }
 
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = {
-                        // Здесь можно добавить логику обычного клика, например, переход на детальный экран
-                    },
-                    onLongClick = {
-                        if (!isProcessing) {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            showMenu = true
-                        }
-                    }
-                )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Заявка №${load.id}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = load.product?.name ?: "Без наименования",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+    Icon(
+        imageVector = icon,
+        contentDescription = if (isFull) "Загружена" else "Пуста",
+        tint = color,
+        modifier = Modifier.size(24.dp)
+    )
+}
 
-                Text(
-                    text = "${load.quality} ${load.bucket?.measure ?: ""}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
+/**
+ * Детальная информация о телеге в раскрытом состоянии.
+ *
+ * @param bucket Модель бетоновозной телеги.
+ */
+@Composable
+private fun ExpandedBucketContent(bucket: Bucket) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 1) Местоположения
+        Text(
+            text = "Местоположение",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        InfoRow(label = "Текущий участок (zoneNumber)", value = bucket.zoneNumber.toString())
+        InfoRow(label = "Участок доставки (dstZone)", value = bucket.dstZone.toString())
 
-                Spacer(modifier = Modifier.width(16.dp))
-                StatusIcon(load.status)
-            }
-        }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-        // Контекстное меню, привязанное к строке
-        DropdownMenu(
-            expanded = showMenu,
-            onDismissRequest = { showMenu = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("Изменить") },
-                onClick = {
-                    showMenu = false
-                    onEdit(load)
-                },
-                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                enabled = !isProcessing
-            )
+        // 2) Информация о телеге
+        Text(
+            text = "Информация о телеге",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        InfoRow(label = "Код заявки (loadId)", value = if (bucket.loadId != 0L) bucket.loadId.toString() else "Нет активной заявки")
 
-            HorizontalDivider()
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-            DropdownMenuItem(
-                text = { Text("Удалить", color = MaterialTheme.colorScheme.error) },
-                onClick = {
-                    showMenu = false
-                    onDelete(load)
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                },
-                enabled = !isProcessing
-            )
-        }
+        // 3) Информация о времени
+        Text(
+            text = "Информация о времени",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        InfoRow(
+            label = "Приготовление смеси (loadDate)",
+            value = bucket.loadDate?.format(DateTimeFormatters.dateTimeFormatter) ?: "—"
+        )
+        InfoRow(
+            label = "Прибытие на разгрузку (arrivalDate)",
+            value = bucket.arrivalDate?.format(DateTimeFormatters.dateTimeFormatter) ?: "—"
+        )
+        InfoRow(
+            label = "Завершение разгрузки (departDate)",
+            value = bucket.departDate?.format(DateTimeFormatters.dateTimeFormatter) ?: "—"
+        )
+    }
+}
+
+/**
+ * Строка для отображения пары "метка-значение" в раскрытом списке.
+ *
+ * @param label Название поля.
+ * @param value Значение поля.
+ */
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
 /**
  * Визуальные обозначения статусов бетоновозной телеги.
- * Отображает соответствующую иконку и цвет в зависимости от переданного статуса.
  *
- * @param status Статус телеги ([BucketStatus]). Если равен null, отображается иконка неизвестного статуса.
- * @param modifier Модификатор для настройки размера и позиционирования иконки.
+ * @param status Статус телеги ([BucketStatus]).
+ * @param modifier Модификатор.
  */
 @Composable
 fun BucketStatusIcon(
@@ -286,14 +318,14 @@ fun BucketStatusIcon(
     modifier: Modifier = Modifier
 ) {
     val (icon, color) = when (status) {
-        BucketStatus.WAITING_FOR_LOADING -> Icons.Default.Schedule to Color(0xFFFF9800) // Янтарный (ожидание)
-        BucketStatus.MOVING -> Icons.Default.LocalShipping to Color(0xFF2196F3) // Синий (движение)
-        BucketStatus.STOPPED_AT_POINT -> Icons.Default.PauseCircle to Color(0xFF9E9E9E) // Серый (пауза/остановка)
-        BucketStatus.UNLOADING -> Icons.Default.Downloading to Color(0xFF4CAF50) // Зеленый (активный процесс разгрузки)
-        BucketStatus.DISCONNECTED -> Icons.Default.SignalWifiOff to Color(0xFFF44336) // Красный (проблема/нет связи)
-        BucketStatus.UNDER_REPAIR -> Icons.Default.Construction to Color(0xFF795548) // Коричневый (ремонт/обслуживание)
-        BucketStatus.MANUAL_CONTROL -> Icons.Default.Handyman to Color(0xFF9C27B0) // Фиолетовый (ручное управление)
-        BucketStatus.UNKNOWN, null -> Icons.AutoMirrored.Filled.Help to Color(0xFFBDBDBD) // Светло-серый (неизвестно)
+        BucketStatus.WAITING_FOR_LOADING -> Icons.Default.Schedule to Color(0xFFFF9800)
+        BucketStatus.MOVING -> Icons.Default.LocalShipping to Color(0xFF2196F3)
+        BucketStatus.STOPPED_AT_POINT -> Icons.Default.PauseCircle to Color(0xFF9E9E9E)
+        BucketStatus.UNLOADING -> Icons.Default.Downloading to Color(0xFF4CAF50)
+        BucketStatus.DISCONNECTED -> Icons.Default.SignalWifiOff to Color(0xFFF44336)
+        BucketStatus.UNDER_REPAIR -> Icons.Default.Construction to Color(0xFF795548)
+        BucketStatus.MANUAL_CONTROL -> Icons.Default.Handyman to Color(0xFF9C27B0)
+        BucketStatus.UNKNOWN, null -> Icons.AutoMirrored.Filled.Help to Color(0xFFBDBDBD)
     }
 
     Icon(

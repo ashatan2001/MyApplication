@@ -238,11 +238,10 @@ private fun MainNavigationRail(
             enabled = isAuthenticated
         )
         NavigationRailItem(
-            icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
-            label = { Text("Заказ", fontSize = 12.sp) },
-            selected = currentRoute == Routers.DstPointList.route ||
-                    currentRoute?.startsWith("product_list") == true,
-            onClick = onDstPointListClick,
+            icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Телеги") },
+            label = { Text("Телеги", fontSize = 12.sp) },
+            selected = currentRoute == Routers.BucketList.route,
+            onClick = onBucketListClick,
             enabled = isAuthenticated
         )
         NavigationRailItem(

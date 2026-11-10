@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application") version "8.7.2" apply false
-    id("com.android.library") version "8.7.2" apply false
+    id("com.android.application") version "8.9.0" apply false
+    id("com.android.library") version "8.9.0" apply false
 
     /** Версия Kotlin обновлена до 2.2.20 для поддержки метаданных 2.2.0 */
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false

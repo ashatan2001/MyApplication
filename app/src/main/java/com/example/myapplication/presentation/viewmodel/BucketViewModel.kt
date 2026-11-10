@@ -5,13 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.domain.event.AuthEventBus
 import com.example.domain.exception.NetworkConnectionException
 import com.example.domain.exception.SessionExpiredDomainException
+import com.example.domain.model.Bucket
 import com.example.domain.model.Load
 import com.example.domain.model.Terminal
-import com.example.domain.usecase.DeleteLoadByIdUseCase
-import com.example.domain.usecase.GetLoadBucketUseCase
-import com.example.domain.usecase.UpdateLoadByIdUseCase
+import com.example.domain.usecase.GetBucketListUseCase
 import com.example.domain.util.CustomResult
-import com.example.domain.util.groupByTerminal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,20 +30,21 @@ import javax.inject.Inject
  */
 sealed class BucketUiState {
     data object Loading : BucketUiState()
-    data class Success(val loadsByTerminal: Map<Terminal, List<Load>>) : BucketUiState()
+    data class Success(val bucketList: List<Bucket>) : BucketUiState()
     data class Error(val message: String, val isNetworkError: Boolean = false) : BucketUiState()
 }
 
 /**
- * ViewModel экрана со списком бетоновозных телег. Реагирует на глобальные события аутентификации
- * через [authEventBus] для корректного сброса состояния при выходе.»
+ * ViewModel экрана со списком бетоновозных телег.
+ * Реагирует на глобальные события аутентификации через [authEventBus]
+ * для корректного сброса состояния при выходе.»
  *
- * @param getBucketUseCase UseCase для получения списка бетоновозных телег.
+ * @param getBucketListUseCase UseCase для получения списка бетоновозных телег.
  * @param authEventBus Шина событий для отслеживания выхода из системы.
  */
 @HiltViewModel
 class BucketViewModel @Inject constructor(
-    private val getBucketUseCase: GetBucketUseCase,
+    private val getBucketListUseCase: GetBucketListUseCase,
     private val authEventBus: AuthEventBus
 ) : ViewModel() {
 
@@ -63,24 +62,23 @@ class BucketViewModel @Inject constructor(
     }
 
     /**
-     * Загружает очередь заявок на отгрузку из репозитория.
+     * Загружает список бетоновозных телег из репозитория.
      *
-     * При истёкшей сессии ничего не делает — [TokenInterceptor] уже обработал редирект на логин.
+     * При истёкшей сессии ничего не делает — TokenInterceptor уже обработал редирект на логин.
      * При других ошибках отображает сообщение пользователю.
      */
     fun loadBucket() {
         Timber.d("Начало загрузки списка бетоновозных телег")
         viewModelScope.launch {
             _uiState.value = BucketUiState.Loading
-            when (val result = getBucketUseCase()) {
+            when (val result = getBucketListUseCase()) {
                 is CustomResult.Success -> {
-                    Timber.d("Список бетоновозных телег успешно загружена")
-                    _uiState.value = BucketUiState.Success(result.data.groupByTerminal())
+                    Timber.d("Список бетоновозных телег успешно загружен")
+                    _uiState.value = BucketUiState.Success(result.data)
                 }
                 is CustomResult.Error -> {
                     val message = when (result.exception) {
                         is SessionExpiredDomainException -> {
-                            // TokenInterceptor уже обработал редирект на логин
                             Timber.w("Сессия истекла, пропуск обработки")
                             return@launch
                         }

@@ -4,7 +4,6 @@ import com.example.data.local.AuthLocalDataSource
 import com.example.data.mapper.toDomain
 import com.example.data.remote.BucketRemoteDataSource
 import com.example.data.util.safeRepositoryCall
-import com.example.domain.exception.DstPointNotFoundException
 import com.example.domain.model.Bucket
 import com.example.domain.repository.BucketRepository
 import javax.inject.Inject

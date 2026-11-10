@@ -1,14 +1,9 @@
 package com.example.data.remote
 
 import com.example.data.dto.BucketDto
-import com.example.data.dto.LoadDto
-import com.example.data.dto.TaskRequestDto
-import com.example.data.dto.TaskResponseDto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
-import retrofit2.http.Body
 import retrofit2.http.POST
-import retrofit2.http.Path
 
 /**
  * Retrofit API для операций c заявками на производство ЖБИ.

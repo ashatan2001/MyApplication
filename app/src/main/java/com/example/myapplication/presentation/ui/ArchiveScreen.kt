@@ -16,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.presentation.ArchiveRow
@@ -27,7 +26,6 @@ import com.example.myapplication.presentation.util.DateTimeFormatters.parseToMil
 import com.example.myapplication.presentation.util.WindowSize
 import com.example.myapplication.presentation.util.rememberWindowSize
 import com.example.myapplication.presentation.viewmodel.ArchiveViewModel
-import java.time.LocalDateTime
 
 /** Ширина боковой панели формы на больших экранах. */
 private val FormPanelWidth = 340.dp
