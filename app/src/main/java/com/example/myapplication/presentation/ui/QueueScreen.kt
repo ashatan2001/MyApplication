@@ -174,7 +174,7 @@ private fun TerminalHeader(
     onClick: () -> Unit
 ) {
     val rotation by animateFloatAsState(
-        targetValue = if (isExpanded) 90f else 0f,
+        targetValue = if (isExpanded) 180f else 0f,
         label = "arrow_rotation"
     )
 
@@ -205,7 +205,7 @@ private fun TerminalHeader(
                 )
             }
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                imageVector = Icons.Filled.KeyboardArrowDown,
                 contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
                 modifier = Modifier
                     .size(24.dp)

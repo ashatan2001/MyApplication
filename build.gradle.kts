@@ -10,5 +10,5 @@ plugins {
     id("com.google.dagger.hilt.android") version "2.58" apply false
 
     /** Версия KSP должна строго соответствовать выбранной версии Kotlin */
-    id("com.google.devtools.ksp") version "2.2.20-2.0.3" apply false
+    id("com.google.devtools.ksp") version "2.2.20-2.0.4" apply false
 }

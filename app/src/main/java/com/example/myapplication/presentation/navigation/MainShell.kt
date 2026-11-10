@@ -136,6 +136,8 @@ fun MainShell(
 
                 composable(Routers.Queue.route) { QueueScreen() }
 
+                composable(Routers.BucketList.route) { BucketScreen() }
+
                 composable(Routers.Archive.route) { ArchiveScreen() }
 
                 composable(Routers.PersonInfo.route) {
