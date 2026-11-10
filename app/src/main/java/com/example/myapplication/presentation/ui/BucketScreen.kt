@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.Schedule
@@ -37,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,6 +70,14 @@ fun BucketScreen(
     viewModel: BucketViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    /**
+     * Инициирует загрузку списка телег при первом запуске экрана.
+     * Блок выполняется один раз при вхождении в композицию благодаря ключу [Unit].
+     */
+    LaunchedEffect(Unit) {
+        viewModel.loadBucketList()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
@@ -103,7 +113,7 @@ fun BucketScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )
-                    Button(onClick = { viewModel.loadBucket() }) { Text("Повторить") }
+                    Button(onClick = { viewModel.loadBucketList() }) { Text("Повторить") }
                 }
             }
         }
@@ -149,7 +159,6 @@ private fun BucketItem(bucket: Bucket) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            // Заголовок (закрытое состояние)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -169,18 +178,16 @@ private fun BucketItem(bucket: Bucket) {
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Флаг загруженности
                 IsFullIcon(isFull = bucket.isFull)
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Статус
                 BucketStatusIcon(status = bucket.status)
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    imageVector = Icons.Filled.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
                     modifier = Modifier
                         .size(24.dp)

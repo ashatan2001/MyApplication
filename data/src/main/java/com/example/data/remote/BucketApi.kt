@@ -3,7 +3,7 @@ package com.example.data.remote
 import com.example.data.dto.BucketDto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
-import retrofit2.http.POST
+import retrofit2.http.GET
 
 /**
  * Retrofit API для операций c заявками на производство ЖБИ.
@@ -26,7 +26,7 @@ interface BucketApi {
      * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
      * - 5xx — внутренняя ошибка сервера
      */
-    @POST("api/apb/buckets")
+    @GET("api/apb/buckets")
     suspend fun getBuckets(): Response<List<BucketDto>>
 
 }

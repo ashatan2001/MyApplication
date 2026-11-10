@@ -57,6 +57,7 @@ class BucketViewModel @Inject constructor(
             authEventBus.logoutEvents.collect {
                 Timber.d("Получено событие выхода, сброс состояния на Loading")
                 _uiState.value = BucketUiState.Loading
+                loadBucketList()
             }
         }
     }
@@ -67,7 +68,7 @@ class BucketViewModel @Inject constructor(
      * При истёкшей сессии ничего не делает — TokenInterceptor уже обработал редирект на логин.
      * При других ошибках отображает сообщение пользователю.
      */
-    fun loadBucket() {
+    fun loadBucketList() {
         Timber.d("Начало загрузки списка бетоновозных телег")
         viewModelScope.launch {
             _uiState.value = BucketUiState.Loading

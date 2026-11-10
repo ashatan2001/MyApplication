@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -348,7 +349,7 @@ private fun MainTopBar(
                 }
             } else {
                 IconButton(onClick = onLoginClick) {
-                    Icon(Icons.Default.Login, contentDescription = "Войти")
+                    Icon(Icons.AutoMirrored.Filled.Login, contentDescription = "Войти")
                 }
             }
         },
