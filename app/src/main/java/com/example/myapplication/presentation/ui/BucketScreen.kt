@@ -47,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.Bucket
 import com.example.domain.model.BucketStatus
@@ -79,11 +81,13 @@ fun BucketScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     /**
-     * Инициирует загрузку списка телег при первом запуске экрана.
-     * Блок выполняется один раз при вхождении в композицию благодаря ключу [Unit].
+     * Мониторинг активен только пока экран в состоянии STARTED:
+     * уход на другой экран или сворачивание приложения останавливает опрос,
+     * возврат — возобновляет (первый запрос уходит сразу при старте).
      */
-    LaunchedEffect(Unit) {
-        viewModel.loadBucketList()
+    LifecycleStartEffect(Unit) {
+        viewModel.startMonitoring()
+        onStopOrDispose { viewModel.stopMonitoring() }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -172,9 +176,9 @@ private fun BucketItem(
     bucket: Bucket,
     onExpandRequest: () -> Unit
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    var isExpanded by rememberSaveable { mutableStateOf(false) }
     val rotation by animateFloatAsState(
-        targetValue = if (isExpanded) 90f else 0f,
+        targetValue = if (isExpanded) 180f else 0f,
         label = "arrow_rotation"
     )
 

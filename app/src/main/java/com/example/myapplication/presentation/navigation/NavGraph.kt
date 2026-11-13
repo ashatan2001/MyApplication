@@ -59,7 +59,14 @@ fun NavGraph(
 
     val hasServerUrl = serverUrl.isNotBlank()
 
-    // Логика автоматических редиректов
+    /**
+     * Автоматические редиректы на основе состояния сессии и наличия URL сервера.
+     *
+     * Перезапускается при каждом изменении [authState] или [hasServerUrl]:
+     * - стартовые редиректы со Splash (холодный старт);
+     * - принудительный выход на экран авторизации из защищённой зоны (MainShell),
+     *   если сессия истекла во время работы (401/419 после неудачного refresh).
+     */
     LaunchedEffect(authState, hasServerUrl) {
         val currentRoute = navController.currentDestination?.route
 
@@ -68,13 +75,17 @@ fun NavGraph(
             !hasServerUrl && currentRoute == Routers.Splash.route -> {
                 navController.navigateClearingBackStack(Routers.Settings.route)
             }
-            // Есть URL, но не авторизован → на экран входа
+            // Есть URL, но не авторизован → на экран входа (холодный старт)
             hasServerUrl && authState is AuthState.Unauthenticated && currentRoute == Routers.Splash.route -> {
                 navController.navigateClearingBackStack(Routers.UserAuth.route)
             }
             // Авторизован → в MainShell
             authState is AuthState.Authenticated && currentRoute == Routers.Splash.route -> {
                 navController.navigateClearingBackStack(Routers.MainShell.route)
+            }
+            // Сессия истекла во время работы внутри защищённой зоны → на экран входа
+            hasServerUrl && authState is AuthState.Unauthenticated && currentRoute == Routers.MainShell.route -> {
+                navController.navigateClearingBackStack(Routers.UserAuth.route)
             }
         }
     }
