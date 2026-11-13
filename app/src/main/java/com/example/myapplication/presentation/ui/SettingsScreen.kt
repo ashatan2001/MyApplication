@@ -13,6 +13,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.myapplication.presentation.util.ComponentSize
+import com.example.myapplication.presentation.util.IconSize
+import com.example.myapplication.presentation.util.Spacing
 import com.example.myapplication.presentation.viewmodel.ServerConnectionStatus
 import com.example.myapplication.presentation.viewmodel.SettingsEvent
 import com.example.myapplication.presentation.viewmodel.SettingsUiState
@@ -82,8 +85,8 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(Spacing.Md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Md)
         ) {
             Text(
                 text = if (!hasSavedUrl) {
@@ -114,11 +117,11 @@ fun SettingsScreen(
                 is ServerConnectionStatus.Checking -> {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)
                     ) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
+                            modifier = Modifier.size(ComponentSize.ProgressSm),
+                            strokeWidth = ComponentSize.ProgressStrokeThin
                         )
                         Text(
                             text = "Проверка подключения...",
@@ -130,13 +133,13 @@ fun SettingsScreen(
                 is ServerConnectionStatus.Connected -> {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)
                     ) {
                         Icon(
                             Icons.Default.CheckCircle,
                             contentDescription = "Сервер доступен",
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(IconSize.Xs)
                         )
                         Text(
                             text = "Сервер доступен",
@@ -148,13 +151,13 @@ fun SettingsScreen(
                 is ServerConnectionStatus.Disconnected -> {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)
                     ) {
                         Icon(
                             Icons.Default.Error,
                             contentDescription = "Сервер недоступен",
                             tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(IconSize.Xs)
                         )
                         Text(
                             text = "Сервер недоступен: ${(connectionStatus as ServerConnectionStatus.Disconnected).error}",
@@ -169,7 +172,7 @@ fun SettingsScreen(
             if (uiState is SettingsUiState.Error) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Sm),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
@@ -190,7 +193,7 @@ fun SettingsScreen(
             // Кнопки действий
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Md)
             ) {
                 // Кнопка проверки подключения
                 OutlinedButton(
@@ -201,9 +204,9 @@ fun SettingsScreen(
                     Icon(
                         Icons.Default.Wifi,
                         contentDescription = "Проверить подключение",
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(IconSize.Sm)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Spacing.Sm))
                     Text("Проверить")
                 }
 
@@ -216,9 +219,9 @@ fun SettingsScreen(
                     Icon(
                         Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(IconSize.Sm)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Spacing.Sm))
                     Text("По умолчанию")
                 }
             }
@@ -230,20 +233,21 @@ fun SettingsScreen(
                 enabled = urlInput.isNotBlank() && uiState !is SettingsUiState.Saving && uiState !is SettingsUiState.Testing
             ) {
                 if (uiState is SettingsUiState.Saving) {
+                    // Компактный индикатор внутри кнопки — размер иконки кнопки.
                     CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(IconSize.Sm),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+                        strokeWidth = ComponentSize.ProgressStrokeThin
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Spacing.Sm))
                     Text("Сохранение...")
                 } else {
                     Icon(
                         Icons.Default.Save,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(IconSize.Sm)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Spacing.Sm))
                     Text(if (!hasSavedUrl) "Сохранить и продолжить" else "Сохранить")
                 }
             }

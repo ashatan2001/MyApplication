@@ -11,28 +11,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.myapplication.presentation.util.ComponentSize
+import com.example.myapplication.presentation.util.IconSize
+import com.example.myapplication.presentation.util.LayoutSize
+import com.example.myapplication.presentation.util.Spacing
 import com.example.myapplication.presentation.viewmodel.AuthEvent
 import com.example.myapplication.presentation.viewmodel.AuthUiState
 import com.example.myapplication.presentation.viewmodel.AuthViewModel
-
-/**
- * Максимальная ширина формы авторизации.
- *
- * На телефонах (экран уже этого значения) форма занимает всю доступную ширину.
- * На планшетах и широких экранах форма ограничивается этой шириной
- * и центрируется, чтобы поля не растягивались на весь дисплей.
- */
-private val AuthFormMaxWidth = 480.dp
 
 /**
  * Экран авторизации с формой логина и пароля.
  *
  * Ширина формы адаптивная: на телефонах поля занимают всю ширину экрана,
  * на планшетах и в ландшафтной ориентации форма центрируется и ограничивается
- * значением [AuthFormMaxWidth]. При открытой клавиатуре или на низких экранах
+ * значением [LayoutSize.FormMaxWidth]. При открытой клавиатуре или на низких экранах
  * форма прокручивается вертикально.
  *
  * @param onNavigateToHome Вызывается после успешного входа для перехода на главный экран.
@@ -65,7 +59,6 @@ fun AuthScreen(
     }
 
     Scaffold { innerPadding ->
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -76,15 +69,15 @@ fun AuthScreen(
         ) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = AuthFormMaxWidth) // ограничение ширины для планшета
-                    .fillMaxWidth()                   // на телефоне — вся ширина экрана
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                    .widthIn(max = LayoutSize.FormMaxWidth) // ограничение ширины для планшета
+                    .fillMaxWidth()                         // на телефоне — вся ширина экрана
+                    .padding(horizontal = Spacing.Lg, vertical = Spacing.Xl),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "Авторизация",
                     style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(bottom = 32.dp)
+                    modifier = Modifier.padding(bottom = Spacing.Xl)
                 )
 
                 OutlinedTextField(
@@ -97,7 +90,7 @@ fun AuthScreen(
                     enabled = uiState !is AuthUiState.Loading,
                     isError = uiState is AuthUiState.Error
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Spacing.Md))
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -117,18 +110,18 @@ fun AuthScreen(
                     enabled = uiState !is AuthUiState.Loading,
                     isError = uiState is AuthUiState.Error
                 )
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(Spacing.Lg))
                 Button(
                     onClick = { viewModel.login(username, password) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                        .height(ComponentSize.ButtonHeight),
                     enabled = uiState !is AuthUiState.Loading &&
                             username.isNotBlank() && password.isNotBlank()
                 ) {
                     if (uiState is AuthUiState.Loading) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(ComponentSize.ProgressMd),
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
@@ -136,7 +129,7 @@ fun AuthScreen(
                     }
                 }
                 if (uiState is AuthUiState.Error) {
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(Spacing.Md))
                     Text(
                         text = (uiState as AuthUiState.Error).message,
                         color = MaterialTheme.colorScheme.error,
@@ -144,7 +137,7 @@ fun AuthScreen(
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(Spacing.Lg))
 
                 // Кнопка для перехода к настройкам сервера
                 TextButton(
@@ -154,9 +147,9 @@ fun AuthScreen(
                     Icon(
                         Icons.Default.Settings,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(IconSize.Sm)
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(Spacing.Sm))
                     Text("Изменить сервер")
                 }
             }

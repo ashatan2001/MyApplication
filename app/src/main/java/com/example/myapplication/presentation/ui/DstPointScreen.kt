@@ -9,16 +9,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.DstPoint
+import com.example.myapplication.presentation.util.IconSize
+import com.example.myapplication.presentation.util.Spacing
 import com.example.myapplication.presentation.viewmodel.DstPointUiState
 import com.example.myapplication.presentation.viewmodel.DstPointViewModel
 
 /**
  * Экран детальной информации о конкретной точке выгрузки.
- *
  * Отображает карточку с данными подразделения. Удален собственный [Scaffold],
  * кнопка "Назад" предоставляется глобальной панелью [MainShell].
  *
@@ -48,15 +48,15 @@ fun DstPointScreen(
             }
             is DstPointUiState.Error -> {
                 Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(Spacing.Lg),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Md)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(IconSize.Xl)
                     )
                     Text(text = state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
                     Button(onClick = { viewModel.loadDstPointData(zoneId) }) { Text("Повторить") }
@@ -74,16 +74,16 @@ fun DstPointScreen(
 @Composable
 private fun DstPointContent(dstPoint: DstPoint) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(Spacing.Lg),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.Md)
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(Spacing.Md),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {

@@ -38,7 +38,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,18 +51,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.Load
 import com.example.domain.model.LoadStatus
 import com.example.domain.model.Terminal
+import com.example.myapplication.presentation.util.AppAlpha
+import com.example.myapplication.presentation.util.AppElevation
+import com.example.myapplication.presentation.util.ComponentSize
+import com.example.myapplication.presentation.util.IconSize
+import com.example.myapplication.presentation.util.Spacing
+import com.example.myapplication.presentation.util.StatusColors
 import com.example.myapplication.presentation.viewmodel.QueueUiState
 import com.example.myapplication.presentation.viewmodel.QueueViewModel
 import kotlinx.coroutines.launch
@@ -95,7 +98,7 @@ fun QueueScreen(
                 if (state.loadsByTerminal.isEmpty()) {
                     Text(
                         text = "Очередь заявок на отгрузку пуста",
-                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                        modifier = Modifier.align(Alignment.Center).padding(Spacing.Md),
                         textAlign = TextAlign.Center
                     )
                 } else {
@@ -109,15 +112,15 @@ fun QueueScreen(
             }
             is QueueUiState.Error -> {
                 Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(Spacing.Lg),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Md)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(IconSize.Xl)
                     )
                     Text(
                         text = state.message,
@@ -135,13 +138,13 @@ fun QueueScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)),
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = AppAlpha.ScrimStrong)),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(ComponentSize.ProgressXl),
                     color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 4.dp
+                    strokeWidth = ComponentSize.ProgressStrokeThick
                 )
             }
         }
@@ -174,7 +177,7 @@ private fun TerminalGroupedList(
     LazyColumn(
         state = lazyListState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp)
+        contentPadding = PaddingValues(vertical = Spacing.Sm)
     ) {
         itemsIndexed(terminalList, key = { _, entry -> "terminal_${entry.key.id}" }) { index, entry ->
             val (terminal, loads) = entry
@@ -230,8 +233,8 @@ private fun TerminalCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .padding(horizontal = Spacing.Md, vertical = Spacing.Sm),
+        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.Card)
     ) {
         Column {
             // Заголовок карточки (закрытое состояние)
@@ -239,7 +242,7 @@ private fun TerminalCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onExpandClick() }
-                    .padding(16.dp),
+                    .padding(Spacing.Md),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -257,13 +260,13 @@ private fun TerminalCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(Spacing.Sm))
 
                 Icon(
                     imageVector = Icons.Filled.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
                     modifier = Modifier
-                        .size(24.dp)
+                        .size(IconSize.Md)
                         .rotate(rotation),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -275,8 +278,8 @@ private fun TerminalCard(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(Spacing.Md),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Sm)
                 ) {
                     Text(
                         text = "Список заявок",
@@ -294,7 +297,7 @@ private fun TerminalCard(
                         )
                         // Разделитель между заявками, но не после последней
                         if (index < loads.lastIndex) {
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.Xs))
                         }
                     }
                 }
@@ -337,7 +340,7 @@ private fun LoadRow(
                         }
                     }
                 )
-                .padding(vertical = 8.dp),
+                .padding(vertical = Spacing.Sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -355,7 +358,7 @@ private fun LoadRow(
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(Spacing.Sm))
 
             Text(
                 text = "${load.quality} ${load.terminal?.measure ?: ""}",
@@ -363,7 +366,7 @@ private fun LoadRow(
                 fontWeight = FontWeight.Medium
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(Spacing.Sm))
 
             StatusIcon(status = load.status)
         }
@@ -410,18 +413,18 @@ private fun LoadRow(
 @Composable
 fun StatusIcon(status: LoadStatus) {
     val (icon, color) = when (status) {
-        LoadStatus.IN_QUEUE -> Icons.Default.Schedule to Color(0xFF2196F3) // Синий
-        LoadStatus.COMPLETED -> Icons.Default.CheckCircle to Color(0xFF4CAF50) // Зеленый
-        LoadStatus.DEFECT -> Icons.Default.Error to Color(0xFFF44336) // Красный
-        LoadStatus.CANCELLED -> Icons.Default.Cancel to Color(0xFF9E9E9E) // Серый
-        LoadStatus.WEIGHED -> Icons.Default.Scale to Color(0xFFFF9800) // Янтарный
-        LoadStatus.UNKNOWN -> Icons.AutoMirrored.Filled.Help to Color(0xFF795548) // Коричневый
+        LoadStatus.IN_QUEUE -> Icons.Default.Schedule to StatusColors.Info
+        LoadStatus.COMPLETED -> Icons.Default.CheckCircle to StatusColors.Success
+        LoadStatus.DEFECT -> Icons.Default.Error to StatusColors.Error
+        LoadStatus.CANCELLED -> Icons.Default.Cancel to StatusColors.Neutral
+        LoadStatus.WEIGHED -> Icons.Default.Scale to StatusColors.Warning
+        LoadStatus.UNKNOWN -> Icons.AutoMirrored.Filled.Help to StatusColors.Maintenance
     }
 
     Icon(
         imageVector = icon,
         contentDescription = status.name,
         tint = color,
-        modifier = Modifier.size(24.dp)
+        modifier = Modifier.size(IconSize.Md)
     )
 }

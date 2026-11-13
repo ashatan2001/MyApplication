@@ -5,13 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -35,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.Product
+import com.example.myapplication.presentation.util.ComponentSize
+import com.example.myapplication.presentation.util.IconSize
+import com.example.myapplication.presentation.util.Spacing
 import com.example.myapplication.presentation.viewmodel.ProductListUiState
 import com.example.myapplication.presentation.viewmodel.ProductListViewModel
 
@@ -81,7 +81,7 @@ fun ProductListScreen(
                         onQueryChange = { searchQuery = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = Spacing.Md, vertical = Spacing.Sm)
                     )
 
                     // Фильтрация списка
@@ -99,7 +99,7 @@ fun ProductListScreen(
                                 "Список продуктов пуст",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
+                                .padding(Spacing.Lg),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -114,7 +114,7 @@ fun ProductListScreen(
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                                    modifier = Modifier.padding(horizontal = Spacing.Md, vertical = Spacing.Smd)
                                 )
                                 HorizontalDivider()
                             }
@@ -127,7 +127,7 @@ fun ProductListScreen(
                                     product = product,
                                     onClick = { viewModel.onProductClick(product) }
                                 )
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = Spacing.Md))
                             }
                         }
                     }
@@ -135,15 +135,15 @@ fun ProductListScreen(
             }
             is ProductListUiState.Error -> {
                 Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(Spacing.Lg),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Md)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(IconSize.Xl)
                     )
                     Text(
                         text = state.message,
@@ -188,9 +188,9 @@ private fun ProductRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .heightIn(min = ComponentSize.ListRowMinHeight)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Spacing.Md, vertical = Spacing.Sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Номер продукта
@@ -198,7 +198,7 @@ private fun ProductRow(
             text = product.number ?: "---",
             modifier = Modifier
                 .weight(1f)
-                .padding(end = 12.dp),
+                .padding(end = Spacing.Smd),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
@@ -211,7 +211,7 @@ private fun ProductRow(
             text = product.name,
             modifier = Modifier
                 .weight(3f)
-                .padding(end = 12.dp),
+                .padding(end = Spacing.Smd),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
@@ -221,13 +221,13 @@ private fun ProductRow(
         // Иконка заказа (компактная кнопка)
         IconButton(
             onClick = onClick,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(IconSize.Action)
         ) {
             Icon(
                 imageVector = Icons.Default.AddCircle,
                 contentDescription = "Заказать ${product.name}",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(IconSize.Lg)
             )
         }
     }

@@ -35,10 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.DstPoint
+import com.example.myapplication.presentation.util.IconSize
+import com.example.myapplication.presentation.util.Spacing
 import com.example.myapplication.presentation.viewmodel.DstPointListUiState
 import com.example.myapplication.presentation.viewmodel.DstPointListViewModel
 
@@ -77,7 +78,7 @@ fun DstPointListScreen(
                         onQueryChange = { searchQuery = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = Spacing.Md, vertical = Spacing.Sm)
                     )
 
                     // Фильтрация списка
@@ -94,7 +95,7 @@ fun DstPointListScreen(
                                 "Список точек выгрузки бетона пуст",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
+                                .padding(Spacing.Lg),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -109,7 +110,7 @@ fun DstPointListScreen(
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                                    modifier = Modifier.padding(horizontal = Spacing.Md, vertical = Spacing.Smd)
                                 )
                                 HorizontalDivider()
                             }
@@ -120,7 +121,7 @@ fun DstPointListScreen(
                                     onOrder = { onProductList(point.zoneId) },
                                     onUnload = { /* Логика отгрузки */ }
                                 )
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = Spacing.Md))
                             }
                         }
                     }
@@ -128,15 +129,15 @@ fun DstPointListScreen(
             }
             is DstPointListUiState.Error -> {
                 Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(Spacing.Lg),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Md)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(IconSize.Xl)
                     )
                     Text(
                         text = state.message,
@@ -168,7 +169,7 @@ private fun DstPointRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Spacing.Md, vertical = Spacing.Smd),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Наименование подразделения
@@ -182,20 +183,20 @@ private fun DstPointRow(
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(Spacing.Sm))
 
         // Кнопка отгрузки
         TextButton(
             onClick = onUnload,
-            contentPadding = PaddingValues(horizontal = 8.dp)
+            contentPadding = PaddingValues(horizontal = Spacing.Sm)
         ) {
             Icon(
                 imageVector = Icons.Default.LocalShipping,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(IconSize.Inline),
                 tint = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(Spacing.Xs))
             Text(
                 text = "Отгрузить",
                 style = MaterialTheme.typography.labelMedium,
@@ -206,15 +207,15 @@ private fun DstPointRow(
         // Кнопка заказа
         TextButton(
             onClick = onOrder,
-            contentPadding = PaddingValues(horizontal = 8.dp)
+            contentPadding = PaddingValues(horizontal = Spacing.Sm)
         ) {
             Icon(
                 imageVector = Icons.Default.Inventory,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(IconSize.Inline),
                 tint = MaterialTheme.colorScheme.secondary
             )
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(Spacing.Xs))
             Text(
                 text = "Заказ",
                 style = MaterialTheme.typography.labelMedium,

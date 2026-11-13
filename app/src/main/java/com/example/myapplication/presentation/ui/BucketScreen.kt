@@ -14,20 +14,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
-import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.Moving
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SignalWifiOff
@@ -42,31 +38,30 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.Bucket
 import com.example.domain.model.BucketStatus
+import com.example.myapplication.presentation.util.AppElevation
 import com.example.myapplication.presentation.util.DateTimeFormatters
+import com.example.myapplication.presentation.util.IconSize
+import com.example.myapplication.presentation.util.Spacing
+import com.example.myapplication.presentation.util.StatusColors
 import com.example.myapplication.presentation.viewmodel.BucketUiState
 import com.example.myapplication.presentation.viewmodel.BucketViewModel
 import kotlinx.coroutines.launch
-
 
 /**
  * Экран мониторинга бетоновозных телег.
@@ -99,7 +94,7 @@ fun BucketScreen(
                 if (state.bucketList.isEmpty()) {
                     Text(
                         text = "Бетоновозные телеги не найдены",
-                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                        modifier = Modifier.align(Alignment.Center).padding(Spacing.Md),
                         textAlign = TextAlign.Center
                     )
                 } else {
@@ -108,15 +103,15 @@ fun BucketScreen(
             }
             is BucketUiState.Error -> {
                 Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(Spacing.Lg),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Md)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(IconSize.Xl)
                     )
                     Text(
                         text = state.message,
@@ -146,7 +141,7 @@ private fun BucketList(buckets: List<Bucket>) {
     LazyColumn(
         state = lazyListState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp)
+        contentPadding = PaddingValues(vertical = Spacing.Sm)
     ) {
         // Используем itemsIndexed, чтобы знать позицию элемента для прокрутки
         itemsIndexed(buckets, key = { _, bucket -> bucket.id }) { index, bucket ->
@@ -185,8 +180,8 @@ private fun BucketItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .padding(horizontal = Spacing.Md, vertical = Spacing.Sm),
+        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.Card)
     ) {
         Column {
             Row(
@@ -200,7 +195,7 @@ private fun BucketItem(
                             onExpandRequest()
                         }
                     }
-                    .padding(16.dp),
+                    .padding(Spacing.Md),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -213,17 +208,16 @@ private fun BucketItem(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(Spacing.Md))
                 IsFullIcon(isFull = bucket.isFull)
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(Spacing.Md))
                 BucketStatusIcon(status = bucket.status)
-                Spacer(modifier = Modifier.width(8.dp))
-
+                Spacer(modifier = Modifier.width(Spacing.Sm))
                 Icon(
                     imageVector = Icons.Filled.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
                     modifier = Modifier
-                        .size(24.dp)
+                        .size(IconSize.Md)
                         .rotate(rotation),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -246,16 +240,16 @@ private fun BucketItem(
 @Composable
 private fun IsFullIcon(isFull: Boolean) {
     val (icon, color) = if (isFull) {
-        Icons.Default.Inventory2 to Color(0xFF4CAF50) // Зеленый (загружена)
+        Icons.Default.Inventory2 to StatusColors.Success   // Зеленый (загружена)
     } else {
-        Icons.Outlined.Inventory2 to Color(0xFF9E9E9E) // Серый (пуста)
+        Icons.Outlined.Inventory2 to StatusColors.Neutral  // Серый (пуста)
     }
 
     Icon(
         imageVector = icon,
         contentDescription = if (isFull) "Загружена" else "Пуста",
         tint = color,
-        modifier = Modifier.size(24.dp)
+        modifier = Modifier.size(IconSize.Md)
     )
 }
 
@@ -269,8 +263,8 @@ private fun ExpandedBucketContent(bucket: Bucket) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(Spacing.Md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Smd)
     ) {
         // 1) Местоположения
         Text(
@@ -282,7 +276,7 @@ private fun ExpandedBucketContent(bucket: Bucket) {
         InfoRow(label = "Текущий участок", value = bucket.zoneNumber.toString())
         InfoRow(label = "Участок назначения", value = bucket.dstZone.toString())
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.Xs))
 
         // 2) Информация о заявке
         Text(
@@ -293,7 +287,7 @@ private fun ExpandedBucketContent(bucket: Bucket) {
         )
         InfoRow(label = "Код заявки", value = if (bucket.loadId != 0L) bucket.loadId.toString() else "Нет активной заявки")
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.Xs))
 
         // 3) Временные отметки
         Text(
@@ -335,7 +329,7 @@ private fun InfoRow(label: String, value: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(Spacing.Sm))
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
@@ -358,20 +352,20 @@ fun BucketStatusIcon(
     modifier: Modifier = Modifier
 ) {
     val (icon, color) = when (status) {
-        BucketStatus.WAITING_FOR_LOADING -> Icons.Default.Schedule to Color(0xFFFF9800)
-        BucketStatus.MOVING -> Icons.Default.KeyboardDoubleArrowRight to Color(0xFF2196F3)
-        BucketStatus.STOPPED_AT_POINT -> Icons.Default.PauseCircle to Color(0xFF9E9E9E)
-        BucketStatus.UNLOADING -> Icons.Default.Downloading to Color(0xFF4CAF50)
-        BucketStatus.DISCONNECTED -> Icons.Default.SignalWifiOff to Color(0xFFF44336)
-        BucketStatus.UNDER_REPAIR -> Icons.Default.Construction to Color(0xFF795548)
-        BucketStatus.MANUAL_CONTROL -> Icons.Default.Handyman to Color(0xFF9C27B0)
-        BucketStatus.UNKNOWN, null -> Icons.AutoMirrored.Filled.Help to Color(0xFFBDBDBD)
+        BucketStatus.WAITING_FOR_LOADING -> Icons.Default.Schedule to StatusColors.Warning
+        BucketStatus.MOVING -> Icons.Default.KeyboardDoubleArrowRight to StatusColors.Info
+        BucketStatus.STOPPED_AT_POINT -> Icons.Default.PauseCircle to StatusColors.Neutral
+        BucketStatus.UNLOADING -> Icons.Default.Downloading to StatusColors.Success
+        BucketStatus.DISCONNECTED -> Icons.Default.SignalWifiOff to StatusColors.Error
+        BucketStatus.UNDER_REPAIR -> Icons.Default.Construction to StatusColors.Maintenance
+        BucketStatus.MANUAL_CONTROL -> Icons.Default.Handyman to StatusColors.Manual
+        BucketStatus.UNKNOWN, null -> Icons.AutoMirrored.Filled.Help to StatusColors.Unknown
     }
 
     Icon(
         imageVector = icon,
         contentDescription = status?.name ?: "Неизвестный статус",
         tint = color,
-        modifier = modifier.size(24.dp)
+        modifier = modifier.size(IconSize.Md)
     )
 }

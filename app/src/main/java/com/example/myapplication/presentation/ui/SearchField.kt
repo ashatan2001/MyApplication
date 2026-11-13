@@ -1,7 +1,6 @@
 package com.example.myapplication.presentation.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -10,11 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
+import com.example.myapplication.presentation.util.AppShape
 
 /**
  * Поле поиска с анимированной иконкой очистки и кастомными цветами.
  *
+ * @param text Текст подсказки (placeholder), например "Поиск продукта".
  * @param query Текущий текст запроса.
  * @param onQueryChange Колбэк изменения текста запроса.
  * @param modifier Модификатор для настройки макета.
@@ -55,7 +55,7 @@ fun SearchField(
             }
         },
         singleLine = true,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.MediumLarge,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,

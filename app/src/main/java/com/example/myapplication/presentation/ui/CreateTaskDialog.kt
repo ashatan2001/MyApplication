@@ -9,8 +9,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import com.example.domain.model.Product
+import com.example.myapplication.presentation.util.Spacing
 
 /**
  * Диалоговое окно создания заявки на отгрузку продукта.
@@ -40,7 +40,7 @@ fun CreateTaskDialog(
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.Smd)) {
                 // Информация о продукте
                 Text(
                     text = "Продукт: ${product.name}",

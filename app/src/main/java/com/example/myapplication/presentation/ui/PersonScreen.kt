@@ -10,10 +10,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.Person
+import com.example.myapplication.presentation.util.IconSize
+import com.example.myapplication.presentation.util.Spacing
 import com.example.myapplication.presentation.viewmodel.PersonUiState
 import com.example.myapplication.presentation.viewmodel.PersonViewModel
 
@@ -52,13 +53,13 @@ fun PersonScreen(
             is PersonUiState.Error -> {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Md)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(IconSize.Xl)
                     )
                     Text(
                         text = state.message,
@@ -84,14 +85,14 @@ private fun PersonContent(person: Person) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(Spacing.Lg),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.Md)
     ) {
         Icon(
             imageVector = Icons.Default.Person,
             contentDescription = null,
-            modifier = Modifier.size(100.dp),
+            modifier = Modifier.size(IconSize.Avatar),
             tint = MaterialTheme.colorScheme.primary
         )
         Text(
@@ -105,8 +106,8 @@ private fun PersonContent(person: Person) {
             )
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(Spacing.Md),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Sm)
             ) {
                 InfoRow("ID", person.id)
                 InfoRow("Должность", person.position ?: "Не указана")

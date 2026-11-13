@@ -4,7 +4,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
@@ -16,29 +15,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.presentation.ArchiveRow
 import com.example.myapplication.presentation.ArchiveScreenState
 import com.example.myapplication.presentation.ArchiveType
+import com.example.myapplication.presentation.util.AppAlpha
+import com.example.myapplication.presentation.util.AppFontSize
+import com.example.myapplication.presentation.util.AppShape
+import com.example.myapplication.presentation.util.ComponentSize
 import com.example.myapplication.presentation.util.DateTimeFormatters
 import com.example.myapplication.presentation.util.DateTimeFormatters.parseToMillis
+import com.example.myapplication.presentation.util.IconSize
+import com.example.myapplication.presentation.util.LayoutSize
+import com.example.myapplication.presentation.util.Spacing
 import com.example.myapplication.presentation.util.WindowSize
 import com.example.myapplication.presentation.util.rememberWindowSize
 import com.example.myapplication.presentation.viewmodel.ArchiveViewModel
 
-/** Ширина боковой панели формы на больших экранах. */
-private val FormPanelWidth = 340.dp
-
-/** Ширина фиксированной колонки с датой в таблице. */
-private val DateColumnWidth = 160.dp
+/**
+ * Ширина фиксированной колонки с датой в таблице.
+ * Специфична для экрана архива, поэтому остаётся локальной константой файла.
+ */
+private val DateColumnWidth: Dp = 160.dp
 
 /**
  * Экран архива с адаптивной версткой:
- * [WindowSize.COMPACT] — форма над таблицей, колонки таблицы со горизонтальной прокруткой;
+ * [WindowSize.COMPACT] — форма над таблицей, колонки таблицы с горизонтальной прокруткой;
  * [WindowSize.MEDIUM] — то же, но поля дат размещаются в две колонки для экономии высоты;
  * [WindowSize.EXPANDED] — форма в боковой панели слева, таблица занимает оставшуюся ширину,
  * колонки таблицы растягиваются пропорционально без прокрутки, если хватает места.
+ *
  * @param viewModel [ArchiveViewModel] для управления состоянием экрана.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,13 +62,13 @@ fun ArchiveScreen(
         WindowSize.EXPANDED -> Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = Spacing.Md, vertical = Spacing.Sm),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Md)
         ) {
             ArchiveForm(
                 state = state,
                 modifier = Modifier
-                    .width(FormPanelWidth)
+                    .width(LayoutSize.FormSidePanelWidth) // единая ширина боковых форм
                     .fillMaxHeight()
                     .verticalScroll(rememberScrollState()),
                 onTypeChange = viewModel::updateType,
@@ -84,7 +90,7 @@ fun ArchiveScreen(
         else -> Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(horizontal = Spacing.Smd, vertical = Spacing.Sm)
         ) {
             ArchiveForm(
                 state = state,
@@ -95,7 +101,7 @@ fun ArchiveScreen(
                 onShowStartPicker = { showStartPicker = true },
                 onShowEndPicker = { showEndPicker = true }
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.Sm))
             ArchiveContent(
                 state = state,
                 modifier = Modifier.weight(1f),
@@ -130,6 +136,7 @@ fun ArchiveScreen(
 
 /**
  * Область вывода результата: индикатор загрузки, ошибка либо таблица с пагинацией.
+ *
  * @param state Текущее состояние экрана.
  * @param modifier Модификатор контейнера.
  * @param onPreviousPage Переход на предыдущую страницу.
@@ -150,14 +157,14 @@ private fun ArchiveContent(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                CircularProgressIndicator(modifier = Modifier.size(ComponentSize.ProgressLg))
             }
         } else if (state.error != null && state.rows.isEmpty()) {
             Text(
                 text = state.error!!,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                fontSize = 13.sp
+                modifier = Modifier.fillMaxWidth().padding(Spacing.Smd),
+                fontSize = AppFontSize.Body
             )
         } else {
             ArchiveTable(
@@ -173,11 +180,11 @@ private fun ArchiveContent(
         }
         if (state.error != null && state.rows.isNotEmpty()) {
             Snackbar(
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(top = Spacing.Xs),
                 containerColor = MaterialTheme.colorScheme.errorContainer,
-                action = { TextButton(onClick = onClearError) { Text("OK", fontSize = 12.sp) } }
+                action = { TextButton(onClick = onClearError) { Text("OK", fontSize = AppFontSize.Caption) } }
             ) {
-                Text(state.error!!, fontSize = 12.sp)
+                Text(state.error!!, fontSize = AppFontSize.Caption)
             }
         }
     }
@@ -185,6 +192,7 @@ private fun ArchiveContent(
 
 /**
  * Форма фильтров архива. На [WindowSize.MEDIUM] поля дат размещаются в две колонки.
+ *
  * @param state Текущее состояние экрана.
  * @param modifier Модификатор контейнера формы.
  * @param onTypeChange Смена типа архива.
@@ -208,34 +216,33 @@ private fun ArchiveForm(
     var typeExpanded by remember { mutableStateOf(false) }
     var recordsExpanded by remember { mutableStateOf(false) }
     val recordsOptions = listOf("25", "50", "100", "200")
-    val shape = RoundedCornerShape(8.dp)
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
         ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = !typeExpanded }) {
             OutlinedTextField(
                 value = state.selectedType.title,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Тип архива", fontSize = 13.sp) },
+                label = { Text("Тип архива", fontSize = AppFontSize.Body) },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                    .clip(shape),
-                shape = shape,
-                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                    .clip(AppShape.Medium),
+                shape = AppShape.Medium,
+                textStyle = LocalTextStyle.current.copy(fontSize = AppFontSize.Field)
             )
             ExposedDropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }) {
                 ArchiveType.entries.forEach { type ->
                     DropdownMenuItem(
-                        text = { Text(type.title, fontSize = 14.sp) },
+                        text = { Text(type.title, fontSize = AppFontSize.Field) },
                         onClick = { onTypeChange(type); typeExpanded = false }
                     )
                 }
             }
         }
         if (windowSize == WindowSize.MEDIUM) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)) {
                 DateField(
                     label = "Дата и время начала",
                     value = state.startDate,
@@ -253,7 +260,7 @@ private fun ArchiveForm(
             DateField("Дата и время начала", state.startDate, onShowStartPicker, Modifier.fillMaxWidth())
             DateField("Дата и время окончания", state.endDate, onShowEndPicker, Modifier.fillMaxWidth())
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Xsm), verticalAlignment = Alignment.CenterVertically) {
             ExposedDropdownMenuBox(expanded = recordsExpanded, onExpandedChange = { recordsExpanded = !recordsExpanded }) {
                 OutlinedTextField(
                     value = state.records,
@@ -261,16 +268,16 @@ private fun ArchiveForm(
                     readOnly = true,
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = recordsExpanded) },
                     modifier = Modifier
-                        .width(90.dp)
+                        .width(ComponentSize.RecordsFieldWidth)
                         .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                        .clip(shape),
-                    shape = shape,
-                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                        .clip(AppShape.Medium),
+                    shape = AppShape.Medium,
+                    textStyle = LocalTextStyle.current.copy(fontSize = AppFontSize.Field)
                 )
                 ExposedDropdownMenu(expanded = recordsExpanded, onDismissRequest = { recordsExpanded = false }) {
                     recordsOptions.forEach { option ->
                         DropdownMenuItem(
-                            text = { Text(option, fontSize = 14.sp) },
+                            text = { Text(option, fontSize = AppFontSize.Field) },
                             onClick = { onRecordsChange(option); recordsExpanded = false }
                         )
                     }
@@ -279,14 +286,15 @@ private fun ArchiveForm(
             Button(
                 onClick = onLoadClick,
                 enabled = !state.isLoading,
-                modifier = Modifier.height(48.dp).weight(1f).clip(shape),
-                shape = shape,
-                contentPadding = PaddingValues(horizontal = 12.dp)
+                modifier = Modifier.height(ComponentSize.ButtonHeight).weight(1f).clip(AppShape.Medium),
+                shape = AppShape.Medium,
+                contentPadding = PaddingValues(horizontal = Spacing.Smd)
             ) {
                 if (state.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    // Компактный индикатор внутри кнопки — размер иконки кнопки.
+                    CircularProgressIndicator(modifier = Modifier.size(IconSize.Sm), color = MaterialTheme.colorScheme.onPrimary)
                 } else {
-                    Text("Загрузить", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Text("Загрузить", fontSize = AppFontSize.Field, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -295,6 +303,7 @@ private fun ArchiveForm(
 
 /**
  * Подписанное поле выбора даты/времени периода.
+ *
  * @param label Подпись над полем.
  * @param value Текущее значение даты (пустое — показывается плейсхолдер).
  * @param onClick Открытие диалога выбора.
@@ -308,12 +317,12 @@ private fun DateField(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, fontSize = AppFontSize.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
         PickerFieldButton(
             value = value.ifBlank { "дд.мм.гггг чч:мм" },
             icon = Icons.Default.CalendarToday,
             onClick = onClick,
-            shape = RoundedCornerShape(8.dp),
+            shape = AppShape.Medium,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -324,6 +333,8 @@ private data class TableColumn(val title: String, val width: Dp)
 
 /**
  * Возвращает описание колонок таблицы для выбранного типа архива.
+ * Ширины колонок — данные конкретного экрана, поэтому заданы локально.
+ *
  * @param type Тип архива.
  * @return Список колонок с заголовками и базовыми ширинами.
  */
@@ -347,6 +358,7 @@ private fun tableColumns(type: ArchiveType): List<TableColumn> = when (type) {
 
 /**
  * Извлекает текстовые значения ячеек строки таблицы.
+ *
  * @param row Строка архива.
  * @return Список значений ячеек в порядке колонок [tableColumns].
  */
@@ -371,6 +383,7 @@ private fun cellValues(row: ArchiveRow): List<String> = when (row) {
 
 /**
  * Извлекает строковое представление даты события для фиксированной колонки.
+ *
  * @param row Строка архива.
  * @return Дата в формате "дд.мм.гггг чч:мм:сс".
  */
@@ -391,6 +404,7 @@ private fun dateText(row: ArchiveRow): String {
  * Поведение колонок адаптивное: если доступная ширина экрана не меньше суммарной
  * ширины колонок, колонки растягиваются пропорционально базовым ширинам ([Modifier.weight]);
  * иначе таблица прокручивается горизонтально общим [ScrollState] для шапки и строк.
+ *
  * @param type Тип архива, определяющий набор колонок.
  * @param rows Строки текущей страницы.
  * @param isLoadingPage Флаг загрузки страницы (оверлей с индикатором).
@@ -442,10 +456,10 @@ private fun ArchiveTable(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = AppAlpha.Scrim)),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                        CircularProgressIndicator(modifier = Modifier.size(ComponentSize.ProgressXl))
                     }
                 }
             }
@@ -476,7 +490,7 @@ private fun TableHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(vertical = 8.dp)
+            .padding(vertical = Spacing.Sm)
     ) {
         HeaderCell("Дата и время", Modifier.width(DateColumnWidth))
         if (stretch) {
@@ -495,6 +509,7 @@ private fun TableHeader(
 
 /**
  * Ячейка шапки таблицы.
+ *
  * @param text Заголовок колонки.
  * @param modifier Модификатор, задающий ширину или вес колонки.
  */
@@ -502,9 +517,9 @@ private fun TableHeader(
 private fun HeaderCell(text: String, modifier: Modifier) {
     Text(
         text = text,
-        modifier = modifier.padding(horizontal = 8.dp),
+        modifier = modifier.padding(horizontal = Spacing.Sm),
         fontWeight = FontWeight.Bold,
-        fontSize = 12.sp,
+        fontSize = AppFontSize.Caption,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )
@@ -522,14 +537,14 @@ private fun TableRow(
     scrollState: ScrollState
 ) {
     val values = cellValues(row)
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Xsm)) {
         Box(
-            modifier = Modifier.width(DateColumnWidth).padding(horizontal = 8.dp),
+            modifier = Modifier.width(DateColumnWidth).padding(horizontal = Spacing.Sm),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(
                 text = dateText(row),
-                fontSize = 12.sp,
+                fontSize = AppFontSize.Caption,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -550,13 +565,14 @@ private fun TableRow(
 
 /**
  * Ячейка данных таблицы.
+ *
  * @param text Значение ячейки.
  * @param modifier Модификатор, задающий ширину или вес колонки.
  */
 @Composable
 private fun CellText(text: String, modifier: Modifier) {
-    Box(modifier = modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.CenterStart) {
-        Text(text = text, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Box(modifier = modifier.padding(horizontal = Spacing.Sm), contentAlignment = Alignment.CenterStart) {
+        Text(text = text, fontSize = AppFontSize.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -564,6 +580,7 @@ private fun CellText(text: String, modifier: Modifier) {
  * Панель постраничной навигации.
  * На широких экранах ([centered] = true) элементы группируются по центру,
  * на узких — разводятся по краям.
+ *
  * @param currentPage Номер текущей страницы.
  * @param totalPages Общее количество страниц.
  * @param isLoadingPage Флаг загрузки страницы.
@@ -583,9 +600,9 @@ private fun PaginationRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = if (centered) 16.dp else 0.dp),
+            .padding(vertical = Spacing.Sm, horizontal = if (centered) Spacing.Md else 0.dp),
         horizontalArrangement = if (centered) {
-            Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
+            Arrangement.spacedBy(Spacing.Lg, Alignment.CenterHorizontally)
         } else {
             Arrangement.SpaceBetween
         },
@@ -594,25 +611,28 @@ private fun PaginationRow(
         OutlinedButton(
             onClick = onPreviousPage,
             enabled = !isLoadingPage && currentPage > 1,
-            modifier = Modifier.height(40.dp)
+            modifier = Modifier.height(ComponentSize.SmallButtonHeight)
         ) {
-            Text("Назад", fontSize = 13.sp)
+            Text("Назад", fontSize = AppFontSize.Body)
         }
         if (isLoadingPage) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            CircularProgressIndicator(
+                modifier = Modifier.size(ComponentSize.ProgressMd),
+                strokeWidth = ComponentSize.ProgressStrokeThin
+            )
         } else {
             Text(
                 text = "Страница $currentPage из $totalPages",
-                fontSize = 13.sp,
+                fontSize = AppFontSize.Body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         OutlinedButton(
             onClick = onNextPage,
             enabled = !isLoadingPage && currentPage < totalPages,
-            modifier = Modifier.height(40.dp)
+            modifier = Modifier.height(ComponentSize.SmallButtonHeight)
         ) {
-            Text("Вперед", fontSize = 13.sp)
+            Text("Вперед", fontSize = AppFontSize.Body)
         }
     }
 }
