@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -23,7 +25,9 @@ import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
 import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.Moving
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SignalWifiOff
@@ -42,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +63,8 @@ import com.example.domain.model.BucketStatus
 import com.example.myapplication.presentation.util.DateTimeFormatters
 import com.example.myapplication.presentation.viewmodel.BucketUiState
 import com.example.myapplication.presentation.viewmodel.BucketViewModel
+import kotlinx.coroutines.launch
+
 
 /**
  * Экран мониторинга бетоновозных телег.
@@ -121,18 +128,33 @@ fun BucketScreen(
 }
 
 /**
- * Список бетоновозных телег с возможностью раскрытия деталей.
+ * Список бетоновозных телег с возможностью раскрытия деталей и автоматической прокруткой.
  *
  * @param buckets Список моделей телег.
  */
 @Composable
 private fun BucketList(buckets: List<Bucket>) {
+    // Состояние прокрутки для LazyColumn
+    val lazyListState = rememberLazyListState()
+    // Область корутин для выполнения suspend-функции прокрутки
+    val coroutineScope = rememberCoroutineScope()
+
     LazyColumn(
+        state = lazyListState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        items(buckets, key = { it.id }) { bucket ->
-            BucketItem(bucket = bucket)
+        // Используем itemsIndexed, чтобы знать позицию элемента для прокрутки
+        itemsIndexed(buckets, key = { _, bucket -> bucket.id }) { index, bucket ->
+            BucketItem(
+                bucket = bucket,
+                onExpandRequest = {
+                    // При запросе на раскрытие плавно прокручиваем список к этому индексу
+                    coroutineScope.launch {
+                        lazyListState.animateScrollToItem(index)
+                    }
+                }
+            )
         }
     }
 }
@@ -143,9 +165,13 @@ private fun BucketList(buckets: List<Bucket>) {
  * В раскрытом состоянии отображает детальную информацию.
  *
  * @param bucket Модель бетоновозной телеги.
+ * @param onExpandRequest Колбэк, вызываемый при раскрытии элемента для инициирования прокрутки.
  */
 @Composable
-private fun BucketItem(bucket: Bucket) {
+private fun BucketItem(
+    bucket: Bucket,
+    onExpandRequest: () -> Unit
+) {
     var isExpanded by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 90f else 0f,
@@ -162,7 +188,14 @@ private fun BucketItem(bucket: Bucket) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { isExpanded = !isExpanded }
+                    .clickable {
+                        val willExpand = !isExpanded
+                        isExpanded = willExpand
+                        // Вызываем прокрутку только если элемент раскрывается, а не сворачивается
+                        if (willExpand) {
+                            onExpandRequest()
+                        }
+                    }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -177,13 +210,9 @@ private fun BucketItem(bucket: Bucket) {
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
-
                 IsFullIcon(isFull = bucket.isFull)
-
                 Spacer(modifier = Modifier.width(16.dp))
-
                 BucketStatusIcon(status = bucket.status)
-
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Icon(
@@ -246,39 +275,39 @@ private fun ExpandedBucketContent(bucket: Bucket) {
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary
         )
-        InfoRow(label = "Текущий участок (zoneNumber)", value = bucket.zoneNumber.toString())
-        InfoRow(label = "Участок доставки (dstZone)", value = bucket.dstZone.toString())
+        InfoRow(label = "Текущий участок", value = bucket.zoneNumber.toString())
+        InfoRow(label = "Участок назначения", value = bucket.dstZone.toString())
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-        // 2) Информация о телеге
+        // 2) Информация о заявке
         Text(
-            text = "Информация о телеге",
+            text = "Информация о заявке",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary
         )
-        InfoRow(label = "Код заявки (loadId)", value = if (bucket.loadId != 0L) bucket.loadId.toString() else "Нет активной заявки")
+        InfoRow(label = "Код заявки", value = if (bucket.loadId != 0L) bucket.loadId.toString() else "Нет активной заявки")
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-        // 3) Информация о времени
+        // 3) Временные отметки
         Text(
-            text = "Информация о времени",
+            text = "Временные отметки",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary
         )
         InfoRow(
-            label = "Приготовление смеси (loadDate)",
+            label = "Приготовление смеси",
             value = bucket.loadDate?.format(DateTimeFormatters.dateTimeFormatter) ?: "—"
         )
         InfoRow(
-            label = "Прибытие на разгрузку (arrivalDate)",
+            label = "Прибытие в точку разгрузки",
             value = bucket.arrivalDate?.format(DateTimeFormatters.dateTimeFormatter) ?: "—"
         )
         InfoRow(
-            label = "Завершение разгрузки (departDate)",
+            label = "Завершение разгрузки",
             value = bucket.departDate?.format(DateTimeFormatters.dateTimeFormatter) ?: "—"
         )
     }
@@ -326,7 +355,7 @@ fun BucketStatusIcon(
 ) {
     val (icon, color) = when (status) {
         BucketStatus.WAITING_FOR_LOADING -> Icons.Default.Schedule to Color(0xFFFF9800)
-        BucketStatus.MOVING -> Icons.Default.LocalShipping to Color(0xFF2196F3)
+        BucketStatus.MOVING -> Icons.Default.KeyboardDoubleArrowRight to Color(0xFF2196F3)
         BucketStatus.STOPPED_AT_POINT -> Icons.Default.PauseCircle to Color(0xFF9E9E9E)
         BucketStatus.UNLOADING -> Icons.Default.Downloading to Color(0xFF4CAF50)
         BucketStatus.DISCONNECTED -> Icons.Default.SignalWifiOff to Color(0xFFF44336)

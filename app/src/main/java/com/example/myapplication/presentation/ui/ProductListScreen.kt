@@ -1,14 +1,35 @@
 package com.example.myapplication.presentation.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -25,7 +46,7 @@ import com.example.myapplication.presentation.viewmodel.ProductListViewModel
  * Экран списка продуктов, разрешенных для отгрузки в конкретной зоне.
  * Отображает таблицу продуктов с полем поиска. При нажатии на продукт или иконку заказа
  * открывает диалог создания заявки ([CreateTaskDialog]).
- * Удален собственный [Scaffold], навигация "Назад" обрабатывается глобальной панелью [MainShell].
+ * Интерфейс оптимизирован: убраны тяжелые карточки и sticky-заголовки.
  *
  * @param onBack Колбэк для возврата на предыдущий экран (используется [MainShell]).
  * @param zone ID зоны выгрузки, для которой загружается список продуктов.
@@ -52,9 +73,10 @@ fun ProductListScreen(
             }
             is ProductListUiState.Success -> {
                 Column(modifier = Modifier.fillMaxSize()) {
+
                     // Поле поиска
                     SearchField(
-                        text = "Наименование продукта",
+                        text = "Поиск продукта",
                         query = searchQuery,
                         onQueryChange = { searchQuery = it },
                         modifier = Modifier
@@ -68,26 +90,35 @@ fun ProductListScreen(
                                 product.number?.contains(searchQuery.trim(), ignoreCase = true) == true
                     }
 
-                    // Отображение списка
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        stickyHeader { TableHeader() }
+                    if (filteredList.isEmpty()) {
+                        // Состояние пустого списка
+                        Text(
+                            text = if (searchQuery.isNotEmpty())
+                                "Ничего не найдено по запросу \"$searchQuery\""
+                            else
+                                "Список продуктов пуст",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
 
-                        if (filteredList.isEmpty()) {
-                            item {
+                            // Легкий заголовок секции
+                            item(key = "header") {
                                 Text(
-                                    text = if (searchQuery.isNotEmpty())
-                                        "Ничего не найдено по запросу \"$searchQuery\""
-                                    else
-                                        "Список продуктов пуст",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = "Доступные продукты",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                                 )
+                                HorizontalDivider()
                             }
-                        } else {
+
                             items(
                                 items = filteredList,
                                 key = { product -> product.id }
@@ -96,7 +127,7 @@ fun ProductListScreen(
                                     product = product,
                                     onClick = { viewModel.onProductClick(product) }
                                 )
-                                HorizontalDivider()
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                             }
                         }
                     }
@@ -117,7 +148,8 @@ fun ProductListScreen(
                     Text(
                         text = state.message,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
                     )
                     Button(onClick = { viewModel.loadProductList(zone) }) {
                         Text("Повторить")
@@ -142,104 +174,61 @@ fun ProductListScreen(
 
 /**
  * Отдельная строка списка продуктов с иконкой заказа.
- * При нажатии на строку или иконку вызывает колбэк для открытия диалога создания заявки.
+ * Использует [Modifier.clickable] вместо [androidx.compose.material3.Surface]
+ * для уменьшения глубины дерева компоновки и повышения производительности.
  *
  * @param product Модель данных продукта.
  * @param onClick Действие при нажатии на строку или иконку заказа.
  */
 @Composable
-private fun ProductRow(product: Product, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        color = MaterialTheme.colorScheme.surface
+private fun ProductRow(
+    product: Product,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // Номер продукта
+        Text(
+            text = product.number ?: "---",
             modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Номер продукта
-            Text(
-                text = product.number?: "---",
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+                .weight(1f)
+                .padding(end = 12.dp),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
 
-            // Наименование продукта
-            Text(
-                text = product.name,
-                modifier = Modifier
-                    .weight(4f)
-                    .padding(end = 8.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            // Иконка заказа
-            IconButton(
-                onClick = onClick,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AddCircle,
-                    contentDescription = "Заказать ${product.name}",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-        }
-    }
-}
-
-/**
- * Закрепленный заголовок таблицы списка продуктов.
- */
-@Composable
-private fun TableHeader() {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
+        // Наименование продукта
+        Text(
+            text = product.name,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .weight(3f)
+                .padding(end = 12.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        // Иконка заказа (компактная кнопка)
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.size(40.dp)
         ) {
-            Text(
-                text = "Номер",
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+            Icon(
+                imageVector = Icons.Default.AddCircle,
+                contentDescription = "Заказать ${product.name}",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
             )
-            Text(
-                text = "Наименование",
-                modifier = Modifier
-                    .weight(4f)
-                    .padding(end = 8.dp),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.width(40.dp))
         }
     }
 }

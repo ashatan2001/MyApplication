@@ -1,15 +1,35 @@
 package com.example.myapplication.presentation.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -24,8 +44,8 @@ import com.example.myapplication.presentation.viewmodel.DstPointListViewModel
 
 /**
  * Экран списка точек выгрузки бетона.
- * Отображает список доступных зон в виде таблицы с закрепленным заголовком и полем поиска.
- * Удален собственный [Scaffold], так как навигация и заголовок предоставляются [MainShell].
+ * Отображает список доступных зон в виде легкой таблицы без карточек.
+ * Навигация "Назад" обрабатывается глобальной панелью [MainShell].
  *
  * @param onProductList Колбэк, вызываемый при выборе точки выгрузки, передает ID зоны.
  * @param viewModel [DstPointListViewModel] для управления загрузкой списка точек.
@@ -49,44 +69,58 @@ fun DstPointListScreen(
             }
             is DstPointListUiState.Success -> {
                 Column(modifier = Modifier.fillMaxSize()) {
+
                     // Поле поиска
                     SearchField(
-                        text = "Наименование подразделения",
+                        text = "Поиск подразделения",
                         query = searchQuery,
                         onQueryChange = { searchQuery = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     )
 
-                    // Фильтрация списка (исправлено дублирование объявления)
+                    // Фильтрация списка
                     val filteredList = state.dstPointList.filter { point ->
                         point.zoneName.contains(searchQuery.trim(), ignoreCase = true)
                     }
 
-                    // Отображение списка
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        stickyHeader { TableHeader() }
+                    if (filteredList.isEmpty()) {
+                        // Состояние пустого списка или отсутствия результатов поиска
+                        Text(
+                            text = if (searchQuery.isNotEmpty())
+                                "Ничего не найдено по запросу \"$searchQuery\""
+                            else
+                                "Список точек выгрузки бетона пуст",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
 
-                        if (filteredList.isEmpty()) {
-                            item {
+                            // Легкий заголовок секции (в стиле BucketScreen)
+                            item(key = "header") {
                                 Text(
-                                    text = if (searchQuery.isNotEmpty())
-                                        "Ничего не найдено по запросу \"$searchQuery\""
-                                    else
-                                        "Список точек выгрузки бетона пуст",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = "Подразделения",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                                 )
-                            }
-                        } else {
-                            items(items = filteredList, key = { point -> point.zoneId }) { point ->
-                                TerminalRow(dstPoint = point, onOrder = { onProductList(point.zoneId) }, onUnload = {})
                                 HorizontalDivider()
+                            }
+
+                            items(items = filteredList, key = { point -> point.zoneId }) { point ->
+                                DstPointRow(
+                                    dstPoint = point,
+                                    onOrder = { onProductList(point.zoneId) },
+                                    onUnload = { /* Логика отгрузки */ }
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                             }
                         }
                     }
@@ -107,7 +141,8 @@ fun DstPointListScreen(
                     Text(
                         text = state.message,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
                     )
                     Button(onClick = { viewModel.loadDstPointList() }) { Text("Повторить") }
                 }
@@ -116,101 +151,75 @@ fun DstPointListScreen(
     }
 }
 
-
 /**
  * Отдельная строка списка точек выгрузки.
- * Реагирует на нажатие и вызывает переданный колбэк.
+ * Выполнена в минималистичном стиле без использования Surface/Card для снижения нагрузки на UI.
  *
  * @param dstPoint Модель данных точки выгрузки.
  * @param onOrder Действие при нажатии на кнопку заказа.
  * @param onUnload Действие при нажатии на кнопку отгрузки.
  */
 @Composable
-private fun TerminalRow(
+private fun DstPointRow(
     dstPoint: DstPoint,
     onUnload: () -> Unit,
     onOrder: () -> Unit
 ) {
-    Surface(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 44.dp)
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = dstPoint.zoneName,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            TextButton(
-                onClick = onUnload,
-                contentPadding = PaddingValues(horizontal = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocalShipping,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Отгрузить",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            TextButton(
-                onClick = onOrder,
-                contentPadding = PaddingValues(horizontal = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Inventory,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Заказ",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-/**
- * Закрепленный заголовок таблицы списка точек выгрузки.
- */
-@Composable
-private fun TableHeader() {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.fillMaxWidth()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Наименование подразделения
+        Text(
+            text = dstPoint.zoneName,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Кнопка отгрузки
+        TextButton(
+            onClick = onUnload,
+            contentPadding = PaddingValues(horizontal = 8.dp)
         ) {
-            Text(
-                text = "Наименование подразделения",
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+            Icon(
+                imageVector = Icons.Default.LocalShipping,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.width(24.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "Отгрузить",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        // Кнопка заказа
+        TextButton(
+            onClick = onOrder,
+            contentPadding = PaddingValues(horizontal = 8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Inventory,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.secondary
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "Заказ",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
         }
     }
 }

@@ -4,15 +4,50 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -30,11 +65,11 @@ import com.example.domain.model.LoadStatus
 import com.example.domain.model.Terminal
 import com.example.myapplication.presentation.viewmodel.QueueUiState
 import com.example.myapplication.presentation.viewmodel.QueueViewModel
+import kotlinx.coroutines.launch
 
 /**
  * Экран очереди заявок на отгрузку, сгруппированных по терминалам.
- *
- * Отображает список терминалов. При нажатии на строку терминала
+ * Отображает список терминалов в виде карточек. При нажатии на карточку
  * раскрывается вложенный список заявок этого терминала.
  *
  * @param viewModel [QueueViewModel] для управления состоянием экрана.
@@ -86,14 +121,15 @@ fun QueueScreen(
                     Text(
                         text = state.message,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
                     )
                     Button(onClick = { viewModel.loadQueue() }) { Text("Повторить") }
                 }
             }
         }
 
-        // Глобальный индикатор загрузки поверх экрана при выполнении действий
+        // Глобальный индикатор загрузки поверх экрана при выполнении сетевых действий
         if (isProcessing) {
             Box(
                 modifier = Modifier
@@ -112,13 +148,14 @@ fun QueueScreen(
 }
 
 /**
-* Список терминалов с раскрывающимися вложенными списками заявок.
-*
-* @param loadsByTerminal Сгруппированные по терминалу заявки.
-* @param onEdit Колбэк для действия "Изменить".
-* @param onDelete Колбэк для действия "Удалить".
-* @param isProcessing Флаг активной сетевой операции для блокировки UI.
-*/
+ * Список терминалов с раскрывающимися вложенными списками заявок.
+ * Реализует автоматическую прокрутку к раскрываемому элементу.
+ *
+ * @param loadsByTerminal Сгруппированные по терминалу заявки.
+ * @param onEdit Колбэк для действия "Изменить".
+ * @param onDelete Колбэк для действия "Удалить".
+ * @param isProcessing Флаг активной сетевой операции для блокировки UI.
+ */
 @Composable
 private fun TerminalGroupedList(
     loadsByTerminal: Map<Terminal, List<Load>>,
@@ -126,92 +163,141 @@ private fun TerminalGroupedList(
     onDelete: (Load) -> Unit,
     isProcessing: Boolean
 ) {
+    val lazyListState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     val expandedTerminals = remember { mutableStateMapOf<String, Boolean>() }
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        stickyHeader { TableHeader() }
+    // Преобразуем Map в List для использования itemsIndexed и получения индекса для прокрутки
+    val terminalList = loadsByTerminal.entries.toList()
 
-        loadsByTerminal.forEach { (terminal, loads) ->
-            item(key = "terminal_${terminal.id}") {
-                TerminalHeader(
-                    terminal = terminal,
-                    loadsCount = loads.size,
-                    isExpanded = expandedTerminals[terminal.id] == true,
-                    onClick = {
-                        expandedTerminals[terminal.id] = !(expandedTerminals[terminal.id] ?: false)
+    LazyColumn(
+        state = lazyListState,
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(vertical = 8.dp)
+    ) {
+        itemsIndexed(terminalList, key = { _, entry -> "terminal_${entry.key.id}" }) { index, entry ->
+            val (terminal, loads) = entry
+            val isExpanded = expandedTerminals[terminal.id] == true
+
+            TerminalCard(
+                terminal = terminal,
+                loads = loads,
+                isExpanded = isExpanded,
+                onExpandClick = {
+                    val willExpand = !isExpanded
+                    expandedTerminals[terminal.id] = willExpand
+                    if (willExpand) {
+                        coroutineScope.launch {
+                            lazyListState.animateScrollToItem(index)
+                        }
                     }
-                )
-            }
-
-            if (expandedTerminals[terminal.id] == true) {
-                items(items = loads, key = { load -> load.id }) { load ->
-                    LoadRow(
-                        load = load,
-                        onEdit = onEdit,
-                        onDelete = onDelete,
-                        isProcessing = isProcessing
-                    )
-                    HorizontalDivider()
-                }
-            }
+                },
+                onEdit = onEdit,
+                onDelete = onDelete,
+                isProcessing = isProcessing
+            )
         }
     }
 }
 
 /**
- * Заголовок группы терминала. При нажатии раскрывает/сворачивает список заявок.
+ * Карточка терминала с раскрывающимся списком заявок.
  *
  * @param terminal Модель терминала.
- * @param loadsCount Количество заявок в группе.
- * @param isExpanded Признак раскрытого состояния.
- * @param onClick Колбэк нажатия на заголовок.
+ * @param loads Список заявок, привязанных к данному терминалу.
+ * @param isExpanded Признак раскрытого состояния карточки.
+ * @param onExpandClick Колбэк нажатия на заголовок карточки.
+ * @param onEdit Колбэк действия редактирования заявки.
+ * @param onDelete Колбэк действия удаления заявки.
+ * @param isProcessing Флаг блокировки взаимодействий во время сетевого запроса.
  */
 @Composable
-private fun TerminalHeader(
+private fun TerminalCard(
     terminal: Terminal,
-    loadsCount: Int,
+    loads: List<Load>,
     isExpanded: Boolean,
-    onClick: () -> Unit
+    onExpandClick: () -> Unit,
+    onEdit: (Load) -> Unit,
+    onDelete: (Load) -> Unit,
+    isProcessing: Boolean
 ) {
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
         label = "arrow_rotation"
     )
 
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = terminal.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "Заявок: $loadsCount",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+        Column {
+            // Заголовок карточки (закрытое состояние)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onExpandClick() }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = terminal.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Заявок в очереди: ${loads.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .rotate(rotation),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Icon(
-                imageVector = Icons.Filled.KeyboardArrowDown,
-                contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
-                modifier = Modifier
-                    .size(24.dp)
-                    .rotate(rotation),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
-            )
+
+            // Раскрытая информация
+            if (isExpanded) {
+                HorizontalDivider()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Список заявок",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    loads.forEachIndexed { index, load ->
+                        LoadRow(
+                            load = load,
+                            onEdit = onEdit,
+                            onDelete = onDelete,
+                            isProcessing = isProcessing
+                        )
+                        // Разделитель между заявками, но не после последней
+                        if (index < loads.lastIndex) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -236,7 +322,7 @@ private fun LoadRow(
     val haptic = LocalHapticFeedback.current
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        Surface(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
@@ -250,37 +336,35 @@ private fun LoadRow(
                         }
                     }
                 )
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Заявка №${load.id}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = load.product?.name ?: "Без наименования",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${load.quality} ${load.terminal?.measure ?: ""}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    text = "Заявка №${load.id}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                Spacer(modifier = Modifier.width(16.dp))
-                StatusIcon(load.status)
+                Text(
+                    text = load.product?.name ?: "Без наименования",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = "${load.quality} ${load.terminal?.measure ?: ""}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            StatusIcon(status = load.status)
         }
 
         // Контекстное меню, привязанное к строке
@@ -297,9 +381,7 @@ private fun LoadRow(
                 leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                 enabled = !isProcessing
             )
-
             HorizontalDivider()
-
             DropdownMenuItem(
                 text = { Text("Удалить", color = MaterialTheme.colorScheme.error) },
                 onClick = {
@@ -320,54 +402,19 @@ private fun LoadRow(
 }
 
 /**
- * Закрепленный заголовок таблицы.
- */
-@Composable
-private fun TableHeader() {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Терминал / Заявка",
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-/**
- * Визуальные обозначения статусов.
+ * Визуальные обозначения статусов заявки.
+ *
+ * @param status Статус заявки ([LoadStatus]).
  */
 @Composable
 fun StatusIcon(status: LoadStatus) {
-    val icon = when (status) {
-        LoadStatus.IN_QUEUE -> Icons.Default.Schedule
-        LoadStatus.COMPLETED -> Icons.Default.CheckCircle
-        LoadStatus.DEFECT -> Icons.Default.Error
-        LoadStatus.CANCELLED -> Icons.Default.Cancel
-        LoadStatus.WEIGHED -> Icons.Default.Scale
-        LoadStatus.UNKNOWN -> Icons.AutoMirrored.Filled.Help
-    }
-
-    val color = when (status) {
-        LoadStatus.IN_QUEUE -> Color(0xFF2196F3)
-        LoadStatus.COMPLETED -> Color(0xFF4CAF50)
-        LoadStatus.DEFECT -> Color(0xFFF44336)
-        LoadStatus.CANCELLED -> Color(0xFF9E9E9E)
-        LoadStatus.WEIGHED -> Color(0xFFFF9800)
-        LoadStatus.UNKNOWN -> Color(0xFF795548)
+    val (icon, color) = when (status) {
+        LoadStatus.IN_QUEUE -> Icons.Default.Schedule to Color(0xFF2196F3) // Синий
+        LoadStatus.COMPLETED -> Icons.Default.CheckCircle to Color(0xFF4CAF50) // Зеленый
+        LoadStatus.DEFECT -> Icons.Default.Error to Color(0xFFF44336) // Красный
+        LoadStatus.CANCELLED -> Icons.Default.Cancel to Color(0xFF9E9E9E) // Серый
+        LoadStatus.WEIGHED -> Icons.Default.Scale to Color(0xFFFF9800) // Янтарный
+        LoadStatus.UNKNOWN -> Icons.AutoMirrored.Filled.Help to Color(0xFF795548) // Коричневый
     }
 
     Icon(
