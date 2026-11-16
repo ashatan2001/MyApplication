@@ -1,9 +1,11 @@
 package com.example.data.remote
 
+import LoadUpdateRequestDto
 import com.example.data.dto.LoadDto
 import com.example.data.dto.LoadIdResponseDto
 import com.example.data.dto.TaskRequestDto
 import com.example.data.util.safeApiCall
+import com.example.domain.model.LoadUpdateRequest
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -86,7 +88,7 @@ interface QueueApi {
     @PUT("/api/queue/{loadid}")
     suspend fun putLoadById(
         @Path("loadid") loadId: String,
-        @Body body: TaskRequestDto
+        @Body body: LoadUpdateRequestDto
     ): Response<LoadIdResponseDto>
 
     /**

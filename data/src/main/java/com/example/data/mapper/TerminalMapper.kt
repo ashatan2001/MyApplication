@@ -15,3 +15,15 @@ fun TerminalDto.toDomain(): Terminal =
         measure = measure,
         type = type
     )
+
+/**
+ * Маппер терминала между доменной моделью и DTO.
+ */
+fun Terminal.toDto(): TerminalDto =
+    TerminalDto(
+        id = id,
+        number = number,
+        name = name,
+        measure = measure,
+        type = type
+    )

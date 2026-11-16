@@ -16,3 +16,16 @@ fun ProductDto.toDomain(): Product =
         number = number,
         quantity = quantity,
     )
+
+/**
+ * Маппер продукта между доменной моделью и DTO.
+ */
+fun Product.toDto(): ProductDto =
+    ProductDto(
+        zone = zone,
+        department = department,
+        id = id,
+        name = name,
+        number = number,
+        quantity = quantity,
+    )

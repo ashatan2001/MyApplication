@@ -122,10 +122,11 @@ fun MainShell(
 
             NavHost(
                 navController = innerNavController,
-                startDestination = Routers.Home.route,
+                //startDestination = Routers.Home.route,
+                startDestination = Routers.DstPointList.route,
                 modifier = Modifier.weight(1f).fillMaxSize()
             ) {
-                composable(Routers.Home.route) { HomeScreen() }
+                //composable(Routers.Home.route) { HomeScreen() }
 
                 composable(Routers.DstPointList.route) {
                     DstPointListScreen(
@@ -410,7 +411,8 @@ private fun MainBottomBar(
             icon = { Icon(Icons.Default.Inventory, contentDescription = "Телеги") },
             label = { Text("Телеги") },
             selected = currentRoute == Routers.BucketList.route,
-            onClick = onBucketListClick
+            onClick = onBucketListClick,
+            enabled = isAuthenticated
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Archive, contentDescription = "Архив") },

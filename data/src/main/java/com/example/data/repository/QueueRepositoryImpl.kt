@@ -6,7 +6,7 @@ import com.example.data.mapper.toDto
 import com.example.data.remote.QueueRemoteDataSource
 import com.example.data.util.safeRepositoryCall
 import com.example.domain.model.Load
-import com.example.domain.model.TaskRequest
+import com.example.domain.model.LoadUpdateRequest
 import com.example.domain.repository.QueueRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -47,10 +47,10 @@ class QueueRepositoryImpl @Inject constructor(
         return dto.map { it.toDomain() }
     }
 
-    override suspend fun updateLoadById(loadId: String, task: TaskRequest): Long {
-        val requestDto = task.toDto()
+    override suspend fun updateLoadById(loadId: String, request: LoadUpdateRequest): Long {
+        val requestDto = request.toDto()
         val responseDto = safeRepositoryCall(
-            contextMessage = "Ошибка при создании заявки",
+            contextMessage = "Ошибка при изменении заявки",
             onAuthError = { localDataSource.clearSession() },
         ) {
             remoteDataSource.updateLoadById(loadId, requestDto)
@@ -60,7 +60,7 @@ class QueueRepositoryImpl @Inject constructor(
 
     override suspend fun updateQueueNumLoadById(loadId: String, number: Int): Long {
         val responseDto = safeRepositoryCall(
-            contextMessage = "Ошибка при создании заявки",
+            contextMessage = "Ошибка при перемещении заявки в очереди",
             onAuthError = { localDataSource.clearSession() },
         ) {
             remoteDataSource.updateQueueNumLoadById(loadId, number)

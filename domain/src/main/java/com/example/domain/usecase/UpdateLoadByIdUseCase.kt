@@ -1,7 +1,7 @@
 package com.example.domain.usecase
 
 import com.example.domain.exception.AppException
-import com.example.domain.model.TaskRequest
+import com.example.domain.model.LoadUpdateRequest
 import com.example.domain.repository.QueueRepository
 import com.example.domain.util.CustomResult
 import javax.inject.Inject
@@ -10,18 +10,24 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * Use-case для изменения заявки на отгрузку в очереди заданного отгрузочного терминала.
  *
- * Инкапсулирует логику запроса списка заявок из [com.example.domain.repository.QueueRepository]
- * и оборачивает результат в [CustomResult] для безопасной обработки ошибок на уровне Presentation.
+ * Оборачивает результат [QueueRepository] в [CustomResult] для безопасной
+ * обработки ошибок на уровне Presentation.
  *
  * @param repository Репозиторий для работы со списком заявок.
  */
 class UpdateLoadByIdUseCase @Inject constructor(
     private val repository: QueueRepository
 ) {
-    suspend operator fun invoke(loadId: String, task: TaskRequest): CustomResult<Long> {
+    /**
+     * Изменяет заявку в очереди терминала.
+     *
+     * @param loadId Код изменяемой заявки.
+     * @param request Новые данные заявки.
+     * @return Код изменённой заявки либо ошибка.
+     */
+    suspend operator fun invoke(loadId: String, request: LoadUpdateRequest): CustomResult<Long> {
         return try {
-            val load = repository.updateLoadById(loadId, task)
-            CustomResult.Success(load)
+            CustomResult.Success(repository.updateLoadById(loadId, request))
         } catch (e: CancellationException) {
             throw e
         } catch (e: AppException) {

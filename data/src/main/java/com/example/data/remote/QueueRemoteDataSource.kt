@@ -1,9 +1,11 @@
 package com.example.data.remote
 
+import LoadUpdateRequestDto
 import com.example.data.dto.LoadDto
 import com.example.data.dto.LoadIdResponseDto
 import com.example.data.dto.TaskRequestDto
 import com.example.data.util.safeApiCall
+import com.example.domain.model.LoadUpdateRequest
 import javax.inject.Inject
 
 /**
@@ -46,11 +48,11 @@ class QueueRemoteDataSource @Inject constructor(
      * Изменяет заявку на отгрузку, находящуюся в очереди отгрузочного терминала.
      *
      * @param loadId код заявки на отгрузку.
-     * @param task новые данные заявки.
+     * @param request новые данные заявки.
      * @return [LoadIdResponseDto] при успехе.
      */
-    suspend fun updateLoadById(loadId: String, task: TaskRequestDto): LoadIdResponseDto = safeApiCall {
-        api.putLoadById(loadId, task) }
+    suspend fun updateLoadById(loadId: String, request: LoadUpdateRequestDto): LoadIdResponseDto = safeApiCall {
+        api.putLoadById(loadId, request) }
 
     /**
      * Изменяет заявку на отгрузку, находящуюся в очереди отгрузочного терминала.

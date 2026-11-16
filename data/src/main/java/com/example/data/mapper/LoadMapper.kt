@@ -1,9 +1,13 @@
 package com.example.data.mapper
 
+import LoadUpdateRequestDto
 import com.example.data.dto.LoadDto
+import com.example.data.dto.ProductDto
+import com.example.data.dto.TerminalDto
 import com.example.data.util.parseDate
 import com.example.domain.model.Load
 import com.example.domain.model.LoadStatus
+import com.example.domain.model.LoadUpdateRequest
 
 
 /**
@@ -28,3 +32,15 @@ fun LoadDto.toDomain(): Load =
         accuracyMode = accuracyMode,
         department = department?.toDomain()
     )
+
+/**
+ * Маппит доменную модель изменения заявки в DTO сервера.
+ *
+ * @return DTO с точными именами полей контракта.
+ */
+fun LoadUpdateRequest.toDto(): LoadUpdateRequestDto = LoadUpdateRequestDto(
+    terminal = terminal.toDto(),
+    product = product.toDto(),
+    qty = quantity,
+    departmentId = departmentId
+)

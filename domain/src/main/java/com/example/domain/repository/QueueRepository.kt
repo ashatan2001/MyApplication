@@ -1,6 +1,7 @@
 package com.example.domain.repository
 
 import com.example.domain.model.Load
+import com.example.domain.model.LoadUpdateRequest
 import com.example.domain.model.TaskRequest
 
 /**
@@ -34,9 +35,9 @@ interface QueueRepository {
      * Изменение заявки, находящейся в очереди отгрузочного терминала
      *
      * @param loadId код заявки на отгрузку.
-     * @param task новые данные заявки.
+     * @param request новые данные заявки.
      */
-    suspend fun updateLoadById(loadId: String, task: TaskRequest): Long
+    suspend fun updateLoadById(loadId: String, request: LoadUpdateRequest): Long
 
     /**
      * Перемещение заявки в очереди заданного отгрузочного терминала
