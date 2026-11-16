@@ -43,6 +43,11 @@ class MainActivity : ComponentActivity() {
                 val viewModel: SessionViewModel = hiltViewModel()
                 val snackbarHostState = remember { SnackbarHostState() }
 
+                /*
+                 * Слушает события принудительного завершения сессии
+                 * (истечение токена, 401/419 после неудачного refresh)
+                 * и информирует пользователя сообщением Snackbar.
+                 */
                 LaunchedEffect(Unit) {
                     viewModel.logoutEvents.collect {
                         snackbarHostState.showSnackbar(
@@ -75,7 +80,7 @@ class MainActivity : ComponentActivity() {
                         NavGraph(
                             navController = navController,
                             onLogout = {
-                                navController.navigateClearingBackStack(Routers.UserAuth.route)
+                                viewModel.logout()
                             },
                             onLogin = {
                                 navController.navigate(Routers.UserAuth.route) {

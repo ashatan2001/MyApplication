@@ -95,24 +95,4 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
-
-    /**
-     * Инициирует процесс выхода пользователя из системы.
-     * При сетевой ошибке всё равно выполняет локальный выход и отправляет событие.
-     */
-    fun logout() {
-        viewModelScope.launch {
-            Timber.d("Начало процесса выхода из системы")
-            _uiState.value = AuthUiState.Loading
-            try {
-                logoutUseCase()
-                _events.trySend(AuthEvent.LogoutSuccess)
-            } catch (e: Exception) {
-                Timber.w(e, "Ошибка сетевого логаута, выполняем локальный выход")
-                _events.trySend(AuthEvent.LogoutSuccess)
-            } finally {
-                _uiState.value = AuthUiState.Idle
-            }
-        }
-    }
 }
