@@ -17,7 +17,7 @@ import kotlin.coroutines.cancellation.CancellationException
 class UpdateQueueNumLoadByIdUseCase @Inject constructor(
     private val repository: QueueRepository
 ) {
-    suspend operator fun invoke(loadId: String, number: Int): CustomResult<Long> {
+    suspend operator fun invoke(loadId: Long, number: String): CustomResult<Long> {
         return try {
             val load = repository.updateQueueNumLoadById(loadId, number)
             CustomResult.Success(load)

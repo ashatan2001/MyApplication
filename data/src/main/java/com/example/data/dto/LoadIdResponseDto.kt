@@ -13,6 +13,6 @@ import kotlinx.serialization.Serializable
 @OptIn(InternalSerializationApi::class)
 @Serializable
 data class LoadIdResponseDto(
-    @SerialName("LoadID") val id: Long,
+    @SerialName("DocID") val id: Long,
 )
 

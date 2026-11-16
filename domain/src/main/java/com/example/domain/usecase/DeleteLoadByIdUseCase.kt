@@ -17,7 +17,7 @@ import kotlin.coroutines.cancellation.CancellationException
 class DeleteLoadByIdUseCase @Inject constructor(
     private val repository: QueueRepository
 ) {
-    suspend operator fun invoke(loadId: String): CustomResult<Unit> {
+    suspend operator fun invoke(loadId: Long): CustomResult<Unit> {
         return try {
             repository.deleteLoadById(loadId)
             CustomResult.Success(Unit)

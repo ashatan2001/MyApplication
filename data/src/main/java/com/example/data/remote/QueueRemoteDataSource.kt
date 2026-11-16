@@ -51,7 +51,7 @@ class QueueRemoteDataSource @Inject constructor(
      * @param request новые данные заявки.
      * @return [LoadIdResponseDto] при успехе.
      */
-    suspend fun updateLoadById(loadId: String, request: LoadUpdateRequestDto): LoadIdResponseDto = safeApiCall {
+    suspend fun updateLoadById(loadId: Long, request: LoadUpdateRequestDto): LoadIdResponseDto = safeApiCall {
         api.putLoadById(loadId, request) }
 
     /**
@@ -61,7 +61,7 @@ class QueueRemoteDataSource @Inject constructor(
      * @param number номер заявки в очереди.
      * @return [LoadIdResponseDto] при успехе.
      */
-    suspend fun updateQueueNumLoadById(loadId: String, number: Int) : LoadIdResponseDto = safeApiCall {
+    suspend fun updateQueueNumLoadById(loadId: Long, number: String) : LoadIdResponseDto = safeApiCall {
         api.putQueueNumLoadById(loadId, number) }
 
     /**
@@ -69,7 +69,7 @@ class QueueRemoteDataSource @Inject constructor(
      *
      * @param loadId код заявки на отгрузку.
      */
-    suspend fun deleteLoadById(loadId: String) {
+    suspend fun deleteLoadById(loadId: Long) {
         safeApiCall { api.deleteLoadById(loadId) }
     }
 }

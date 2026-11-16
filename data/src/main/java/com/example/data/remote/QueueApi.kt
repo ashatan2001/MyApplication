@@ -87,7 +87,7 @@ interface QueueApi {
      */
     @PUT("/api/queue/{loadid}")
     suspend fun putLoadById(
-        @Path("loadid") loadId: String,
+        @Path("loadid") loadId: Long,
         @Body body: LoadUpdateRequestDto
     ): Response<LoadIdResponseDto>
 
@@ -109,8 +109,8 @@ interface QueueApi {
      */
     @PUT("/api/queue/{loadid}/queueno")
     suspend fun putQueueNumLoadById(
-        @Path("loadid") loadId: String,
-        @Query("num") number: Int
+        @Path("loadid") loadId: Long,
+        @Query("num") number: String
     ): Response<LoadIdResponseDto>
 
     /**
@@ -130,6 +130,6 @@ interface QueueApi {
      */
     @DELETE("/api/queue/{loadid}")
     suspend fun deleteLoadById(
-        @Path("loadid") loadId: String,
+        @Path("loadid") loadId: Long,
     ): Response<Unit>
 }

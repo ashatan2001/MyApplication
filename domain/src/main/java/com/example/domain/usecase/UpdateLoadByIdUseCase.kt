@@ -25,7 +25,7 @@ class UpdateLoadByIdUseCase @Inject constructor(
      * @param request Новые данные заявки.
      * @return Код изменённой заявки либо ошибка.
      */
-    suspend operator fun invoke(loadId: String, request: LoadUpdateRequest): CustomResult<Long> {
+    suspend operator fun invoke(loadId: Long, request: LoadUpdateRequest): CustomResult<Long> {
         return try {
             CustomResult.Success(repository.updateLoadById(loadId, request))
         } catch (e: CancellationException) {

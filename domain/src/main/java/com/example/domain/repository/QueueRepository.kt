@@ -37,7 +37,7 @@ interface QueueRepository {
      * @param loadId код заявки на отгрузку.
      * @param request новые данные заявки.
      */
-    suspend fun updateLoadById(loadId: String, request: LoadUpdateRequest): Long
+    suspend fun updateLoadById(loadId: Long, request: LoadUpdateRequest): Long
 
     /**
      * Перемещение заявки в очереди заданного отгрузочного терминала
@@ -45,12 +45,12 @@ interface QueueRepository {
      * @param loadId код заявки на отгрузку.
      * @param number номер заявки в очереди.
      */
-    suspend fun updateQueueNumLoadById(loadId: String, number: Int): Long
+    suspend fun updateQueueNumLoadById(loadId: Long, number: String): Long
 
     /**
      * Удаление заявки из очереди отгрузочного терминала
      *
      * @param loadId код заявки на отгрузку.
      */
-    suspend fun deleteLoadById(loadId: String)
+    suspend fun deleteLoadById(loadId: Long)
 }

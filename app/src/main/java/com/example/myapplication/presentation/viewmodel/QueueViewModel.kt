@@ -167,7 +167,7 @@ class QueueViewModel @Inject constructor(
         viewModelScope.launch {
             _isProcessing.value = true
             try {
-                when (val result = updateLoadByIdUseCase(load.id.toString(), request)) {
+                when (val result = updateLoadByIdUseCase(load.id, request)) {
                     is CustomResult.Success -> {
                         Timber.d("Заявка ${load.id} изменена: количество $newQuantity")
                         _events.send(QueueEvent.ShowMessage("Заявка №${load.id} изменена"))
@@ -207,7 +207,7 @@ class QueueViewModel @Inject constructor(
         viewModelScope.launch {
             _isProcessing.value = true
             try {
-                when (val result = updateQueueNumLoadByIdUseCase(load.id.toString(), newNumber)) {
+                when (val result = updateQueueNumLoadByIdUseCase(load.id, newNumber.toString())) {
                     is CustomResult.Success -> {
                         Timber.d("Заявка ${load.id} перемещена на позицию $newNumber")
                         _events.send(
@@ -248,7 +248,7 @@ class QueueViewModel @Inject constructor(
         viewModelScope.launch {
             _isProcessing.value = true
             try {
-                when (val result = deleteLoadByIdUseCase(load.id.toString())) {
+                when (val result = deleteLoadByIdUseCase(load.id)) {
                     is CustomResult.Success -> {
                         Timber.d("Заявка ${load.id} удалена")
                         _events.send(QueueEvent.ShowMessage("Заявка №${load.id} удалена"))

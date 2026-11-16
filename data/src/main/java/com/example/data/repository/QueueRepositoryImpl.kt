@@ -47,7 +47,7 @@ class QueueRepositoryImpl @Inject constructor(
         return dto.map { it.toDomain() }
     }
 
-    override suspend fun updateLoadById(loadId: String, request: LoadUpdateRequest): Long {
+    override suspend fun updateLoadById(loadId: Long, request: LoadUpdateRequest): Long {
         val requestDto = request.toDto()
         val responseDto = safeRepositoryCall(
             contextMessage = "Ошибка при изменении заявки",
@@ -58,7 +58,7 @@ class QueueRepositoryImpl @Inject constructor(
         return responseDto.id
     }
 
-    override suspend fun updateQueueNumLoadById(loadId: String, number: Int): Long {
+    override suspend fun updateQueueNumLoadById(loadId: Long, number: String): Long {
         val responseDto = safeRepositoryCall(
             contextMessage = "Ошибка при перемещении заявки в очереди",
             onAuthError = { localDataSource.clearSession() },
@@ -68,7 +68,7 @@ class QueueRepositoryImpl @Inject constructor(
         return responseDto.id
     }
 
-    override suspend fun deleteLoadById(loadId: String) {
+    override suspend fun deleteLoadById(loadId: Long) {
         safeRepositoryCall(
             contextMessage = "Ошибка при удалении заявки",
             onAuthError = { localDataSource.clearSession() }
