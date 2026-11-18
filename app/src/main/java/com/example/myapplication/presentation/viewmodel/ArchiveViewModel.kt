@@ -18,7 +18,25 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import javax.inject.Inject
+
+/**
+ * Унифицированный результат загрузки страницы архива.
+ *
+ * Сводит результаты [GetEventArchiveUseCase] и [GetHandLoadArchiveUseCase]
+ * к общему виду, чтобы [handleResult] работал одинаково для обоих типов архива.
+ *
+ * @property rows Преобразованные строки таблицы.
+ * @property pageNum Номер полученной страницы.
+ * @property pages Общее количество страниц.
+ */
+private data class ArchiveRowBatch(
+    val rows: List<ArchiveRow>,
+    val pageNum: Int,
+    val pages: Int
+)
 
 /**
  * ViewModel для управления состоянием экрана архива.
@@ -62,32 +80,35 @@ class ArchiveViewModel @Inject constructor(
     /**
      * Обновляет дату и время начала периода.
      *
-     * @param date Строка с датой.
+     * @param date Строка с датой в формате "dd.MM.yyyy HH:mm:ss".
      */
     fun updateStartDate(date: String) = _state.update { it.copy(startDate = date) }
 
     /**
      * Обновляет дату и время окончания периода.
      *
-     * @param date Строка с датой.
+     * @param date Строка с датой в формате "dd.MM.yyyy HH:mm:ss".
      */
     fun updateEndDate(date: String) = _state.update { it.copy(endDate = date) }
 
     /**
      * Обновляет количество записей на странице.
      *
-     * @param records Количество записей.
+     * @param records Количество записей ("25", "50", "100", "200").
      */
     fun updateRecords(records: String) = _state.update { it.copy(records = records) }
 
     /**
      * Запускает первичную загрузку архива с первой страницы.
-     * Проверяет заполненность дат перед выполнением запроса.
+     *
+     * Валидирует заполненность дат и корректность диапазона
+     * (начало ≤ конец) перед выполнением запроса.
      */
     fun loadArchive() {
         val currentState = _state.value
-        if (currentState.startDate.isBlank() || currentState.endDate.isBlank()) {
-            _state.update { it.copy(error = "Укажите дату и время начала и окончания периода") }
+        val validationError = validatePeriod(currentState.startDate, currentState.endDate)
+        if (validationError != null) {
+            _state.update { it.copy(error = validationError) }
             return
         }
         viewModelScope.launch {
@@ -99,14 +120,18 @@ class ArchiveViewModel @Inject constructor(
 
     /**
      * Выполняет переход на указанную страницу архива.
+     *
      * Заменяет текущие данные новыми, а не дополняет их.
      *
      * @param page Номер страницы для загрузки.
      */
     fun goToPage(page: Int) {
         val currentState = _state.value
-        if (page < 1 || page > currentState.totalPages || currentState.isLoadingPage || currentState.isLoading) return
-
+        if (page < 1 ||
+            page > currentState.totalPages ||
+            currentState.isLoadingPage ||
+            currentState.isLoading
+        ) return
         viewModelScope.launch {
             _state.update { it.copy(isLoadingPage = true, error = null) }
             val result = executeUseCase(currentState, pageNum = page)
@@ -132,55 +157,83 @@ class ArchiveViewModel @Inject constructor(
     /**
      * Выполняет соответствующий UseCase в зависимости от выбранного типа архива.
      *
+     * Возвращает унифицированный [ArchiveRowBatch], чтобы обработчик результата
+     * не зависел от конкретного типа данных.
+     *
      * @param state Текущее состояние экрана.
      * @param pageNum Номер запрашиваемой страницы.
      * @return Результат выполнения запроса.
      */
-    private suspend fun executeUseCase(state: ArchiveScreenState, pageNum: Int): CustomResult<Archive<*>> {
+    private suspend fun executeUseCase(
+        state: ArchiveScreenState,
+        pageNum: Int
+    ): CustomResult<ArchiveRowBatch> {
         val recordsInt = state.records.toIntOrNull() ?: 50
-
         return when (state.selectedType) {
             ArchiveType.EVENTS -> {
-                getEventArchiveUseCase(
+                when (val res = getEventArchiveUseCase(
                     startDate = state.startDate,
                     endDate = state.endDate,
                     pageNum = pageNum,
                     records = recordsInt
-                )
+                )) {
+                    is CustomResult.Success -> CustomResult.Success(
+                        ArchiveRowBatch(
+                            rows = res.data.data.map { ArchiveRow.EventRow(it) },
+                            pageNum = res.data.pageNum,
+                            pages = res.data.pages
+                        )
+                    )
+
+                    is CustomResult.Error -> res
+                }
             }
+
             ArchiveType.HAND_LOADS -> {
-                getHandLoadArchiveUseCase(
+                when (val res = getHandLoadArchiveUseCase(
                     startDate = state.startDate,
                     endDate = state.endDate,
                     pageNum = pageNum,
                     records = recordsInt
-                )
+                )) {
+                    is CustomResult.Success -> CustomResult.Success(
+                        ArchiveRowBatch(
+                            rows = res.data.data.map { ArchiveRow.HandLoadRow(it) },
+                            pageNum = res.data.pageNum,
+                            pages = res.data.pages
+                        )
+                    )
+
+                    is CustomResult.Error -> res
+                }
             }
         }
     }
 
     /**
      * Обрабатывает результат запроса к API.
-     * При успешном ответе заменяет текущие строки новыми и обновляет информацию о пагинации.
+     *
+     * При успешном ответе заменяет текущие строки новыми и обновляет
+     * информацию о пагинации. При ошибке сохраняет сообщение для UI.
      *
      * @param result Результат выполнения запроса.
      */
-    private fun handleResult(result: CustomResult<Archive<*>>) {
+    private fun handleResult(result: CustomResult<ArchiveRowBatch>) {
         when (result) {
             is CustomResult.Success -> {
-                val archive = result.data
-                val newRows = mapToRows(archive.data)
+                val batch = result.data
                 _state.update { currentState ->
                     currentState.copy(
                         isLoading = false,
                         isLoadingPage = false,
-                        rows = newRows, // Полная замена данных
-                        currentPage = archive.pageNum,
-                        totalPages = archive.pages,
+                        rows = batch.rows,
+                        currentPage = batch.pageNum,
+                        totalPages = batch.pages,
                         error = null
                     )
                 }
             }
+
             is CustomResult.Error -> {
                 _state.update { currentState ->
                     currentState.copy(
@@ -194,18 +247,38 @@ class ArchiveViewModel @Inject constructor(
     }
 
     /**
-     * Преобразует список доменных моделей в список строк для отображения в UI.
+     * Валидирует введённый период дат.
      *
-     * @param data Список объектов из ответа API.
-     * @return Список объектов [ArchiveRow].
+     * Проверяет заполненность обеих дат и корректность диапазона:
+     * дата начала не должна быть позже даты окончания.
+     *
+     * @param startDate Строка с датой начала.
+     * @param endDate Строка с датой окончания.
+     * @return Текст ошибки для UI или `null`, если период корректен.
      */
-    private fun mapToRows(data: List<*>): List<ArchiveRow> {
-        return data.mapNotNull { item ->
-            when (item) {
-                is Event -> ArchiveRow.EventRow(item)
-                is HandLoad -> ArchiveRow.HandLoadRow(item)
-                else -> null
-            }
+    private fun validatePeriod(startDate: String, endDate: String): String? {
+        if (startDate.isBlank() || endDate.isBlank()) {
+            return "Укажите дату и время начала и окончания периода"
         }
+        val start = parseToInstant(startDate)
+        val end = parseToInstant(endDate)
+        if (start == null || end == null) {
+            return "Неверный формат даты"
+        }
+        if (start.isAfter(end)) {
+            return "Дата начала не может быть позже даты окончания"
+        }
+        return null
     }
+
+    /**
+     * Парсит строку даты в UTC-[java.time.Instant] для сравнения.
+     *
+     * @param dateStr Строка в формате "dd.MM.yyyy HH:mm:ss".
+     * @return Instant в UTC или null при ошибке парсинга.
+     */
+    private fun parseToInstant(dateStr: String): java.time.Instant? = runCatching {
+        LocalDateTime.parse(dateStr, com.example.myapplication.presentation.util.DateTimeFormatters.dateTimeFormatter)
+            .toInstant(ZoneOffset.UTC)
+    }.getOrNull()
 }

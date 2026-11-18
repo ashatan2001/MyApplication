@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -41,8 +42,8 @@ fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var username by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     /**
@@ -90,7 +91,9 @@ fun AuthScreen(
                     enabled = uiState !is AuthUiState.Loading,
                     isError = uiState is AuthUiState.Error
                 )
+
                 Spacer(Modifier.height(Spacing.Md))
+
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -110,7 +113,9 @@ fun AuthScreen(
                     enabled = uiState !is AuthUiState.Loading,
                     isError = uiState is AuthUiState.Error
                 )
+
                 Spacer(Modifier.height(Spacing.Lg))
+
                 Button(
                     onClick = { viewModel.login(username, password) },
                     modifier = Modifier

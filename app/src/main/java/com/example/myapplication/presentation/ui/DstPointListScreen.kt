@@ -217,7 +217,7 @@ private fun DstPointRow(
             )
             Spacer(modifier = Modifier.width(Spacing.Xs))
             Text(
-                text = "Заказ",
+                text = "Заказать",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary
             )

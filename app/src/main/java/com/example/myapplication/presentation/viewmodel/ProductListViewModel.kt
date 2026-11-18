@@ -7,14 +7,17 @@ import com.example.domain.exception.NetworkConnectionException
 import com.example.domain.exception.SessionExpiredDomainException
 import com.example.domain.model.Product
 import com.example.domain.model.TaskRequest
-import com.example.domain.model.TaskResult
 import com.example.domain.usecase.CreateTaskUseCase
+import com.example.domain.usecase.GetDstPointUseCase
 import com.example.domain.usecase.GetProductListUseCase
 import com.example.domain.util.CustomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -36,27 +39,73 @@ sealed class ProductListUiState {
 }
 
 /**
- * ViewModel экрана со списком продуктов, разрешенных для отгрузки в заданную точку выгрузки.
- * Реагирует на глобальные события аутентификации через [authEventBus]
- * для корректного сброса состояния при выходе.»
+ * Одноразовые события экрана списка продуктов.
  *
- * @param getProductListUseCase UseCase для получения списка продуктов,
- *                              разрешенных для отгрузки в заданную точку выгрузки.
+ * Доставляются через [Channel], чтобы сообщение о результате операции
+ * показывалось ровно один раз и не воспроизводилось при рекомпозиции
+ * или переподписке (в отличие от StateFlow).
+ */
+sealed interface ProductListEvent {
+    /**
+     * Сообщение о результате операции для Snackbar.
+     *
+     * @property text Текст сообщения.
+     * @property isError true — сообщение об ошибке (окраска и длительность показа).
+     */
+    data class ShowMessage(val text: String, val isError: Boolean = false) : ProductListEvent
+}
+
+/**
+ * ViewModel экрана со списком продуктов, разрешенных для отгрузки в заданную точку выгрузки.
+ *
+ * Помимо загрузки списка отвечает за создание заявки:
+ * - [isSubmitting] — индикатор выполнения для кнопки диалога и защита от двойной отправки;
+ * - [submitError] — ошибка создания, показывается внутри диалога (диалог не закрывается,
+ *   введённые данные сохраняются, отправку можно повторить);
+ * - [events] — одноразовые сообщения об успехе для Snackbar;
+ * - [zoneName] — название точки выгрузки для диалога (вместо сырого ID зоны).
+ *
+ * Реагирует на глобальные события аутентификации через [authEventBus]
+ * для корректного сброса состояния при выходе.
+ *
+ * @param getProductListUseCase UseCase для получения списка продуктов.
+ * @param createTaskUseCase UseCase для создания заявки на отгрузку.
+ * @param getDstPointUseCase UseCase для получения названия точки выгрузки.
  * @param authEventBus Шина событий для отслеживания выхода из системы.
  */
 @HiltViewModel
 class ProductListViewModel @Inject constructor(
     private val getProductListUseCase: GetProductListUseCase,
     private val createTaskUseCase: CreateTaskUseCase,
+    private val getDstPointUseCase: GetDstPointUseCase,
     private val authEventBus: AuthEventBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProductListUiState>(ProductListUiState.Loading)
     val uiState: StateFlow<ProductListUiState> = _uiState.asStateFlow()
 
-    private val _taskResult = MutableStateFlow<TaskResult?>(null)
-    val taskResult: StateFlow<TaskResult?> = _taskResult.asStateFlow()
+    private val _selectedProduct = MutableStateFlow<Product?>(null)
+    val selectedProduct: StateFlow<Product?> = _selectedProduct.asStateFlow()
 
+    private val _isSubmitting = MutableStateFlow(false)
+
+    /** Флаг выполнения запроса на создание заявки: блокирует повторную отправку. */
+    val isSubmitting: StateFlow<Boolean> = _isSubmitting.asStateFlow()
+
+    private val _submitError = MutableStateFlow<String?>(null)
+
+    /** Ошибка создания заявки для показа внутри диалога; null — ошибки нет. */
+    val submitError: StateFlow<String?> = _submitError.asStateFlow()
+
+    private val _zoneName = MutableStateFlow<String?>(null)
+
+    /** Название точки выгрузки; null ещё не загружено (UI покажет фолбэк с ID). */
+    val zoneName: StateFlow<String?> = _zoneName.asStateFlow()
+
+    private val _events = Channel<ProductListEvent>(Channel.BUFFERED)
+
+    /** Поток одноразовых событий для UI (Snackbar). */
+    val events: Flow<ProductListEvent> = _events.receiveAsFlow()
 
     init {
         Timber.d("ProductViewModel инициализирован")
@@ -64,18 +113,23 @@ class ProductListViewModel @Inject constructor(
             authEventBus.logoutEvents.collect {
                 Timber.d("Получено событие выхода, сброс состояния на Loading")
                 _uiState.value = ProductListUiState.Loading
+                _selectedProduct.value = null
+                _submitError.value = null
             }
         }
     }
 
     /**
-     * Загружает данные продукта из репозитория.
+     * Загружает список продуктов и (однократно) название точки выгрузки.
      *
-     * При истёкшей сессии ничего не делает — [TokenInterceptor] уже обработал редирект на логин.
-     * При других ошибках отображает сообщение пользователю.
+     * При истёкшей сессии ничего не делает — TokenInterceptor уже обработал редирект на логин.
+     * При других ошибках отображает человекочитаемое сообщение пользователю.
+     *
+     * @param zone ID зоны выгрузки.
      */
     fun loadProductList(zone: Int) {
         Timber.d("Начало загрузки списка продуктов")
+        if (_zoneName.value == null) loadZoneName(zone)
         viewModelScope.launch {
             _uiState.value = ProductListUiState.Loading
             when (val result = getProductListUseCase(zone)) {
@@ -84,59 +138,110 @@ class ProductListViewModel @Inject constructor(
                     _uiState.value = ProductListUiState.Success(result.data)
                 }
                 is CustomResult.Error -> {
-                    val message = when (result.exception) {
-                        is SessionExpiredDomainException -> {
-                            // TokenInterceptor уже обработал редирект на логин
-                            Timber.w("Сессия истекла, пропуск обработки")
-                            return@launch
-                        }
-                        is NetworkConnectionException -> {
-                            Timber.w("Ошибка сети при загрузке списка продуктов")
-                            "Нет соединения с интернетом"
-                        }
-                        else -> {
-                            Timber.e(result.exception, "Неожиданная ошибка при загрузке списка продуктов")
-                            result.exception.message ?: "Неизвестная ошибка"
-                        }
+                    if (result.exception is SessionExpiredDomainException) {
+                        Timber.w("Сессия истекла, пропуск обработки")
+                        return@launch
                     }
-                    _uiState.value = ProductListUiState.Error(message)
+                    Timber.e(result.exception, "Ошибка загрузки списка продуктов")
+                    _uiState.value = ProductListUiState.Error(humanReadableMessage(result.exception))
                 }
             }
         }
     }
 
-    private val _selectedProduct = MutableStateFlow<Product?>(null)
-    val selectedProduct: StateFlow<Product?> = _selectedProduct.asStateFlow()
+    /**
+     * Загружает название точки выгрузки для диалога создания заявки.
+     *
+     * Ошибка не критична: диалог покажет фолбэк «Зона N», поэтому
+     * состояние списка продуктов не затрагивается.
+     *
+     * @param zone ID зоны выгрузки.
+     */
+    private fun loadZoneName(zone: Int) {
+        viewModelScope.launch {
+            when (val result = getDstPointUseCase(zone)) {
+                is CustomResult.Success -> _zoneName.value = result.data.zoneName
+                is CustomResult.Error ->
+                    Timber.w(result.exception, "Не удалось загрузить название зоны $zone")
+            }
+        }
+    }
 
+    /**
+     * Открывает диалог создания заявки для выбранного продукта.
+     * Сбрасывает ошибку предыдущей отправки.
+     *
+     * @param product Продукт для заказа.
+     */
     fun onProductClick(product: Product) {
+        _submitError.value = null
         _selectedProduct.value = product
     }
 
+    /** Закрывает диалог и сбрасывает ошибку отправки. */
     fun onDialogDismiss() {
         _selectedProduct.value = null
+        _submitError.value = null
     }
 
+    /**
+     * Создаёт заявку на отгрузку продукта.
+     *
+     * Повторный вызов во время выполнения игнорируется. Результат:
+     * - успех — диалог закрывается, в [events] уходит сообщение с номером заявки;
+     * - ошибка — диалог остаётся открытым, текст ошибки доступен в [submitError]
+     *   (введённые данные не теряются, отправку можно повторить);
+     * - истёкшая сессия — диалог закрывается, редирект выполняет TokenInterceptor.
+     *
+     * @param zone ID зоны выгрузки.
+     * @param product Заказываемый продукт.
+     * @param quantity Количество продукции (валидируется в диалоге, > 0).
+     * @param pallete Номер паллеты или null.
+     */
     fun submitApplication(zone: Int, product: Product, quantity: Float, pallete: String?) {
+        if (_isSubmitting.value) return
         viewModelScope.launch {
-            // Создаем доменную модель
-            val taskRequest = TaskRequest(
-                quantity = quantity,
-                zone = zone,
-                pallete = pallete,
-                product = product.id
-            )
-
-            when (val result = createTaskUseCase(taskRequest)) {
-                is CustomResult.Success -> {
-                    Timber.d("Заявка создана: ${result.data}")
-                    _taskResult.value = result.data
-                    _selectedProduct.value = null
+            _isSubmitting.value = true
+            _submitError.value = null
+            try {
+                val taskRequest = TaskRequest(
+                    quantity = quantity,
+                    zone = zone,
+                    pallete = pallete,
+                    product = product.id
+                )
+                when (val result = createTaskUseCase(taskRequest)) {
+                    is CustomResult.Success -> {
+                        Timber.d("Заявка создана: ${result.data}")
+                        _selectedProduct.value = null
+                        _events.send(
+                            ProductListEvent.ShowMessage("Заявка №${result.data.load} создана")
+                        )
+                    }
+                    is CustomResult.Error -> {
+                        if (result.exception is SessionExpiredDomainException) {
+                            Timber.w("Сессия истекла при создании заявки")
+                            _selectedProduct.value = null
+                            return@launch
+                        }
+                        Timber.e(result.exception, "Ошибка при создании заявки")
+                        _submitError.value = humanReadableMessage(result.exception)
+                    }
                 }
-                is CustomResult.Error -> {
-                    Timber.e(result.exception, "Ошибка при создании заявки")
-                    // Обработка ошибки
-                }
+            } finally {
+                _isSubmitting.value = false
             }
         }
+    }
+
+    /**
+     * Преобразует исключение в понятное пользователю сообщение.
+     *
+     * @param exception Исключение доменного слоя.
+     * @return Текст для показа в UI.
+     */
+    private fun humanReadableMessage(exception: Throwable): String = when (exception) {
+        is NetworkConnectionException -> "Нет соединения с интернетом. Проверьте подключение и повторите."
+        else -> exception.message ?: "Неизвестная ошибка"
     }
 }

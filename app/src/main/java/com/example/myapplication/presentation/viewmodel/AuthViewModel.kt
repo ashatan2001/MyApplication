@@ -55,28 +55,31 @@ class AuthViewModel @Inject constructor(
     /**
      * Инициирует процесс авторизации пользователя.
      *
-     * @param username Имя пользователя.
-     * @param password Пароль пользователя.
+     * Логин нормализуется: удаляются ведущие и хвостовые пробелы —
+     * частый артефакт автозаполнения и вставки из буфера обмена.
+     * Пароль передаётся в исходном виде: пробелы могут быть частью пароля.
+     *
+     * @param username Имя пользователя; пробелы по краям будут удалены.
+     * @param password Пароль пользователя без изменений.
      */
     fun login(username: String, password: String) {
+        val normalizedUsername = username.trim()
         viewModelScope.launch {
-            Timber.d("Начало процесса авторизации для пользователя: $username")
+            Timber.d("Начало процесса авторизации для пользователя: $normalizedUsername")
             _uiState.value = AuthUiState.Loading
-
             try {
-                val result = loginUseCase(username, password)
+                val result = loginUseCase(normalizedUsername, password)
                 Timber.d("UseCase вернул результат: ${result::class.simpleName}")
-
                 when (result) {
                     is CustomResult.Success -> {
                         Timber.d("Авторизация успешна: ${result.data.fullName}")
                         _uiState.value = AuthUiState.Success(result.data.fullName)
                         _events.trySend(AuthEvent.LoginSuccess)
                     }
+
                     is CustomResult.Error -> {
                         val e = result.exception
                         Timber.e(e, "Ошибка авторизации. Тип: ${e.javaClass.simpleName}")
-
                         val message: String = when (e) {
                             is ValidationException -> e.message ?: "Ошибка валидации данных"
                             is AuthenticationFailedException -> e.message ?: "Неверный логин или пароль"
