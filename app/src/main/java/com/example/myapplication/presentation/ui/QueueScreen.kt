@@ -680,7 +680,7 @@ private fun MoveLoadDialog(
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
-                        onDone = { if (isValid) number?.let(onConfirm) }
+                        onDone = { if (isValid) number.let(onConfirm) }
                     ),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()

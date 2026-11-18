@@ -51,6 +51,10 @@ sealed class Routers(val route: String) {
         fun createRoute(zoneId: Int): String {
             return "product_list/$zoneId"
         }
+
+        fun isMatch(currentRoute: String?): Boolean {
+            return currentRoute?.startsWith("product_list/") == true || currentRoute == route
+        }
     }
 
     /** Экран мониторинга состояния бетоновозных телег */

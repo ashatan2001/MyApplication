@@ -230,7 +230,7 @@ private fun MainNavigationRail(
             icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
             label = { Text("Заказ", fontSize = 12.sp) },
             selected = currentRoute == Routers.DstPointList.route ||
-                    currentRoute?.startsWith("product_list") == true,
+                    Routers.ProductList.isMatch(currentRoute),
             onClick = onDstPointListClick,
             enabled = isAuthenticated
         )
@@ -396,7 +396,7 @@ private fun MainBottomBar(
             icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
             label = { Text("Заказ") },
             selected = currentRoute == Routers.DstPointList.route ||
-                    currentRoute?.startsWith("product_list") == true,
+                    Routers.ProductList.isMatch(currentRoute),
             onClick = onDstPointListClick,
             enabled = isAuthenticated
         )
