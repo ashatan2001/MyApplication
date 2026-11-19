@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
@@ -61,6 +62,7 @@ import com.example.myapplication.presentation.util.Spacing
 import com.example.myapplication.presentation.util.StatusColors
 import com.example.myapplication.presentation.viewmodel.BucketUiState
 import com.example.myapplication.presentation.viewmodel.BucketViewModel
+import com.example.myapplication.presentation.viewmodel.LoadCardUiState
 import kotlinx.coroutines.launch
 
 /**
@@ -74,6 +76,7 @@ fun BucketScreen(
     viewModel: BucketViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val loadCardState by viewModel.loadCardState.collectAsStateWithLifecycle()
 
     /**
      * Мониторинг активен только пока экран в состоянии STARTED:
@@ -98,7 +101,10 @@ fun BucketScreen(
                         textAlign = TextAlign.Center
                     )
                 } else {
-                    BucketList(buckets = state.bucketList)
+                    BucketList(
+                        buckets = state.bucketList,
+                        onLoadClick = viewModel::openLoadCard
+                    )
                 }
             }
             is BucketUiState.Error -> {
@@ -124,15 +130,29 @@ fun BucketScreen(
             }
         }
     }
+
+    // Карточка заявки поверх списка; состояние живёт во ViewModel
+    // и переживает смену конфигурации.
+    if (loadCardState !is LoadCardUiState.Hidden) {
+        LoadCardDialog(
+            state = loadCardState,
+            onRetry = viewModel::openLoadCard,
+            onDismiss = viewModel::closeLoadCard
+        )
+    }
 }
 
 /**
  * Список бетоновозных телег с возможностью раскрытия деталей и автоматической прокруткой.
  *
  * @param buckets Список моделей телег.
+ * @param onLoadClick Колбэк клика по номеру заявки (открытие карточки заявки).
  */
 @Composable
-private fun BucketList(buckets: List<Bucket>) {
+private fun BucketList(
+    buckets: List<Bucket>,
+    onLoadClick: (Long) -> Unit
+) {
     // Состояние прокрутки для LazyColumn
     val lazyListState = rememberLazyListState()
     // Область корутин для выполнения suspend-функции прокрутки
@@ -147,6 +167,7 @@ private fun BucketList(buckets: List<Bucket>) {
         itemsIndexed(buckets, key = { _, bucket -> bucket.id }) { index, bucket ->
             BucketItem(
                 bucket = bucket,
+                onLoadClick = onLoadClick,
                 onExpandRequest = {
                     // При запросе на раскрытие плавно прокручиваем список к этому индексу
                     coroutineScope.launch {
@@ -164,11 +185,13 @@ private fun BucketList(buckets: List<Bucket>) {
  * В раскрытом состоянии отображает детальную информацию.
  *
  * @param bucket Модель бетоновозной телеги.
+ * @param onLoadClick Колбэк клика по номеру заявки (открытие карточки заявки).
  * @param onExpandRequest Колбэк, вызываемый при раскрытии элемента для инициирования прокрутки.
  */
 @Composable
 private fun BucketItem(
     bucket: Bucket,
+    onLoadClick: (Long) -> Unit,
     onExpandRequest: () -> Unit
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(false) }
@@ -226,7 +249,10 @@ private fun BucketItem(
             // Раскрытая информация
             if (isExpanded) {
                 HorizontalDivider()
-                ExpandedBucketContent(bucket = bucket)
+                ExpandedBucketContent(
+                    bucket = bucket,
+                    onLoadClick = onLoadClick
+                )
             }
         }
     }
@@ -257,9 +283,13 @@ private fun IsFullIcon(isFull: Boolean) {
  * Детальная информация о телеге в раскрытом состоянии.
  *
  * @param bucket Модель бетоновозной телеги.
+ * @param onLoadClick Колбэк клика по номеру активной заявки (открытие карточки заявки).
  */
 @Composable
-private fun ExpandedBucketContent(bucket: Bucket) {
+private fun ExpandedBucketContent(
+    bucket: Bucket,
+    onLoadClick: (Long) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -285,7 +315,15 @@ private fun ExpandedBucketContent(bucket: Bucket) {
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary
         )
-        InfoRow(label = "Код заявки", value = if (bucket.loadId != 0L) bucket.loadId.toString() else "Нет активной заявки")
+        if (bucket.loadId != 0L) {
+            // Активная заявка: номер кликабелен и открывает карточку заявки
+            LoadIdRow(
+                loadId = bucket.loadId,
+                onClick = { onLoadClick(bucket.loadId) }
+            )
+        } else {
+            InfoRow(label = "Код заявки", value = "Нет активной заявки")
+        }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.Xs))
 
@@ -307,6 +345,48 @@ private fun ExpandedBucketContent(bucket: Bucket) {
         InfoRow(
             label = "Завершение разгрузки",
             value = bucket.departDate?.format(DateTimeFormatters.dateTimeFormatter) ?: "—"
+        )
+    }
+}
+
+/**
+ * Строка с кликабельным номером активной заявки.
+ *
+ * Номер оформлен как ссылка (primary-цвет + подчёркивание), чтобы
+ * пользователю было видно, что по нему можно открыть карточку заявки.
+ * Кликабельна вся правая половина строки — зона нажатия больше самого текста.
+ *
+ * @param loadId Код активной заявки на отгрузку.
+ * @param onClick Колбэк клика по номеру заявки.
+ */
+@Composable
+private fun LoadIdRow(
+    loadId: Long,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Код заявки",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(Spacing.Sm))
+        Text(
+            text = loadId.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary,
+            textDecoration = TextDecoration.Underline,
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClickLabel = "Открыть карточку заявки", onClick = onClick)
+                .padding(vertical = Spacing.Xs)
         )
     }
 }

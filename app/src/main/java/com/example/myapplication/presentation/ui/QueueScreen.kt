@@ -470,12 +470,17 @@ private fun LoadRow(
             .padding(vertical = Spacing.Sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Text(
+            text = "${load.queueNum}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+
+        Spacer(modifier = Modifier.width(Spacing.Sm))
+
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = buildString {
-                    append("Заявка №${load.id}")
-                    load.queueNum?.let { append(" · позиция $it") }
-                },
+                text = "Заявка №${load.id}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

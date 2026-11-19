@@ -1,4 +1,4 @@
-package com.example.myapplication.presentation
+package com.example.myapplication.presentation.util
 
 import com.example.domain.model.Event
 import com.example.domain.model.HandLoad

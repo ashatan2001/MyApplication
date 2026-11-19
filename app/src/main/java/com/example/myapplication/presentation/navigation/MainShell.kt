@@ -35,7 +35,7 @@ import com.example.myapplication.presentation.viewmodel.SessionViewModel
  * - на телефонах ([WindowSize.COMPACT]) — нижняя панель [MainBottomBar];
  * - на планшетах ([WindowSize.MEDIUM], [WindowSize.EXPANDED]) — боковая панель [MainNavigationRail].
  *
- * Базовые разделы (Заказ, Очередь, Архив) блокируются (становятся светло-серыми)
+ * Базовые разделы (Зоны, Очередь, Архив) блокируются (становятся светло-серыми)
  * при отсутствии авторизации ([AuthState.Authenticated]).
  *
  * @param onLogout Колбэк для выхода из системы.
@@ -227,10 +227,10 @@ private fun MainNavigationRail(
             onClick = onHomeClick
         )*/
         NavigationRailItem(
-            icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
-            label = { Text("Заказ", fontSize = 12.sp) },
+            icon = { Icon(Icons.Default.LocationOn, contentDescription = "Зоны") },
+            label = { Text("Зоны", fontSize = 12.sp) },
             selected = currentRoute == Routers.DstPointList.route ||
-                    Routers.ProductList.isMatch(currentRoute),
+                    currentRoute == Routers.ProductList.route,
             onClick = onDstPointListClick,
             enabled = isAuthenticated
         )
@@ -242,14 +242,14 @@ private fun MainNavigationRail(
             enabled = isAuthenticated
         )
         NavigationRailItem(
-            icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Телеги") },
+            icon = { Icon(Icons.Default.Inventory2, contentDescription = "Телеги") },
             label = { Text("Телеги", fontSize = 12.sp) },
             selected = currentRoute == Routers.BucketList.route,
             onClick = onBucketListClick,
             enabled = isAuthenticated
         )
         NavigationRailItem(
-            icon = { Icon(Icons.Default.Archive, contentDescription = "Архив") },
+            icon = { Icon(Icons.Default.TableView, contentDescription = "Архив") },
             label = { Text("Архив", fontSize = 12.sp) },
             selected = currentRoute == Routers.Archive.route,
             onClick = onArchiveClick,
@@ -393,10 +393,10 @@ private fun MainBottomBar(
             onClick = onBucketListClick
         )*/
         NavigationBarItem(
-            icon = { Icon(Icons.Default.LibraryAdd, contentDescription = "Заказ") },
-            label = { Text("Заказ") },
+            icon = { Icon(Icons.Default.LocationOn, contentDescription = "Зоны") },
+            label = { Text("Зоны") },
             selected = currentRoute == Routers.DstPointList.route ||
-                    Routers.ProductList.isMatch(currentRoute),
+                    currentRoute?.startsWith("product_list") == true,
             onClick = onDstPointListClick,
             enabled = isAuthenticated
         )
@@ -408,14 +408,14 @@ private fun MainBottomBar(
             enabled = isAuthenticated
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Inventory, contentDescription = "Телеги") },
+            icon = { Icon(Icons.Default.Inventory2, contentDescription = "Телеги") },
             label = { Text("Телеги") },
             selected = currentRoute == Routers.BucketList.route,
             onClick = onBucketListClick,
             enabled = isAuthenticated
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Archive, contentDescription = "Архив") },
+            icon = { Icon(Icons.Default.TableView, contentDescription = "Архив") },
             label = { Text("Архив") },
             selected = currentRoute == Routers.Archive.route,
             onClick = onArchiveClick,

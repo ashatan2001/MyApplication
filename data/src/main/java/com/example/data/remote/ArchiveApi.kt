@@ -72,4 +72,32 @@ interface ArchiveApi {
         @Query("page") page: Int,
         @Query("records") records: Int
     ): Response<ArchiveDto<HandLoadDto>>
+
+    /**
+     * Получение архива ручных отгрузок.
+     *
+     * @param startdate дата начала просматриваемого периода в формате dd.MM.yyyy HH:mm:ss
+     * @param enddate дата окончания просматриваемого периода в формате dd.MM.yyyy HH:mm:ss
+     * @param page номер запрашиваемой страницы с данными (для случая, когда количество
+     *             возвращаемых строк за выбранный период больше указанного в запросе или
+     *             заданного по умолчанию)
+     * @param records количество записей на одной странице.
+     * @return [Response<ArchiveDto<EventDto>>] с архивом событий.
+     *
+     * Коды ответов сервера:
+     * - 200 — успешное выполнение команды (в теле запроса JSON)
+     * - 204 — за заданный промежуток времени события отсутствуют в системе (тело запроса является пустым)
+     * - 400 — некорректно сформирован запрос  или невозможно проверить права пользователя
+     * - 401 — необходимо выполнить вход в систему
+     * - 403 — пользователь не имеет необходимых прав на просмотр информации из архива
+     * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
+     * - 500 — внутренняя ошибка получения информации о точках разгрузки
+     */
+    @GET("api/loads")
+    suspend fun getLoads(
+        @Query(value = "startdate", encoded = true) startDate: String,
+        @Query(value = "enddate", encoded = true) endDate: String,
+        @Query("page") page: Int,
+        @Query("records") records: Int
+    ): Response<ArchiveDto<HandLoadDto>>
 }
