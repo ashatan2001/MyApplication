@@ -25,8 +25,9 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
 import androidx.compose.material.icons.filled.PauseCircle
+import androidx.compose.material.icons.filled.PauseCircleOutline
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.SignalWifiOff
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material3.Button
@@ -434,9 +435,9 @@ fun BucketStatusIcon(
     val (icon, color) = when (status) {
         BucketStatus.WAITING_FOR_LOADING -> Icons.Default.Schedule to StatusColors.Warning
         BucketStatus.MOVING -> Icons.Default.KeyboardDoubleArrowRight to StatusColors.Info
-        BucketStatus.STOPPED_AT_POINT -> Icons.Default.PauseCircle to StatusColors.Neutral
+        BucketStatus.STOPPED_AT_POINT -> Icons.Default.PauseCircleOutline to StatusColors.Neutral
         BucketStatus.UNLOADING -> Icons.Default.Downloading to StatusColors.Success
-        BucketStatus.DISCONNECTED -> Icons.Default.SignalWifiOff to StatusColors.Error
+        BucketStatus.DISCONNECTED -> Icons.Default.WifiOff to StatusColors.Error
         BucketStatus.UNDER_REPAIR -> Icons.Default.Construction to StatusColors.Maintenance
         BucketStatus.MANUAL_CONTROL -> Icons.Default.Handyman to StatusColors.Manual
         BucketStatus.UNKNOWN, null -> Icons.AutoMirrored.Filled.Help to StatusColors.Unknown
