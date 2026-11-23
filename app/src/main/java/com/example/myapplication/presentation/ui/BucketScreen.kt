@@ -18,18 +18,25 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.outlined.Help
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.Downloading
+import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
+import androidx.compose.material.icons.filled.Moving
+import androidx.compose.material.icons.filled.PanTool
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PauseCircleOutline
+import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -267,9 +274,9 @@ private fun BucketItem(
 @Composable
 private fun IsFullIcon(isFull: Boolean) {
     val (icon, color) = if (isFull) {
-        Icons.Default.Inventory2 to StatusColors.Success   // Зеленый (загружена)
+        Icons.Default.Scale to StatusColors.Success   // Зеленый (загружена)
     } else {
-        Icons.Outlined.Inventory2 to StatusColors.Neutral  // Серый (пуста)
+        Icons.Outlined.Scale to StatusColors.Neutral  // Серый (пуста)
     }
 
     Icon(
@@ -434,13 +441,13 @@ fun BucketStatusIcon(
 ) {
     val (icon, color) = when (status) {
         BucketStatus.WAITING_FOR_LOADING -> Icons.Default.Schedule to StatusColors.Warning
-        BucketStatus.MOVING -> Icons.Default.KeyboardDoubleArrowRight to StatusColors.Info
+        BucketStatus.MOVING -> Icons.Default.FastForward to StatusColors.Info
         BucketStatus.STOPPED_AT_POINT -> Icons.Default.PauseCircleOutline to StatusColors.Neutral
         BucketStatus.UNLOADING -> Icons.Default.Downloading to StatusColors.Success
         BucketStatus.DISCONNECTED -> Icons.Default.WifiOff to StatusColors.Error
         BucketStatus.UNDER_REPAIR -> Icons.Default.Construction to StatusColors.Maintenance
-        BucketStatus.MANUAL_CONTROL -> Icons.Default.Handyman to StatusColors.Manual
-        BucketStatus.UNKNOWN, null -> Icons.AutoMirrored.Filled.Help to StatusColors.Unknown
+        BucketStatus.MANUAL_CONTROL -> Icons.Default.PanTool to StatusColors.Manual
+        BucketStatus.UNKNOWN, null -> Icons.AutoMirrored.Outlined.Help to StatusColors.Unknown
     }
 
     Icon(

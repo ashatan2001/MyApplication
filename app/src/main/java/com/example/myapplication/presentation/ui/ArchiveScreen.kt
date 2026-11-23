@@ -363,19 +363,19 @@ private fun ArchiveForm(
                     value = state.records,
                     onValueChange = {},
                     readOnly = true,
+                    singleLine = true,
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = recordsExpanded)
                     },
-                    modifier =
-                        Modifier
-                            .width(ComponentSize.RecordsFieldWidth)
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                            .clip(AppShape.Medium),
+                    modifier = Modifier
+                        .width(ComponentSize.RecordsFieldWidth)
+                        .height(ComponentSize.RecordsFieldHeight)
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                        .clip(AppShape.Medium),
                     shape = AppShape.Medium,
-                    textStyle =
-                        androidx.compose.material3.LocalTextStyle.current.copy(
-                            fontSize = AppFontSize.Field,
-                        ),
+                    textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
+                        fontSize = AppFontSize.Field,
+                    ),
                 )
                 ExposedDropdownMenu(
                     expanded = recordsExpanded,

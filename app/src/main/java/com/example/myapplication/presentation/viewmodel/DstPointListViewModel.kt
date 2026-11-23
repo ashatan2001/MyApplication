@@ -1,5 +1,6 @@
 package com.example.myapplication.presentation.viewmodel
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.domain.event.AuthEventBus
@@ -297,4 +298,21 @@ class DstPointListViewModel @Inject constructor(
         isArrivalBaselineInitialized = false
         _arrivedBuckets.value = emptyMap()
     }
+
+    /**
+     * Отладочная точка входа мониторинга: прогоняет список телег через тот же
+     * обработчик [handleBucketResult], что и SmartPoller, минуя сеть и интервалы.
+     *
+     * Используется instrumented-тестами и DEBUG-панелью симуляции, чтобы
+     * детерминированно проверять прибытия, кнопку, Snackbar и подсветку.
+     * В боевом потоке данных не участвует.
+     *
+     * @param buckets Список телег, имитирующий очередной успешный ответ сервера.
+     */
+    @VisibleForTesting
+    internal fun debugInjectBuckets(buckets: List<Bucket>) {
+        handleBucketResult(CustomResult.Success(buckets))
+    }
 }
+
+

@@ -39,8 +39,9 @@ object ComponentSize {
     /** Толстая линия индикатора загрузки (оверлей QueueScreen). */
     val ProgressStrokeThick = 4.dp
 
-    /** Ширина выпадающего поля количества записей (ArchiveScreen). */
+    /** Ширина и высота выпадающего поля количества записей (ArchiveScreen). */
     val RecordsFieldWidth = 90.dp
+    val RecordsFieldHeight = ButtonHeight
 
     /** Толщина рамки поля выбора даты (PickerFieldButton). */
     val BorderWidth = 1.dp

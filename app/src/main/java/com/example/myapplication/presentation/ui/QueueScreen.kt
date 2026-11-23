@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.outlined.Help
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.PendingActions
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -813,11 +815,11 @@ private fun QueueErrorState(
 fun StatusIcon(status: LoadStatus) {
     val (icon, color, label) = when (status) {
         LoadStatus.IN_QUEUE -> Triple(Icons.Default.Schedule, StatusColors.Info, "В очереди")
-        LoadStatus.COMPLETED -> Triple(Icons.Default.CheckCircle, StatusColors.Success, "Выполнена")
+        LoadStatus.COMPLETED -> Triple(Icons.Default.TaskAlt, StatusColors.Success, "Выполнена")
         LoadStatus.DEFECT -> Triple(Icons.Default.Error, StatusColors.Error, "Брак")
         LoadStatus.CANCELLED -> Triple(Icons.Default.Cancel, StatusColors.Neutral, "Отменена")
         LoadStatus.WEIGHED -> Triple(Icons.Default.Scale, StatusColors.Warning, "Взвешена")
-        LoadStatus.UNKNOWN -> Triple(Icons.AutoMirrored.Filled.Help, StatusColors.Maintenance, "Неизвестный статус")
+        LoadStatus.UNKNOWN -> Triple(Icons.AutoMirrored.Outlined.Help, StatusColors.Maintenance, "Неизвестный статус")
     }
 
     Icon(

@@ -33,10 +33,19 @@ android {
         }
     }
 
+    packaging {
+        resources {
+            // Объединить дублирующиеся файлы лицензий
+            merges += "META-INF/LICENSE.md"
+            merges += "META-INF/LICENSE-notice.md"
+        }
+    }
+
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+        encoding = "UTF-8"
     }
 
     buildFeatures {
@@ -52,6 +61,7 @@ kotlin {
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
             "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
         )
+        freeCompilerArgs.add("-Xjava-source-roots=src/main/java")
     }
 }
 
@@ -102,4 +112,8 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("io.mockk:mockk:1.13.13")
+    androidTestImplementation("io.mockk:mockk-android:1.13.13")
 }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Warning
@@ -43,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -144,6 +146,7 @@ fun DstPointListScreen(
                 is DstPointListUiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
+
                 is DstPointListUiState.Success -> {
                     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -179,7 +182,7 @@ fun DstPointListScreen(
                         } else {
                             LazyColumn(modifier = Modifier.fillMaxSize()) {
 
-                                // Легкий заголовок секции (в стиле BucketScreen)
+                                // Легкий заголовок секции
                                 item(key = "header") {
                                     Text(
                                         text = "Подразделения",
@@ -207,6 +210,7 @@ fun DstPointListScreen(
                         }
                     }
                 }
+
                 is DstPointListUiState.Error -> {
                     Column(
                         modifier = Modifier.align(Alignment.Center).padding(Spacing.Lg),
@@ -229,6 +233,16 @@ fun DstPointListScreen(
                     }
                 }
             }
+
+            /**
+             * Отладочная панель симуляции телег: в debug-сборке рисуется поверх низа
+             * списка, в release — no-op (пустая реализация из release source set).
+             */
+            DstPointDebugPanel(
+                viewModel = viewModel,
+                zones = (uiState as? DstPointListUiState.Success)?.dstPointList.orEmpty(),
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }
@@ -274,29 +288,21 @@ private fun DstPointRow(
         label = "arrivalRowHighlight"
     )
 
+    /**
+     * Модификатор строки: testTag позволяет UI-тесту захватить именно эту строку
+     * и проверить цвет фона в моменты появления/затухания подсветки.
+     */
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("dst-row-${dstPoint.zoneId}")
             .background(rowBackground)
             .padding(horizontal = Spacing.Md, vertical = Spacing.Smd),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Наименование подразделения
-
         Text(
-            text = dstPoint.zoneId.toString(),
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-
-        Spacer(modifier = Modifier.width(Spacing.Sm))
-
-        Text(
-            text = dstPoint.zoneName,
+            text = dstPoint.zoneId.toString() + " — " + dstPoint.zoneName,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
@@ -311,40 +317,41 @@ private fun DstPointRow(
         if (arrivedBucket != null) {
             TextButton(
                 onClick = { onUnload(arrivedBucket) },
-                contentPadding = PaddingValues(horizontal = Spacing.Sm)
+                contentPadding = PaddingValues(horizontal = Spacing.Sm),
+                modifier = Modifier.testTag("unload-button-${dstPoint.zoneId}")
             ) {
                 Icon(
-                    imageVector = Icons.Default.LocalShipping,
-                    contentDescription = null,
-                    modifier = Modifier.size(IconSize.Inline),
-                    tint = StatusColors.Success
+                    imageVector = Icons.Default.Downloading,
+                    contentDescription = "Выгрузить",
+                    modifier = Modifier.size(IconSize.Inline)
                 )
-                Spacer(modifier = Modifier.width(Spacing.Xs))
+                /*Spacer(modifier = Modifier.width(Spacing.Xs))
                 Text(
                     text = "Выгрузить",
                     style = MaterialTheme.typography.labelMedium,
                     color = StatusColors.Success
-                )
+                )*/
             }
         }
 
         // Кнопка заказа
         TextButton(
             onClick = onOrder,
-            contentPadding = PaddingValues(horizontal = Spacing.Sm)
+            contentPadding = PaddingValues(horizontal = Spacing.Sm),
+            modifier = Modifier.testTag("order-button-${dstPoint.zoneId}")
         ) {
             Icon(
                 imageVector = Icons.Default.Inventory,
-                contentDescription = null,
+                contentDescription = "Заказать",
                 modifier = Modifier.size(IconSize.Inline),
                 tint = MaterialTheme.colorScheme.secondary
             )
-            Spacer(modifier = Modifier.width(Spacing.Xs))
+            /*Spacer(modifier = Modifier.width(Spacing.Xs))
             Text(
                 text = "Заказать",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary
-            )
+            )*/
         }
     }
 }
