@@ -95,19 +95,6 @@ fun DstPointDebugPanel(
                         )
                     )
                 }) { Text("Прибытие") }
-                TextButton(onClick = {
-                    inject(simBuckets.map {
-                        if (it.zoneNumber == zone.zoneId) it.copy(status = BucketStatus.UNLOADING) else it
-                    })
-                }) { Text("Разгрузка") }
-                TextButton(onClick = {
-                    inject(simBuckets.map {
-                        if (it.zoneNumber == zone.zoneId) it.copy(departDate = LocalDateTime.now()) else it
-                    })
-                }) { Text("Завершена") }
-                TextButton(onClick = {
-                    inject(simBuckets.filterNot { it.zoneNumber == zone.zoneId })
-                }) { Text("Уехала") }
                 TextButton(onClick = { inject(emptyList()) }) { Text("Сброс") }
                 TextButton(onClick = {
                     if (polling) viewModel.stopBucketMonitoring() else viewModel.startBucketMonitoring()

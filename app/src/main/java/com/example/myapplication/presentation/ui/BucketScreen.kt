@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,39 +18,31 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.compose.material.icons.automirrored.outlined.Help
-import androidx.compose.material.icons.filled.Construction
-import androidx.compose.material.icons.filled.Downloading
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.Handyman
-import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
-import androidx.compose.material.icons.filled.Moving
-import androidx.compose.material.icons.filled.PanTool
-import androidx.compose.material.icons.filled.PauseCircle
-import androidx.compose.material.icons.filled.PauseCircleOutline
-import androidx.compose.material.icons.filled.Scale
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.Scale
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -67,15 +61,85 @@ import com.example.myapplication.presentation.util.AppElevation
 import com.example.myapplication.presentation.util.DateTimeFormatters
 import com.example.myapplication.presentation.util.IconSize
 import com.example.myapplication.presentation.util.Spacing
-import com.example.myapplication.presentation.util.StatusColors
 import com.example.myapplication.presentation.viewmodel.BucketUiState
 import com.example.myapplication.presentation.viewmodel.BucketViewModel
 import com.example.myapplication.presentation.viewmodel.LoadCardUiState
 import kotlinx.coroutines.launch
 
 /**
+ * Варианты фильтрации по заполненности телеги.
+ */
+enum class FullnessFilter(val title: String) {
+    ALL("Любая"),
+    FULL("Загружена"),
+    EMPTY("Пуста")
+}
+
+/**
+ * Состояние фильтров экрана телег.
+ *
+ * @property selectedStatuses Набор статусов, которые должны отображаться.
+ * @property fullnessFilter Фильтр по заполненности.
+ * @property hideUnderRepair Флаг принудительного скрытия телег на ремонте
+ *                           (работает даже если статус выбран в списке).
+ */
+data class BucketFilterState(
+    val selectedStatuses: Set<BucketStatus> = BucketStatus.entries.toSet(),
+    val fullnessFilter: FullnessFilter = FullnessFilter.ALL,
+    val hideUnderRepair: Boolean = false
+) {
+    /**
+     * Применяет фильтры к списку телег.
+     * Null-статусы трактуются как [BucketStatus.UNKNOWN] в соответствии с UI-маппингом.
+     */
+    fun apply(buckets: List<Bucket>): List<Bucket> = buckets.filter { bucket ->
+        val effectiveStatus = bucket.status ?: BucketStatus.UNKNOWN
+        val statusMatch = effectiveStatus in selectedStatuses
+        val fullnessMatch = when (fullnessFilter) {
+            FullnessFilter.ALL -> true
+            FullnessFilter.FULL -> bucket.isFull
+            FullnessFilter.EMPTY -> !bucket.isFull
+        }
+        val repairMatch = !(hideUnderRepair && effectiveStatus == BucketStatus.UNDER_REPAIR)
+        statusMatch && fullnessMatch && repairMatch
+    }
+}
+
+/**
+ * Saver для сохранения состояния фильтров при смене конфигурации и смерти процесса.
+ * Сериализует enum-значения как строки, чтобы не зависеть от порядка ordinal.
+ */
+private val BucketFilterStateSaver: Saver<BucketFilterState, Any> = Saver(
+    save = { state ->
+        listOf(
+            state.selectedStatuses.map { it.name },
+            state.fullnessFilter.name,
+            state.hideUnderRepair
+        )
+    },
+    restore = { saved ->
+        @Suppress("UNCHECKED_CAST")
+        val list = saved as List<Any>
+        val statuses = (list[0] as List<String>).mapNotNull { name ->
+            BucketStatus.entries.find { it.name == name }
+        }.toSet()
+        val fullness = FullnessFilter.entries.find { it.name == list[1] as String } ?: FullnessFilter.ALL
+        val hideRepair = list[2] as Boolean
+        BucketFilterState(
+            selectedStatuses = statuses.ifEmpty { BucketStatus.entries.toSet() },
+            fullnessFilter = fullness,
+            hideUnderRepair = hideRepair
+        )
+    }
+)
+
+/**
  * Экран мониторинга бетоновозных телег.
  * Отображает список телег с возможностью раскрытия детальной информации по каждой.
+ *
+ * В шапке экрана размещены кнопки «Фильтры» и «Обозначения статусов»:
+ * фильтры применяются локально к уже загруженному списку, поэтому не влияют
+ * на сетевой опрос и сохраняют позицию скролла и раскрытые карточки.
  *
  * @param viewModel ViewModel для управления состоянием экрана.
  */
@@ -86,61 +150,82 @@ fun BucketScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val loadCardState by viewModel.loadCardState.collectAsStateWithLifecycle()
 
-    /**
-     * Мониторинг активен только пока экран в состоянии STARTED:
-     * уход на другой экран или сворачивание приложения останавливает опрос,
-     * возврат — возобновляет (первый запрос уходит сразу при старте).
-     */
+    // Видимость карточек-диалогов и состояние фильтров переживают смену конфигурации.
+    var showStatusLegend by rememberSaveable { mutableStateOf(false) }
+    var showFilterDialog by rememberSaveable { mutableStateOf(false) }
+    var filterState by rememberSaveable(stateSaver = BucketFilterStateSaver) {
+        mutableStateOf(BucketFilterState())
+    }
+
     LifecycleStartEffect(Unit) {
         viewModel.startMonitoring()
         onStopOrDispose { viewModel.stopMonitoring() }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        when (val state = uiState) {
-            is BucketUiState.Loading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
-            is BucketUiState.Success -> {
-                if (state.bucketList.isEmpty()) {
-                    Text(
-                        text = "Бетоновозные телеги не найдены",
-                        modifier = Modifier.align(Alignment.Center).padding(Spacing.Md),
-                        textAlign = TextAlign.Center
-                    )
-                } else {
-                    BucketList(
-                        buckets = state.bucketList,
-                        onLoadClick = viewModel::openLoadCard
-                    )
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Кнопки управления представлением списка.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.Md, vertical = Spacing.Xs),
+            horizontalArrangement = Arrangement.End
+        ) {
+            BucketFilterButton(
+                onClick = { showFilterDialog = true },
+                isActive = filterState != BucketFilterState()
+            )
+            StatusLegendButton(onClick = { showStatusLegend = true })
+        }
+
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            when (val state = uiState) {
+                is BucketUiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-            }
-            is BucketUiState.Error -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(Spacing.Lg),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(Spacing.Md)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(IconSize.Xl)
-                    )
-                    Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
-                    )
-                    Button(onClick = { viewModel.loadBucketList() }) { Text("Повторить") }
+                is BucketUiState.Success -> {
+                    val filteredBuckets = filterState.apply(state.bucketList)
+                    if (filteredBuckets.isEmpty()) {
+                        Text(
+                            text = if (state.bucketList.isEmpty()) {
+                                "Бетоновозные телеги не найдены"
+                            } else {
+                                "Телеги не найдены по заданным фильтрам"
+                            },
+                            modifier = Modifier.align(Alignment.Center).padding(Spacing.Md),
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        BucketList(
+                            buckets = filteredBuckets,
+                            onLoadClick = viewModel::openLoadCard
+                        )
+                    }
+                }
+                is BucketUiState.Error -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center).padding(Spacing.Lg),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(Spacing.Md)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(IconSize.Xl)
+                        )
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                        Button(onClick = { viewModel.loadBucketList() }) { Text("Повторить") }
+                    }
                 }
             }
         }
     }
 
-    // Карточка заявки поверх списка; состояние живёт во ViewModel
-    // и переживает смену конфигурации.
     if (loadCardState !is LoadCardUiState.Hidden) {
         LoadCardDialog(
             state = loadCardState,
@@ -148,6 +233,177 @@ fun BucketScreen(
             onDismiss = viewModel::closeLoadCard
         )
     }
+
+    if (showStatusLegend) {
+        StatusLegendDialog(
+            title = "Обозначения статусов телег",
+            sections = bucketStatusLegendSections(),
+            onDismiss = { showStatusLegend = false }
+        )
+    }
+
+    if (showFilterDialog) {
+        BucketFilterDialog(
+            state = filterState,
+            onStateChange = { filterState = it },
+            onReset = { filterState = BucketFilterState() },
+            onDismiss = { showFilterDialog = false }
+        )
+    }
+}
+
+/**
+ * Кнопка открытия карточки фильтров.
+ *
+ * При наличии активных фильтров (отличных от дефолтных) иконка и текст
+ * окрашиваются в primary-цвет, чтобы пользователь видел, что список отфильтрован.
+ *
+ * @param onClick Колбэк открытия диалога фильтров.
+ * @param isActive true, если хотя бы один параметр фильтра отличается от дефолтного.
+ * @param modifier Модификатор кнопки.
+ */
+@Composable
+private fun BucketFilterButton(
+    onClick: () -> Unit,
+    isActive: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val tint = if (isActive) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    TextButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            imageVector = Icons.Default.FilterAlt,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(IconSize.Inline)
+        )
+        Spacer(modifier = Modifier.width(Spacing.Xsm))
+        Text(text = "Фильтр", color = tint)
+    }
+}
+
+/**
+ * Карточка-диалог настройки фильтров списка телег.
+ *
+ * Содержит три секции:
+ * 1. Заполненность — мультивыбор через FilterChip (используется как single-select).
+ * 2. Скрытие телег на ремонте — переключатель Switch.
+ * 3. Статусы — мультивыбор FilterChip с иконками и цветами из легенды.
+ *
+ * Сброс возвращает состояние к дефолтному (все статусы включены, заполненность любая,
+ * ремонт не скрывается). Изменения применяются мгновенно, кнопка «Применить» просто
+ * закрывает диалог.
+ *
+ * @param state Текущее состояние фильтров.
+ * @param onStateChange Колбэк обновления состояния.
+ * @param onReset Колбэк сброса фильтров в дефолтное состояние.
+ * @param onDismiss Колбэк закрытия диалога.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun BucketFilterDialog(
+    state: BucketFilterState,
+    onStateChange: (BucketFilterState) -> Unit,
+    onReset: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Фильтры списка телег") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Md)
+            ) {
+                // 1. Заполненность
+                Text(
+                    text = "Заполненность",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Sm),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Xs)
+                ) {
+                    FullnessFilter.entries.forEach { filter ->
+                        FilterChip(
+                            selected = state.fullnessFilter == filter,
+                            onClick = { onStateChange(state.copy(fullnessFilter = filter)) },
+                            label = { Text(filter.title) }
+                        )
+                    }
+                }
+
+                HorizontalDivider()
+
+                // 2. Скрытие ремонта
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Скрывать телеги на ремонте",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = state.hideUnderRepair,
+                        onCheckedChange = { onStateChange(state.copy(hideUnderRepair = it)) }
+                    )
+                }
+
+                HorizontalDivider()
+
+                // 3. Статусы
+                Text(
+                    text = "Статусы",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Xs),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Xs)
+                ) {
+                    BucketStatus.entries.forEach { status ->
+                        val item = bucketStatusLegendItem(status)
+                        FilterChip(
+                            selected = status in state.selectedStatuses,
+                            onClick = {
+                                val newStatuses = if (status in state.selectedStatuses) {
+                                    state.selectedStatuses - status
+                                } else {
+                                    state.selectedStatuses + status
+                                }
+                                onStateChange(state.copy(selectedStatuses = newStatuses))
+                            },
+                            label = { Text(item.title) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = null,
+                                    tint = item.tint,
+                                    modifier = Modifier.size(IconSize.Sm)
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Применить") }
+        },
+        dismissButton = {
+            TextButton(onClick = onReset) { Text("Сбросить") }
+        }
+    )
 }
 
 /**
@@ -161,9 +417,7 @@ private fun BucketList(
     buckets: List<Bucket>,
     onLoadClick: (Long) -> Unit
 ) {
-    // Состояние прокрутки для LazyColumn
     val lazyListState = rememberLazyListState()
-    // Область корутин для выполнения suspend-функции прокрутки
     val coroutineScope = rememberCoroutineScope()
 
     LazyColumn(
@@ -171,13 +425,11 @@ private fun BucketList(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = Spacing.Sm)
     ) {
-        // Используем itemsIndexed, чтобы знать позицию элемента для прокрутки
         itemsIndexed(buckets, key = { _, bucket -> bucket.id }) { index, bucket ->
             BucketItem(
                 bucket = bucket,
                 onLoadClick = onLoadClick,
                 onExpandRequest = {
-                    // При запросе на раскрытие плавно прокручиваем список к этому индексу
                     coroutineScope.launch {
                         lazyListState.animateScrollToItem(index)
                     }
@@ -221,7 +473,6 @@ private fun BucketItem(
                     .clickable {
                         val willExpand = !isExpanded
                         isExpanded = willExpand
-                        // Вызываем прокрутку только если элемент раскрывается, а не сворачивается
                         if (willExpand) {
                             onExpandRequest()
                         }
@@ -254,7 +505,6 @@ private fun BucketItem(
                 )
             }
 
-            // Раскрытая информация
             if (isExpanded) {
                 HorizontalDivider()
                 ExpandedBucketContent(
@@ -269,20 +519,19 @@ private fun BucketItem(
 /**
  * Иконка, отображающая флаг загруженности телеги.
  *
+ * Визуальные параметры берутся из [bucketFullnessLegendItem] — единого
+ * источника для иконок списка и карточки-легенды.
+ *
  * @param isFull true, если телега загружена, false - если пуста.
  */
 @Composable
 private fun IsFullIcon(isFull: Boolean) {
-    val (icon, color) = if (isFull) {
-        Icons.Default.Scale to StatusColors.Success   // Зеленый (загружена)
-    } else {
-        Icons.Outlined.Scale to StatusColors.Neutral  // Серый (пуста)
-    }
+    val item = bucketFullnessLegendItem(isFull = isFull)
 
     Icon(
-        imageVector = icon,
-        contentDescription = if (isFull) "Загружена" else "Пуста",
-        tint = color,
+        imageVector = item.icon,
+        contentDescription = item.title,
+        tint = item.tint,
         modifier = Modifier.size(IconSize.Md)
     )
 }
@@ -304,7 +553,6 @@ private fun ExpandedBucketContent(
             .padding(Spacing.Md),
         verticalArrangement = Arrangement.spacedBy(Spacing.Smd)
     ) {
-        // 1) Местоположения
         Text(
             text = "Местоположение",
             style = MaterialTheme.typography.titleSmall,
@@ -316,7 +564,6 @@ private fun ExpandedBucketContent(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.Xs))
 
-        // 2) Информация о заявке
         Text(
             text = "Информация о заявке",
             style = MaterialTheme.typography.titleSmall,
@@ -324,7 +571,6 @@ private fun ExpandedBucketContent(
             color = MaterialTheme.colorScheme.primary
         )
         if (bucket.loadId != 0L) {
-            // Активная заявка: номер кликабелен и открывает карточку заявки
             LoadIdRow(
                 loadId = bucket.loadId,
                 onClick = { onLoadClick(bucket.loadId) }
@@ -335,7 +581,6 @@ private fun ExpandedBucketContent(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.Xs))
 
-        // 3) Временные отметки
         Text(
             text = "Временные отметки",
             style = MaterialTheme.typography.titleSmall,
@@ -359,10 +604,6 @@ private fun ExpandedBucketContent(
 
 /**
  * Строка с кликабельным номером активной заявки.
- *
- * Номер оформлен как ссылка (primary-цвет + подчёркивание), чтобы
- * пользователю было видно, что по нему можно открыть карточку заявки.
- * Кликабельна вся правая половина строки — зона нажатия больше самого текста.
  *
  * @param loadId Код активной заявки на отгрузку.
  * @param onClick Колбэк клика по номеру заявки.
@@ -439,21 +680,12 @@ fun BucketStatusIcon(
     status: BucketStatus?,
     modifier: Modifier = Modifier
 ) {
-    val (icon, color) = when (status) {
-        BucketStatus.WAITING_FOR_LOADING -> Icons.Default.Schedule to StatusColors.Warning
-        BucketStatus.MOVING -> Icons.Default.FastForward to StatusColors.Info
-        BucketStatus.STOPPED_AT_POINT -> Icons.Default.PauseCircleOutline to StatusColors.Neutral
-        BucketStatus.UNLOADING -> Icons.Default.Downloading to StatusColors.Success
-        BucketStatus.DISCONNECTED -> Icons.Default.WifiOff to StatusColors.Error
-        BucketStatus.UNDER_REPAIR -> Icons.Default.Construction to StatusColors.Maintenance
-        BucketStatus.MANUAL_CONTROL -> Icons.Default.PanTool to StatusColors.Manual
-        BucketStatus.UNKNOWN, null -> Icons.AutoMirrored.Outlined.Help to StatusColors.Unknown
-    }
+    val item = bucketStatusLegendItem(status = status)
 
     Icon(
-        imageVector = icon,
-        contentDescription = status?.name ?: "Неизвестный статус",
-        tint = color,
+        imageVector = item.icon,
+        contentDescription = item.title,
+        tint = item.tint,
         modifier = modifier.size(IconSize.Md)
     )
 }

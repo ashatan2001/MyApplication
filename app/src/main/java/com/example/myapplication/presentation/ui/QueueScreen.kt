@@ -13,20 +13,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.compose.material.icons.automirrored.outlined.Help
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PendingActions
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -52,7 +44,6 @@ import com.example.domain.model.Terminal
 import com.example.myapplication.presentation.util.AppElevation
 import com.example.myapplication.presentation.util.IconSize
 import com.example.myapplication.presentation.util.Spacing
-import com.example.myapplication.presentation.util.StatusColors
 import com.example.myapplication.presentation.viewmodel.QueueEvent
 import com.example.myapplication.presentation.viewmodel.QueueUiState
 import com.example.myapplication.presentation.viewmodel.QueueViewModel
@@ -74,6 +65,11 @@ import kotlinx.coroutines.launch
  * (тап и long-press сохранены как дополнительные ярлыки):
  * изменение количества, перемещение в очереди, удаление с подтверждением.
  *
+ * В шапке экрана размещена кнопка «Обозначения статусов», открывающая
+ * карточку-легенду с расшифровкой иконок статусов заявок. Легенда — это
+ * просмотр, а не мутация, поэтому кнопка доступна всегда, в том числе
+ * во время операций и обновления.
+ *
  * @param viewModel [QueueViewModel] для управления состоянием экрана.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,6 +87,9 @@ fun QueueScreen(
     var loadToEdit by remember { mutableStateOf<Load?>(null) }
     var loadToDelete by remember { mutableStateOf<Load?>(null) }
     var moveTarget by remember { mutableStateOf<MoveTarget?>(null) }
+
+    // Видимость карточки-легенды статусов; rememberSaveable — переживает смену конфигурации.
+    var showStatusLegend by rememberSaveable { mutableStateOf(false) }
 
     // Кэш последних успешно загруженных данных: по M3 контент не должен
     // исчезать под спиннером при обновлении уже показанного списка.
@@ -148,54 +147,62 @@ fun QueueScreen(
         // Insets уже обработаны оболочкой MainShell — не дублируем отступы.
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { if (!isProcessing) viewModel.loadQueue() },
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            val displayLoads = when (state) {
-                is QueueUiState.Success -> state.loadsByTerminal
-                is QueueUiState.Loading -> cachedLoads
-                is QueueUiState.Error -> null
-            }
-
-            when {
-                state is QueueUiState.Error -> QueueErrorState(
-                    message = state.message,
-                    onRetry = viewModel::loadQueue,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-                // Первичная загрузка: circular по центру загружающегося контейнера (M3).
-                displayLoads == null -> CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
-                displayLoads.isEmpty() -> QueueEmptyState(
-                    modifier = Modifier.align(Alignment.Center)
-                )
-                else -> TerminalGroupedList(
-                    loadsByTerminal = displayLoads,
-                    actionsEnabled = actionsEnabled,
-                    onEdit = { load -> loadToEdit = load },
-                    onMove = { load, maxPosition -> moveTarget = MoveTarget(load, maxPosition) },
-                    onDelete = { load -> loadToDelete = load }
-                )
-            }
-
-            // M3: один линейный индикатор у верхней кромки контейнера
-            // на время мутации — без перекрытия контента скримом.
-            AnimatedVisibility(
-                visible = isProcessing,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier.align(Alignment.TopCenter)
+            // Кнопка открытия расшифровки иконок статусов: просмотр легенды
+            // безопасен и не блокируется во время фоновых операций.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.Md, vertical = Spacing.Xs),
+                horizontalArrangement = Arrangement.End
             ) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = "Выполняется операция с заявкой" }
-                )
+                StatusLegendButton(onClick = { showStatusLegend = true })
+            }
+
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { if (!isProcessing) viewModel.loadQueue() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                val displayLoads = when (state) {
+                    is QueueUiState.Success -> state.loadsByTerminal
+                    is QueueUiState.Loading -> cachedLoads
+                    is QueueUiState.Error -> null
+                }
+
+                when {
+                    state is QueueUiState.Error -> QueueErrorState(
+                        message = state.message,
+                        onRetry = viewModel::loadQueue,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                    // Первичная загрузка: circular по центру загружающегося контейнера (M3).
+                    displayLoads == null -> CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                    displayLoads.isEmpty() -> QueueEmptyState(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                    else -> TerminalGroupedList(
+                        loadsByTerminal = displayLoads,
+                        actionsEnabled = actionsEnabled,
+                        onEdit = { load -> loadToEdit = load },
+                        onMove = { load, maxPosition -> moveTarget = MoveTarget(load, maxPosition) },
+                        onDelete = { load -> loadToDelete = load }
+                    )
+                }
+
+                // M3: один линейный индикатор у верхней кромки контейнера
+                // на время мутации — без перекрытия контента скримом.
+                // Вызов вынесен в BoxScope.QueueProcessingIndicator, чтобы
+                // внешний ColumnScope не перехватывал разрешение AnimatedVisibility.
+                QueueProcessingIndicator(visible = isProcessing)
             }
         }
     }
@@ -234,6 +241,15 @@ fun QueueScreen(
                 viewModel.moveLoad(target.load, number)
             },
             onDismiss = { moveTarget = null }
+        )
+    }
+
+    // Карточка с расшифровкой иконок статусов заявок.
+    if (showStatusLegend) {
+        StatusLegendDialog(
+            title = "Обозначения статусов заявок",
+            sections = loadStatusLegendSections(),
+            onDismiss = { showStatusLegend = false }
         )
     }
 }
@@ -804,8 +820,41 @@ private fun QueueErrorState(
 }
 
 /**
+ * Линейный индикатор выполняющейся операции у верхней кромки контейнера.
+ *
+ * Вынесен в отдельную функцию с приёмником [androidx.compose.foundation.layout.BoxScope]
+ * намеренно: внутри вложенных лямбд Column + PullToRefreshBox компилятор разрешает
+ * вызов AnimatedVisibility в расширение ColumnScope.AnimatedVisibility и запрещает
+ * его вызов с неявным внешним приёмником. В теле этой функции в области видимости
+ * только BoxScope, поэтому выбирается базовая перегрузка AnimatedVisibility,
+ * а Modifier.align(TopCenter) позиционирует индикатор поверх списка (M3: без скрима
+ * и без сдвига контента).
+ *
+ * Вызывается из контентной лямбды PullToRefreshBox, которая предоставляет BoxScope.
+ *
+ * @param visible true — операция выполняется, индикатор показывается.
+ */
+@Composable
+private fun BoxScope.QueueProcessingIndicator(visible: Boolean) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.align(Alignment.TopCenter)
+    ) {
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Выполняется операция с заявкой" }
+        )
+    }
+}
+
+/**
  * Визуальные обозначения статусов заявки.
  *
+ * Иконка, цвет и подпись берутся из [loadStatusLegendItem] — единого
+ * источника для иконок списка и карточки-легенды.
  * contentDescription — человекочитаемая подпись статуса (не enum.name),
  * чтобы TalkBack озвучивал «В очереди», а не «IN_QUEUE».
  *
@@ -813,19 +862,12 @@ private fun QueueErrorState(
  */
 @Composable
 fun StatusIcon(status: LoadStatus) {
-    val (icon, color, label) = when (status) {
-        LoadStatus.IN_QUEUE -> Triple(Icons.Default.Schedule, StatusColors.Info, "В очереди")
-        LoadStatus.COMPLETED -> Triple(Icons.Default.TaskAlt, StatusColors.Success, "Выполнена")
-        LoadStatus.DEFECT -> Triple(Icons.Default.Error, StatusColors.Error, "Брак")
-        LoadStatus.CANCELLED -> Triple(Icons.Default.Cancel, StatusColors.Neutral, "Отменена")
-        LoadStatus.WEIGHED -> Triple(Icons.Default.Scale, StatusColors.Warning, "Взвешена")
-        LoadStatus.UNKNOWN -> Triple(Icons.AutoMirrored.Outlined.Help, StatusColors.Maintenance, "Неизвестный статус")
-    }
+    val item = loadStatusLegendItem(status = status)
 
     Icon(
-        imageVector = icon,
-        contentDescription = label,
-        tint = color,
+        imageVector = item.icon,
+        contentDescription = item.title,
+        tint = item.tint,
         modifier = Modifier.size(IconSize.Md)
     )
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -246,7 +247,7 @@ private fun ProductRow(
         Text(
             text = product.name,
             modifier = Modifier
-                .weight(3f)
+                .weight(4f)
                 .padding(end = Spacing.Smd),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
@@ -258,7 +259,7 @@ private fun ProductRow(
             modifier = Modifier.size(IconSize.Action)
         ) {
             Icon(
-                imageVector = Icons.Default.AddCircle,
+                imageVector = Icons.Default.Add,
                 contentDescription = "Заказать ${product.name}",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(IconSize.Lg)

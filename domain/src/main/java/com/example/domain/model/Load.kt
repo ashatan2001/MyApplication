@@ -10,7 +10,7 @@ import java.time.LocalDateTime
  * @property date Дата и время отгрузки.
  * @property documentNum Номер накладной.
  * @property queueNum Номер в очереди (только для заявок в очереди).
- * @property status Статус заявки (0 - в очереди, 1 - выполнена, -1 - брак, -2 - аннулирована, 3 - взвешена).
+ * @property status Статус заявки
  * @property statusName Наименование статуса заявки.
  * @property arrivalDate Дата и время прибытия на площадку.
  * @property departDate Дата и время убытия.
@@ -44,11 +44,28 @@ data class Load (
 
 /** Статус заявки на отгрузку. */
 enum class LoadStatus(val code: Int) {
+    /** Заявка в очереди. */
     IN_QUEUE(0),
+
+    /** Заявка выполнена. */
     COMPLETED(1),
+
+    /** Заявка является браком. */
     DEFECT(-1),
+
+    /** Заявка аннулирована. */
     CANCELLED(-2),
+
+    /** Заявка выполнена и проведено взвешивание. */
     WEIGHED(3),
+
+    /** Заявка отправлена в архив вручную. */
+    ARCHIVED(4),
+
+    /** Машина находится под загрузкой. */
+    LOADING(5),
+
+    /** Заявка в очереди. */
     UNKNOWN(-99);
 
     companion object {

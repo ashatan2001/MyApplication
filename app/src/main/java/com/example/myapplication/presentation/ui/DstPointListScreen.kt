@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -280,7 +279,7 @@ private fun DstPointRow(
     }
     val rowBackground by animateColorAsState(
         targetValue = if (isHighlighted) {
-            StatusColors.Success.copy(alpha = ARRIVAL_HIGHLIGHT_ALPHA)
+            StatusColors.Green.copy(alpha = ARRIVAL_HIGHLIGHT_ALPHA)
         } else {
             Color.Transparent
         },
@@ -300,10 +299,23 @@ private fun DstPointRow(
             .padding(horizontal = Spacing.Md, vertical = Spacing.Smd),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Код подразделения
+        Text(
+            text = dstPoint.zoneId.toString(),
+            modifier = Modifier.weight(0.2f),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.primary,
+        )
+
+        Spacer(modifier = Modifier.width(Spacing.Sm))
+
         // Наименование подразделения
         Text(
-            text = dstPoint.zoneId.toString() + " — " + dstPoint.zoneName,
-            modifier = Modifier.weight(1f),
+            text = dstPoint.zoneName,
+            modifier = Modifier.weight(0.8f),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             maxLines = 1,

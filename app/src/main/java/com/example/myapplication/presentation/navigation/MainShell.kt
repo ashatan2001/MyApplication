@@ -22,6 +22,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.domain.model.AuthState
+import com.example.myapplication.presentation.icon.Bucket
 import com.example.myapplication.presentation.ui.*
 import com.example.myapplication.presentation.util.LayoutSize.NavigationRailWidth
 import com.example.myapplication.presentation.util.WindowSize
@@ -408,14 +409,14 @@ private fun MainBottomBar(
             enabled = isAuthenticated
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Inventory2, contentDescription = "Телеги") },
+            icon = { Icon(Icons.Filled.Bucket, contentDescription = "Телеги") },
             label = { Text("Телеги") },
             selected = currentRoute == Routers.BucketList.route,
             onClick = onBucketListClick,
             enabled = isAuthenticated
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.TableView, contentDescription = "Архив") },
+            icon = { Icon(Icons.Default.Archive, contentDescription = "Архив") },
             label = { Text("Архив") },
             selected = currentRoute == Routers.Archive.route,
             onClick = onArchiveClick,

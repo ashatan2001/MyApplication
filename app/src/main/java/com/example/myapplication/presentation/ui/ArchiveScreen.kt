@@ -1,7 +1,16 @@
 package com.example.myapplication.presentation.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +34,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,7 +49,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
@@ -51,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,12 +71,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.myapplication.presentation.util.AppAlpha
+import com.example.myapplication.presentation.util.AppElevation
+import com.example.myapplication.presentation.util.AppFontSize
+import com.example.myapplication.presentation.util.AppShape
 import com.example.myapplication.presentation.util.ArchiveRow
 import com.example.myapplication.presentation.util.ArchiveScreenState
 import com.example.myapplication.presentation.util.ArchiveType
-import com.example.myapplication.presentation.util.AppAlpha
-import com.example.myapplication.presentation.util.AppFontSize
-import com.example.myapplication.presentation.util.AppShape
 import com.example.myapplication.presentation.util.ComponentSize
 import com.example.myapplication.presentation.util.DateTimeFormatters
 import com.example.myapplication.presentation.util.DateTimeFormatters.parseToUtcMillis
@@ -81,11 +95,16 @@ import com.example.myapplication.presentation.viewmodel.ArchiveViewModel
 private val DateColumnWidth: Dp = 160.dp
 
 /**
- * Экран архива с адаптивной версткой:
- * - [WindowSize.COMPACT] — форма над таблицей, колонки таблицы с горизонтальной прокруткой;
- * - [WindowSize.MEDIUM] — то же, но поля дат размещаются в две колонки для экономии высоты;
- * - [WindowSize.EXPANDED] — форма в боковой панели слева, таблица занимает оставшуюся ширину,
- *   колонки таблицы растягиваются пропорционально без прокрутки, если хватает места.
+ * Экран архива с адаптивной версткой и скрываемой панелью фильтров:
+ * [WindowSize.COMPACT] — сворачиваемая карточка фильтров над таблицей,
+ * колонки таблицы с горизонтальной прокруткой;
+ * [WindowSize.MEDIUM] — то же, но поля дат размещаются в две колонки для экономии высоты;
+ * [WindowSize.EXPANDED] — форма в скрываемой боковой панели слева; при сворачивании
+ * таблица занимает всю ширину, а над ней появляется строка-заголовок для раскрытия.
+ *
+ * В свёрнутом состоянии заголовок панели показывает сводку активных фильтров
+ * (тип архива, период, размер страницы). Состояние раскрытия хранится в
+ * rememberSaveable и переживает смену конфигурации и смерть процесса.
  *
  * @param viewModel [ArchiveViewModel] для управления состоянием экрана.
  */
@@ -101,51 +120,88 @@ fun ArchiveScreen(viewModel: ArchiveViewModel = hiltViewModel()) {
     var showStartPicker by rememberSaveable { mutableStateOf(false) }
     var showEndPicker by rememberSaveable { mutableStateOf(false) }
 
+    // Видимость панели «Фильтры и сортировка»; по умолчанию раскрыта.
+    var filtersExpanded by rememberSaveable { mutableStateOf(true) }
+
     when (windowSize) {
-        // Планшет горизонтально: форма слева, таблица справа
+        // Планшет горизонтально: скрываемая форма слева, таблица справа
         WindowSize.EXPANDED -> {
             Row(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = Spacing.Md, vertical = Spacing.Sm),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = Spacing.Md, vertical = Spacing.Sm),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.Md),
             ) {
-                ArchiveForm(
-                    state = state,
-                    modifier =
-                        Modifier
-                            .width(LayoutSize.FormSidePanelWidth)
-                            .fillMaxHeight()
-                            .verticalScroll(rememberScrollState()),
-                    onTypeChange = viewModel::updateType,
-                    onRecordsChange = viewModel::updateRecords,
-                    onLoadClick = viewModel::loadArchive,
-                    onShowStartPicker = { showStartPicker = true },
-                    onShowEndPicker = { showEndPicker = true },
-                )
-                VerticalDivider(modifier = Modifier.fillMaxHeight())
-                ArchiveContent(
-                    state = state,
-                    modifier = Modifier.weight(1f),
-                    onPreviousPage = viewModel::previousPage,
-                    onNextPage = viewModel::nextPage,
-                    onClearError = viewModel::clearError,
-                )
+                // Боковая панель плавно скрывается, освобождая ширину таблице.
+                // AnimatedVisibility — непосредственный ребёнок Row (RowScope),
+                // поэтому перегрузка резолвится на ближайший приёмник без конфликта.
+                AnimatedVisibility(
+                    visible = filtersExpanded,
+                    enter = fadeIn() + expandHorizontally(),
+                    exit = fadeOut() + shrinkHorizontally(),
+                    label = "filters_side_panel",
+                ) {
+                    Row(modifier = Modifier.fillMaxHeight()) {
+                        Column(
+                            modifier = Modifier
+                                .width(LayoutSize.FormSidePanelWidth)
+                                .fillMaxHeight(),
+                        ) {
+                            FiltersPanelHeader(
+                                expanded = true,
+                                state = state,
+                                onToggle = { filtersExpanded = false },
+                            )
+                            HorizontalDivider()
+                            ArchiveForm(
+                                state = state,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(horizontal = Spacing.Smd, vertical = Spacing.Sm),
+                                onTypeChange = viewModel::updateType,
+                                onRecordsChange = viewModel::updateRecords,
+                                onLoadClick = viewModel::loadArchive,
+                                onShowStartPicker = { showStartPicker = true },
+                                onShowEndPicker = { showEndPicker = true },
+                            )
+                        }
+                        VerticalDivider(modifier = Modifier.fillMaxHeight())
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    // Свёрнутая панель: строка-заголовок с кнопкой раскрытия над таблицей.
+                    if (!filtersExpanded) {
+                        FiltersPanelHeader(
+                            expanded = false,
+                            state = state,
+                            onToggle = { filtersExpanded = true },
+                        )
+                    }
+                    ArchiveContent(
+                        state = state,
+                        modifier = Modifier.weight(1f),
+                        onPreviousPage = viewModel::previousPage,
+                        onNextPage = viewModel::nextPage,
+                        onClearError = viewModel::clearError,
+                    )
+                }
             }
         }
 
-        // Телефон и планшет вертикально: форма над таблицей
+        // Телефон и планшет вертикально: сворачиваемая карточка фильтров над таблицей
         else -> {
             Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = Spacing.Smd, vertical = Spacing.Sm),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = Spacing.Smd, vertical = Spacing.Sm),
             ) {
-                ArchiveForm(
+                FiltersCard(
+                    expanded = filtersExpanded,
+                    onToggle = { filtersExpanded = !filtersExpanded },
                     state = state,
-                    modifier = Modifier.fillMaxWidth(),
                     onTypeChange = viewModel::updateType,
                     onRecordsChange = viewModel::updateRecords,
                     onLoadClick = viewModel::loadArchive,
@@ -189,6 +245,159 @@ fun ArchiveScreen(viewModel: ArchiveViewModel = hiltViewModel()) {
 }
 
 /**
+ * Сворачиваемая карточка «Фильтры и сортировка» для компактной вёрстки.
+ *
+ * Оформлена по паттерну раскрывающихся карточек проекта (BucketItem, TerminalCard):
+ * кликабельная шапка с вращающимся шевроном, тело — [ArchiveForm] под разделителем.
+ * Сворачивание анимировано (fade + expand/shrinkVertically); свёрнутая шапка
+ * показывает сводку активных фильтров.
+ *
+ * AnimatedVisibility — непосредственный ребёнок ColumnScope-лямбды Card,
+ * поэтому выбирается перегрузка ColumnScope.AnimatedVisibility на ближайшем
+ * приёмнике (без конфликта внешних областей видимости).
+ *
+ * @param expanded Раскрыта ли панель фильтров.
+ * @param onToggle Колбэк переключения раскрытия.
+ * @param state Текущее состояние экрана (для формы и сводки фильтров).
+ * @param onTypeChange Смена типа архива.
+ * @param onRecordsChange Смена количества записей на странице.
+ * @param onLoadClick Запуск загрузки архива.
+ * @param onShowStartPicker Открытие диалога выбора даты начала.
+ * @param onShowEndPicker Открытие диалога выбора даты окончания.
+ */
+@Composable
+private fun FiltersCard(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    state: ArchiveScreenState,
+    onTypeChange: (ArchiveType) -> Unit,
+    onRecordsChange: (String) -> Unit,
+    onLoadClick: () -> Unit,
+    onShowStartPicker: () -> Unit,
+    onShowEndPicker: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.Card),
+    ) {
+        FiltersPanelHeader(
+            expanded = expanded,
+            state = state,
+            onToggle = onToggle,
+        )
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+            label = "filters_form",
+        ) {
+            Column {
+                HorizontalDivider()
+                ArchiveForm(
+                    state = state,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(Spacing.Smd),
+                    onTypeChange = onTypeChange,
+                    onRecordsChange = onRecordsChange,
+                    onLoadClick = onLoadClick,
+                    onShowStartPicker = onShowStartPicker,
+                    onShowEndPicker = onShowEndPicker,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Кликабельная шапка панели «Фильтры и сортировка».
+ *
+ * Единый заголовок для карточки фильтров (COMPACT/MEDIUM) и боковой панели
+ * (EXPANDED): иконка фильтра, название, вращающийся шеврон раскрытия.
+ * В свёрнутом состоянии под названием выводится сводка активных фильтров,
+ * чтобы было видно, с какими параметрами загружена таблица.
+ *
+ * @param expanded Раскрыта ли панель (определяет направление шеврона и сводку).
+ * @param state Текущее состояние экрана для сводки фильтров.
+ * @param onToggle Колбэк нажатия на шапку.
+ * @param modifier Модификатор контейнера шапки.
+ */
+@Composable
+private fun FiltersPanelHeader(
+    expanded: Boolean,
+    state: ArchiveScreenState,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val rotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "filters_arrow_rotation",
+    )
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(
+                onClickLabel = if (expanded) "Скрыть фильтры" else "Показать фильтры",
+                onClick = onToggle,
+            )
+            .padding(horizontal = Spacing.Smd, vertical = Spacing.Sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.FilterList,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(IconSize.Inline),
+        )
+        Spacer(modifier = Modifier.width(Spacing.Sm))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Фильтры и сортировка",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!expanded) {
+                Text(
+                    text = filtersSummary(state),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(Spacing.Sm))
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowDown,
+            contentDescription = if (expanded) "Скрыть фильтры" else "Показать фильтры",
+            modifier = Modifier
+                .size(IconSize.Md)
+                .rotate(rotation),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * Собирает короткую сводку активных фильтров для свёрнутой шапки.
+ *
+ * @param state Текущее состояние экрана.
+ * @return Строка вида «Тип архива · период · N зап.»; незаполненные даты
+ *         показываются многоточием, полностью пустой период — «период не задан».
+ */
+private fun filtersSummary(state: ArchiveScreenState): String {
+    val period = if (state.startDate.isBlank() && state.endDate.isBlank()) {
+        "период не задан"
+    } else {
+        "${state.startDate.ifBlank { "…" }} — ${state.endDate.ifBlank { "…" }}"
+    }
+    return "${state.selectedType.title} · $period · ${state.records} зап."
+}
+
+/**
  * Область вывода результата: индикатор загрузки, ошибка либо таблица с пагинацией.
  *
  * @param state Текущее состояние экрана.
@@ -208,10 +417,9 @@ private fun ArchiveContent(
     Column(modifier = modifier) {
         if (state.isLoading && state.rows.isEmpty()) {
             Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(ComponentSize.ProgressLg))
@@ -220,10 +428,9 @@ private fun ArchiveContent(
             Text(
                 text = state.error!!,
                 color = MaterialTheme.colorScheme.error,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(Spacing.Smd),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.Smd),
                 fontSize = AppFontSize.Body,
             )
         } else {
@@ -294,16 +501,14 @@ private fun ArchiveForm(
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded)
                 },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                        .clip(AppShape.Medium),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                    .clip(AppShape.Medium),
                 shape = AppShape.Medium,
-                textStyle =
-                    androidx.compose.material3.LocalTextStyle.current.copy(
-                        fontSize = AppFontSize.Field,
-                    ),
+                textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
+                    fontSize = AppFontSize.Field,
+                ),
             )
             ExposedDropdownMenu(
                 expanded = typeExpanded,
@@ -395,11 +600,10 @@ private fun ArchiveForm(
             Button(
                 onClick = onLoadClick,
                 enabled = !state.isLoading,
-                modifier =
-                    Modifier
-                        .height(ComponentSize.ButtonHeight)
-                        .weight(1f)
-                        .clip(AppShape.Medium),
+                modifier = Modifier
+                    .height(ComponentSize.ButtonHeight)
+                    .weight(1f)
+                    .clip(AppShape.Medium),
                 shape = AppShape.Medium,
                 contentPadding = PaddingValues(horizontal = Spacing.Smd),
             ) {
@@ -451,7 +655,12 @@ private fun DateField(
     }
 }
 
-/** Описание колонки таблицы: заголовок и базовая ширина. */
+/**
+ * Описание колонки таблицы: заголовок и базовая ширина.
+ *
+ * @property title Заголовок колонки.
+ * @property width Базовая ширина колонки (используется и как вес при растяжении).
+ */
 private data class TableColumn(
     val title: String,
     val width: Dp,
@@ -476,7 +685,6 @@ private fun tableColumns(type: ArchiveType): List<TableColumn> =
                 TableColumn("Текст", 250.dp),
             )
         }
-
         ArchiveType.HAND_LOADS -> {
             listOf(
                 TableColumn("Место", 150.dp),
@@ -506,7 +714,6 @@ private fun cellValues(row: ArchiveRow): List<String> =
                 row.event.text ?: "—",
             )
         }
-
         is ArchiveRow.HandLoadRow -> {
             listOf(
                 row.handLoad.workPlaceName ?: "—",
@@ -529,7 +736,6 @@ private fun dateText(row: ArchiveRow): String =
         is ArchiveRow.EventRow -> {
             row.event.date?.format(DateTimeFormatters.dateTimeFormatter) ?: "Дата не указана"
         }
-
         is ArchiveRow.HandLoadRow -> {
             row.handLoad.date?.format(DateTimeFormatters.dateTimeFormatter) ?: "Дата не указана"
         }
@@ -541,7 +747,8 @@ private fun dateText(row: ArchiveRow): String =
  * Поведение колонок адаптивное: если доступная ширина экрана не меньше суммарной
  * ширины колонок, колонки растягиваются пропорционально базовым ширинам
  * ([Modifier.weight]); иначе таблица прокручивается горизонтально общим
- * [ScrollState] для шапки и строк.
+ * [ScrollState] для шапки и строк. Скрытие панели фильтров автоматически
+ * переключает таблицу в режим растяжения, когда ширины начинает хватать.
  *
  * @param type Тип архива, определяющий набор колонок.
  * @param rows Строки текущей страницы.
@@ -573,12 +780,10 @@ private fun ArchiveTable(
         Column(modifier = Modifier.fillMaxWidth()) {
             TableHeader(columns = columns, stretch = stretch, scrollState = scrollState)
             HorizontalDivider()
-
             Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
             ) {
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
                     itemsIndexed(
@@ -598,23 +803,20 @@ private fun ArchiveTable(
                         )
                     }
                 }
-
                 // Оверлей лоадера при переключении страниц
                 if (isLoadingPage) {
                     Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(
-                                    MaterialTheme.colorScheme.surface.copy(alpha = AppAlpha.Scrim),
-                                ),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = AppAlpha.Scrim),
+                            ),
                         contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(ComponentSize.ProgressXl))
                     }
                 }
             }
-
             PaginationRow(
                 currentPage = currentPage,
                 totalPages = totalPages,
@@ -630,6 +832,10 @@ private fun ArchiveTable(
 /**
  * Шапка таблицы. В режиме [stretch] колонки растягиваются на всю ширину,
  * иначе прокручиваются горизонтально синхронно со строками.
+ *
+ * @param columns Описание колонок.
+ * @param stretch Режим растяжения колонок.
+ * @param scrollState Общий_state горизонтальной прокрутки шапки и строк.
  */
 @Composable
 private fun TableHeader(
@@ -638,11 +844,10 @@ private fun TableHeader(
     scrollState: ScrollState,
 ) {
     Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(vertical = Spacing.Sm),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(vertical = Spacing.Sm),
     ) {
         HeaderCell("Дата и время", Modifier.width(DateColumnWidth))
         if (stretch) {
@@ -683,6 +888,11 @@ private fun HeaderCell(
 /**
  * Строка таблицы. Фиксированная колонка даты + ячейки данных,
  * растягиваемые или прокручиваемые в зависимости от режима [stretch].
+ *
+ * @param row Строка архива.
+ * @param columns Описание колонок.
+ * @param stretch Режим растяжения колонок.
+ * @param scrollState Общий state горизонтальной прокрутки шапки и строк.
  */
 @Composable
 private fun TableRow(
@@ -692,12 +902,12 @@ private fun TableRow(
     scrollState: ScrollState,
 ) {
     val values = cellValues(row)
+
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Xsm)) {
         Box(
-            modifier =
-                Modifier
-                    .width(DateColumnWidth)
-                    .padding(horizontal = Spacing.Sm),
+            modifier = Modifier
+                .width(DateColumnWidth)
+                .padding(horizontal = Spacing.Sm),
             contentAlignment = Alignment.CenterStart,
         ) {
             Text(
@@ -744,17 +954,18 @@ private fun CellText(
         )
     }
 }
+
 /**
  * Компактная панель постраничной навигации: две кнопки-стрелки и счётчик страниц.
  *
  * Отличия от прежней версии:
- * - вместо текстовых [OutlinedButton] высотой 40 dp — icon-only кнопки-шевроны
- *   без фона и рамок (визуально лёгкие; фактическая зона нажатия остаётся
- *   не меньше 48 dp благодаря enforcement Material 3);
- * - вместо подписи «Страница N из M» — короткий счётчик «N / M»;
- * - убран дублирующий индикатор загрузки: загрузку страницы уже показывает
- *   оверлей таблицы, здесь кнопки просто блокируются на время запроса;
- * - уменьшены вертикальные отступы строки.
+ * вместо текстовых OutlinedButton высотой 40 dp — icon-only кнопки-шевроны
+ * без фона и рамок (визуально лёгкие; фактическая зона нажатия остаётся
+ * не меньше 48 dp благодаря enforcement Material 3);
+ * вместо подписи «Страница N из M» — короткий счётчик «N / M»;
+ * убран дублирующий индикатор загрузки: загрузку страницы уже показывает
+ * оверлей таблицы, здесь кнопки просто блокируются на время запроса;
+ * уменьшены вертикальные отступы строки.
  *
  * @param currentPage Номер текущей страницы.
  * @param totalPages Общее количество страниц.
@@ -770,42 +981,40 @@ private fun PaginationRow(
     isLoadingPage: Boolean,
     centered: Boolean,
     onPreviousPage: () -> Unit,
-    onNextPage: () -> Unit
+    onNextPage: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
                 vertical = Spacing.Xs,
-                horizontal = if (centered) Spacing.Md else Spacing.Sm
+                horizontal = if (centered) Spacing.Md else Spacing.Sm,
             ),
         horizontalArrangement = if (centered) {
             Arrangement.spacedBy(Spacing.Sm, Alignment.CenterHorizontally)
         } else {
             Arrangement.SpaceBetween
         },
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         PageArrowButton(
             imageVector = Icons.Filled.ChevronLeft,
             contentDescription = "Предыдущая страница",
             enabled = !isLoadingPage && currentPage > 1,
-            onClick = onPreviousPage
+            onClick = onPreviousPage,
         )
-
         Text(
             text = "$currentPage / $totalPages",
             fontSize = AppFontSize.Caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
-
         PageArrowButton(
             imageVector = Icons.Filled.ChevronRight,
             contentDescription = "Следующая страница",
             enabled = !isLoadingPage && currentPage < totalPages,
-            onClick = onNextPage
+            onClick = onNextPage,
         )
     }
 }
@@ -827,17 +1036,17 @@ private fun PageArrowButton(
     imageVector: ImageVector,
     contentDescription: String,
     enabled: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     IconButton(
         onClick = onClick,
-        enabled = enabled
+        enabled = enabled,
     ) {
         Icon(
             imageVector = imageVector,
             contentDescription = contentDescription,
             modifier = Modifier.size(IconSize.Md),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
