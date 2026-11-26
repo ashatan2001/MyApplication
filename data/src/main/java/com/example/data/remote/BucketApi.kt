@@ -35,7 +35,7 @@ interface BucketApi {
      * Команда начала разгрузки бетоновозной телеги.
      *
      * @param bucketId код бетоновозной телеги
-     * @return [Response<Boolean>] признак загруженности телеги.
+     * @return [Response<Unit>], так как сервер не передаёт тело при успехе (200).
      *
      * Коды ответов сервера:
      * - 200 — успешное выполнение команды (в теле запроса JSON)
@@ -48,13 +48,13 @@ interface BucketApi {
      */
     @PUT("api/apb/buckets/{bucketId}/open")
 
-    suspend fun getBucketOpen(@Path("bucketId") id: Int): Response<Boolean>
+    suspend fun getBucketOpen(@Path("bucketId") id: Int): Response<Unit>
 
     /**
-     * Команда начала разгрузки бетоновозной телеги.
+     * Команда завершения разгрузки бетоновозной телеги.
      *
      * @param bucketId код бетоновозной телеги
-     * @return [Response<Boolean>] признак загруженности телеги.
+     * @return [Response<Unit>], так как сервер не передаёт тело при успехе (200).
      *
      * Коды ответов сервера:
      * - 200 — успешное выполнение команды (в теле запроса JSON)
@@ -66,5 +66,5 @@ interface BucketApi {
      * - 5xx — внутренняя ошибка сервера
      */
     @PUT("api/apb/buckets/{bucketId}/close")
-    suspend fun getBucketClose(@Path("bucketId") id: Int): Response<Boolean>
+    suspend fun getBucketClose(@Path("bucketId") id: Int): Response<Unit>
 }

@@ -20,4 +20,6 @@ class BucketRemoteDataSource @Inject constructor(
      * @return [List<BucketDto>] при успехе.
      */
     suspend fun getBucketList(): List<BucketDto> = safeApiCall { api.getBuckets() }
+
+
 }
