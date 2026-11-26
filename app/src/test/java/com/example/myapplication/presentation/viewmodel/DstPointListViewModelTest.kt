@@ -225,7 +225,7 @@ class DstPointListViewModelTest {
         name = "Бетоновоз $id",
         zoneNumber = zone,
         isFull = true,
-        status = status,
+        statuses = status,
         loadId = 9_000L + id,
         dstZone = zone,
         loadDate = arrivalDate,

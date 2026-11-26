@@ -48,7 +48,7 @@ interface BucketApi {
      */
     @PUT("api/apb/buckets/{bucketId}/open")
 
-    suspend fun getBucketOpen(@Path("bucketId") id: Int): Response<Unit>
+    suspend fun putBucketOpen(@Path("bucketId") id: Int): Response<Unit>
 
     /**
      * Команда завершения разгрузки бетоновозной телеги.
@@ -66,5 +66,5 @@ interface BucketApi {
      * - 5xx — внутренняя ошибка сервера
      */
     @PUT("api/apb/buckets/{bucketId}/close")
-    suspend fun getBucketClose(@Path("bucketId") id: Int): Response<Unit>
+    suspend fun putBucketClose(@Path("bucketId") id: Int): Response<Unit>
 }

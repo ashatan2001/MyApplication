@@ -78,9 +78,18 @@ fun DstPointDebugPanel(
                     val now = LocalDateTime.now()
                     inject(
                         simBuckets + Bucket(
-                            id = id, name = "Симулятор $id", zoneNumber = zone.zoneId,
-                            isFull = true, status = BucketStatus.MOVING, loadId = 9_000L + id,
-                            dstZone = zone.zoneId, loadDate = now, arrivalDate = now, departDate = null
+                            id = id,
+                            name = "Симулятор $id",
+                            zoneNumber = zone.zoneId,
+                            isFull = true,
+                            // Симулируем прибытие телеги: статусы передаются как множество.
+                            // STOPPED_AT_POINT — чтобы появилась иконка разгрузки рядом с телегой.
+                            statuses = setOf(BucketStatus.STOPPED_AT_POINT),
+                            loadId = 9_000L + id,
+                            dstZone = zone.zoneId,
+                            loadDate = now,
+                            arrivalDate = now,
+                            departDate = null
                         )
                     )
                 }) { Text("Прибытие") }

@@ -19,6 +19,7 @@ import com.example.domain.model.LoadStatus
 import com.example.myapplication.presentation.icon.AppIcons
 import com.example.myapplication.presentation.icon.Bucket
 import com.example.myapplication.presentation.icon.Bucket.Bucket
+import com.example.myapplication.presentation.icon.SignalDisconnected
 import com.example.myapplication.presentation.icon.UnloadBucket
 import com.example.myapplication.presentation.icon.UnloadBucket.UnloadBucket
 import com.example.myapplication.presentation.util.IconSize
@@ -88,7 +89,7 @@ fun bucketStatusLegendItem(status: BucketStatus?): StatusLegendItem = when (stat
         description = "Идёт разгрузка телеги в точке назначения."
     )
     BucketStatus.DISCONNECTED -> StatusLegendItem(
-        icon = Icons.Outlined.WifiOff,
+        icon = AppIcons.Outlined.SignalDisconnected,
         tint = StatusColors.Red,
         title = "Нет связи",
         description = "Телега отключена: связь с ней потеряна."

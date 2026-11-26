@@ -133,7 +133,7 @@ class DstPointListScreenTest {
         name = "Бетоновоз $id",
         zoneNumber = zone,
         isFull = true,
-        status = BucketStatus.MOVING,
+        statuses = BucketStatus.MOVING,
         loadId = 9_000L + id,
         dstZone = zone,
         loadDate = LocalDateTime.of(2026, 11, 19, 12, 0),

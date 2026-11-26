@@ -11,6 +11,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -55,24 +57,29 @@ enum class FullnessFilter(val title: String) {
  *                           (работает даже если статус выбран в списке).
  */
 data class BucketFilterState(
-    val selectedStatuses: Set<BucketStatus> = BucketStatus.entries.toSet(),
+    val selectedStatuses: Set<BucketStatus> = BucketStatus.entries.filter { it != BucketStatus.UNKNOWN }.toSet(),
     val fullnessFilter: FullnessFilter = FullnessFilter.ALL,
     val hideUnderRepair: Boolean = false
 ) {
     /**
      * Применяет фильтры к списку телег.
-     * Null-статусы трактуются как [BucketStatus.UNKNOWN] в соответствии с UI-маппингом.
+     *
+     * Логика по статусам: телега попадает в выборку, если хотя бы один из её
+     * активных статусов присутствует в [selectedStatuses] (OR-логика).
+     * Это соответствует семантике битовой маски — пользователь видит все телеги,
+     * обладающие интересующим его свойством.
+     *
+     * Фильтр "Скрывать ремонт" имеет приоритет и работает независимо от [selectedStatuses].
      */
     fun apply(buckets: List<Bucket>): List<Bucket> = buckets.filter { bucket ->
-        val effectiveStatus = bucket.status ?: BucketStatus.UNKNOWN
-        val statusMatch = effectiveStatus in selectedStatuses
+        val hasMatchingStatus = bucket.statuses.any { it in selectedStatuses }
         val fullnessMatch = when (fullnessFilter) {
             FullnessFilter.ALL -> true
             FullnessFilter.FULL -> bucket.isFull
             FullnessFilter.EMPTY -> !bucket.isFull
         }
-        val repairMatch = !(hideUnderRepair && effectiveStatus == BucketStatus.UNDER_REPAIR)
-        statusMatch && fullnessMatch && repairMatch
+        val repairMatch = !(hideUnderRepair && bucket.hasStatus(BucketStatus.UNDER_REPAIR))
+        hasMatchingStatus && fullnessMatch && repairMatch
     }
 }
 
@@ -97,7 +104,9 @@ private val BucketFilterStateSaver: Saver<BucketFilterState, Any> = Saver(
         val fullness = FullnessFilter.entries.find { it.name == list[1] as String } ?: FullnessFilter.ALL
         val hideRepair = list[2] as Boolean
         BucketFilterState(
-            selectedStatuses = statuses.ifEmpty { BucketStatus.entries.toSet() },
+            selectedStatuses = statuses.ifEmpty {
+                BucketStatus.entries.filter { it != BucketStatus.UNKNOWN }.toSet()
+            },
             fullnessFilter = fullness,
             hideUnderRepair = hideRepair
         )
@@ -168,7 +177,9 @@ fun BucketScreen(
                     } else {
                         BucketList(
                             buckets = filteredBuckets,
-                            onLoadClick = viewModel::openLoadCard
+                            onLoadClick = viewModel::openLoadCard,
+                            onOpenBucketClick = viewModel::openBucket,
+                            onCloseBucketClick = viewModel::closeBucket
                         )
                     }
                 }
@@ -332,7 +343,7 @@ private fun BucketFilterDialog(
 
                 HorizontalDivider()
 
-                // 3. Статусы
+                // 3. Статусы (исключаем UNKNOWN из списка выбора)
                 Text(
                     text = "Статусы",
                     style = MaterialTheme.typography.titleSmall,
@@ -342,29 +353,31 @@ private fun BucketFilterDialog(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.Xs),
                     verticalArrangement = Arrangement.spacedBy(Spacing.Xs)
                 ) {
-                    BucketStatus.entries.forEach { status ->
-                        val item = bucketStatusLegendItem(status)
-                        FilterChip(
-                            selected = status in state.selectedStatuses,
-                            onClick = {
-                                val newStatuses = if (status in state.selectedStatuses) {
-                                    state.selectedStatuses - status
-                                } else {
-                                    state.selectedStatuses + status
+                    BucketStatus.entries
+                        .filter { it != BucketStatus.UNKNOWN }
+                        .forEach { status ->
+                            val item = bucketStatusLegendItem(status)
+                            FilterChip(
+                                selected = status in state.selectedStatuses,
+                                onClick = {
+                                    val newStatuses = if (status in state.selectedStatuses) {
+                                        state.selectedStatuses - status
+                                    } else {
+                                        state.selectedStatuses + status
+                                    }
+                                    onStateChange(state.copy(selectedStatuses = newStatuses))
+                                },
+                                label = { Text(item.title) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = item.icon,
+                                        contentDescription = null,
+                                        tint = item.tint,
+                                        modifier = Modifier.size(IconSize.Sm)
+                                    )
                                 }
-                                onStateChange(state.copy(selectedStatuses = newStatuses))
-                            },
-                            label = { Text(item.title) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = item.icon,
-                                    contentDescription = null,
-                                    tint = item.tint,
-                                    modifier = Modifier.size(IconSize.Sm)
-                                )
-                            }
-                        )
-                    }
+                            )
+                        }
                 }
             }
         },
@@ -382,11 +395,15 @@ private fun BucketFilterDialog(
  *
  * @param buckets Список моделей телег.
  * @param onLoadClick Колбэк клика по номеру заявки (открытие карточки заявки).
+ * @param onOpenBucketClick Колбэк команды начала разгрузки телеги.
+ * @param onCloseBucketClick Колбэк команды завершения разгрузки телеги.
  */
 @Composable
 private fun BucketList(
     buckets: List<Bucket>,
-    onLoadClick: (Long) -> Unit
+    onLoadClick: (Long) -> Unit,
+    onOpenBucketClick: (Int) -> Unit,
+    onCloseBucketClick: (Int) -> Unit
 ) {
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -400,6 +417,8 @@ private fun BucketList(
             BucketItem(
                 bucket = bucket,
                 onLoadClick = onLoadClick,
+                onOpenBucketClick = onOpenBucketClick,
+                onCloseBucketClick = onCloseBucketClick,
                 onExpandRequest = {
                     coroutineScope.launch {
                         lazyListState.animateScrollToItem(index)
@@ -417,12 +436,16 @@ private fun BucketList(
  *
  * @param bucket Модель бетоновозной телеги.
  * @param onLoadClick Колбэк клика по номеру заявки (открытие карточки заявки).
+ * @param onOpenBucketClick Колбэк команды начала разгрузки телеги.
+ * @param onCloseBucketClick Колбэк команды завершения разгрузки телеги.
  * @param onExpandRequest Колбэк, вызываемый при раскрытии элемента для инициирования прокрутки.
  */
 @Composable
 private fun BucketItem(
     bucket: Bucket,
     onLoadClick: (Long) -> Unit,
+    onOpenBucketClick: (Int) -> Unit,
+    onCloseBucketClick: (Int) -> Unit,
     onExpandRequest: () -> Unit
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(false) }
@@ -461,10 +484,19 @@ private fun BucketItem(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(Spacing.Md))
+                // Иконки управления разгрузкой — всегда активны.
+                // LockOpen вызывает openBucket, Lock вызывает closeBucket.
+                BucketActionIcons(
+                    onOpenClick = { onOpenBucketClick(bucket.id) },
+                    onCloseClick = { onCloseBucketClick(bucket.id) }
+                )
+
+                Spacer(modifier = Modifier.width(Spacing.Lg))
                 IsFullIcon(isFull = bucket.isFull)
                 Spacer(modifier = Modifier.width(Spacing.Md))
-                BucketStatusIcon(status = bucket.status)
+                // Для иконки статуса используем приоритетный статус из множества —
+                // он определяет, какая иконка/цвет будут показаны в списке.
+                BucketStatusIcon(status = bucket.primaryStatus)
                 Spacer(modifier = Modifier.width(Spacing.Sm))
                 Icon(
                     imageVector = Icons.Filled.KeyboardArrowDown,
@@ -508,6 +540,43 @@ private fun IsFullIcon(isFull: Boolean) {
 }
 
 /**
+ * Иконки управления разгрузкой телеги (начать/завершить).
+ *
+ * Показывает обе иконки рядом: LockOpen для начала разгрузки и Lock для завершения.
+ * Обе иконки всегда активны и кликабельны.
+ *
+ * @param onOpenClick Колбэк клика по иконке начала разгрузки.
+ * @param onCloseClick Колбэк клика по иконке завершения разгрузки.
+ */
+@Composable
+private fun BucketActionIcons(
+    onOpenClick: () -> Unit,
+    onCloseClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Sm)
+    ) {
+        Icon(
+            imageVector = Icons.Default.LockOpen,
+            contentDescription = "Начать разгрузку",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .size(IconSize.Md)
+                .clickable(onClickLabel = "Начать разгрузку", onClick = onOpenClick)
+        )
+        Icon(
+            imageVector = Icons.Default.Lock,
+            contentDescription = "Завершить разгрузку",
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier
+                .size(IconSize.Md)
+                .clickable(onClickLabel = "Завершить разгрузку", onClick = onCloseClick)
+        )
+    }
+}
+
+/**
  * Детальная информация о телеге в раскрытом состоянии.
  *
  * @param bucket Модель бетоновозной телеги.
@@ -532,6 +601,26 @@ private fun ExpandedBucketContent(
         )
         InfoRow(label = "Текущий участок", value = bucket.zoneNumber.toString())
         InfoRow(label = "Участок назначения", value = bucket.dstZone.toString())
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.Xs))
+
+        // Секция статусов с ограничением до 3 статусов
+        Text(
+            text = "Статусы",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        if (bucket.statuses.isNotEmpty()) {
+            val displayedStatuses = bucket.statuses.take(3)
+            val hasMore = bucket.statuses.size > 3
+            val statusText = displayedStatuses.joinToString(", ") {
+                bucketStatusLegendItem(it).title
+            } + if (hasMore) " и ещё ${bucket.statuses.size - 3}" else ""
+            InfoRow(label = "Активные статусы", value = statusText)
+        } else {
+            InfoRow(label = "Активные статусы", value = "Нет данных")
+        }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.Xs))
 
@@ -643,12 +732,15 @@ private fun InfoRow(label: String, value: String) {
 /**
  * Визуальные обозначения статусов бетоновозной телеги.
  *
+ * В новой модели [Bucket] статусы хранятся как множество, но для компактного
+ * отображения в списке используется приоритетный статус ([Bucket.primaryStatus]).
+ *
  * @param status Статус телеги ([BucketStatus]).
  * @param modifier Модификатор.
  */
 @Composable
 fun BucketStatusIcon(
-    status: BucketStatus?,
+    status: BucketStatus,
     modifier: Modifier = Modifier
 ) {
     val item = bucketStatusLegendItem(status = status)

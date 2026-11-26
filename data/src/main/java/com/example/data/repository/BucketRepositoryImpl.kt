@@ -24,4 +24,22 @@ class BucketRepositoryImpl @Inject constructor(
         }
         return dto.map { it.toDomain() }
     }
+
+    override suspend fun openBucket(id: Int) {
+        safeRepositoryCall(
+            contextMessage = "Ошибка при отправке команды начала разгрузки телеги",
+            onAuthError = { localDataSource.clearSession() }
+        ) {
+            remoteDataSource.openBucket(id)
+        }
+    }
+
+    override suspend fun closeBucket(id: Int) {
+        safeRepositoryCall(
+            contextMessage = "Ошибка при отправке команды завершения разгрузки телеги",
+            onAuthError = { localDataSource.clearSession() }
+        ) {
+            remoteDataSource.closeBucket(id)
+        }
+    }
 }

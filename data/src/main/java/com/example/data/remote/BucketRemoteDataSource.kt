@@ -21,5 +21,21 @@ class BucketRemoteDataSource @Inject constructor(
      */
     suspend fun getBucketList(): List<BucketDto> = safeApiCall { api.getBuckets() }
 
+    /**
+     * Отправляет команду начала разгрузки бетоновозной телеги.
+     *
+     * @param id код бетоновозной телеги.
+     */
+    suspend fun openBucket(id: Int) {
+        safeApiCall<Unit> { api.putBucketOpen(id) }
+    }
 
+    /**
+     * Отправляет команду завершения разгрузки бетоновозной телеги.
+     *
+     * @param id код бетоновозной телеги.
+     */
+    suspend fun closeBucket(id: Int) {
+        safeApiCall { api.putBucketClose(id) }
+    }
 }

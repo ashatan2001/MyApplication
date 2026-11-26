@@ -7,8 +7,10 @@ import com.example.domain.exception.NetworkConnectionException
 import com.example.domain.exception.SessionExpiredDomainException
 import com.example.domain.model.Bucket
 import com.example.domain.model.Load
+import com.example.domain.usecase.CloseBucketUseCase
 import com.example.domain.usecase.GetBucketListUseCase
 import com.example.domain.usecase.GetLoadByIdUseCase
+import com.example.domain.usecase.OpenBucketUseCase
 import com.example.domain.util.CustomResult
 import com.example.domain.util.SmartPoller
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -71,6 +73,8 @@ sealed class LoadCardUiState {
 class BucketViewModel @Inject constructor(
     private val getBucketListUseCase: GetBucketListUseCase,
     private val getLoadByIdUseCase: GetLoadByIdUseCase,
+    private val openBucketUseCase: OpenBucketUseCase,
+    private val closeBucketUseCase: CloseBucketUseCase,
     private val authEventBus: AuthEventBus
 ) : ViewModel() {
 
@@ -197,6 +201,51 @@ class BucketViewModel @Inject constructor(
                         result.exception.message ?: "Неизвестная ошибка"
                     }
                     _uiState.value = BucketUiState.Error(message)
+                }
+            }
+        }
+    }
+
+    /**
+     * Отправляет команду начала разгрузки бетоновозной телеги и обновляет список.
+     *
+     * @param bucketId Код бетоновозной телеги.
+     */
+    fun openBucket(bucketId: Int) {
+        viewModelScope.launch {
+            when (val result = openBucketUseCase(bucketId)) {
+                is CustomResult.Success -> {
+                    Timber.d("Команда начала разгрузки телеги $bucketId успешно отправлена")
+                    handleResult(getBucketListUseCase())
+                }
+                is CustomResult.Error -> {
+                    if (result.exception is SessionExpiredDomainException) {
+                        return@launch
+                    }
+                    Timber.w(result.exception, "Ошибка отправки команды начала разгрузки телеги $bucketId")
+                    // Здесь можно обновить UI-стейт для показа снэкбара с ошибкой
+                }
+            }
+        }
+    }
+
+    /**
+     * Отправляет команду завершения разгрузки бетоновозной телеги и обновляет список.
+     *
+     * @param bucketId Код бетоновозной телеги.
+     */
+    fun closeBucket(bucketId: Int) {
+        viewModelScope.launch {
+            when (val result = closeBucketUseCase(bucketId)) {
+                is CustomResult.Success -> {
+                    Timber.d("Команда завершения разгрузки телеги $bucketId успешно отправлена")
+                    handleResult(getBucketListUseCase())
+                }
+                is CustomResult.Error -> {
+                    if (result.exception is SessionExpiredDomainException) {
+                        return@launch
+                    }
+                    Timber.w(result.exception, "Ошибка отправки команды завершения разгрузки телеги $bucketId")
                 }
             }
         }

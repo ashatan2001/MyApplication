@@ -16,7 +16,7 @@ fun BucketDto.toDomain(): Bucket {
         name = name,
         zoneNumber = zoneNumber,
         isFull = isFull,
-        status = BucketStatus.fromCode(status),
+        statuses = BucketStatus.fromCode(status),
         loadId = loadId,
         dstZone = dstZone,
         loadDate = parseDate(loadDate),

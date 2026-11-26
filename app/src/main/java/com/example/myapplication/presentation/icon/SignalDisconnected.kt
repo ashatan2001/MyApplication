@@ -1,103 +1,50 @@
 package com.example.myapplication.presentation.icon
 
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
 
-@Suppress("CheckReturnValue")
-public val signal_disconnected: ImageVector
-    get() {
-        if (_signal_disconnected != null) {
-            return _signal_disconnected!!
-        }
-        _signal_disconnected =
-            ImageVector.Builder(
-                name = "signal_disconnected",
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            )
-                .apply {
-                    path(
-                        fill = SolidColor(Color.Black),
-                        fillAlpha = 1f,
-                        stroke = null,
-                        strokeAlpha = 1f,
-                        strokeLineWidth = 1f,
-                        strokeLineCap = StrokeCap.Butt,
-                        strokeLineJoin = StrokeJoin.Bevel,
-                        strokeLineMiter = 1f,
-                        pathFillType = PathFillType.Companion.NonZero,
-                    ) {
-                        moveTo(17.1f, 14.27f)
-                        lineTo(15.88f, 13.05f)
-                        quadToRelative(0.55f, -0.65f, 0.84f, -1.42f)
-                        reflectiveQuadTo(17f, 10f)
-                        quadTo(17f, 9f, 16.6f, 8.1f)
-                        reflectiveQuadTo(15.5f, 6.5f)
-                        lineTo(16.7f, 5.3f)
-                        quadToRelative(0.95f, 0.95f, 1.48f, 2.15f)
-                        reflectiveQuadTo(18.7f, 10f)
-                        quadToRelative(0f, 1.2f, -0.42f, 2.29f)
-                        reflectiveQuadTo(17.1f, 14.27f)
-                        close()
-                        moveTo(14.13f, 11.3f)
-                        lineTo(10.7f, 7.88f)
-                        quadTo(11f, 7.7f, 11.33f, 7.6f)
-                        reflectiveQuadTo(12f, 7.5f)
-                        quadToRelative(1.05f, 0f, 1.78f, 0.72f)
-                        reflectiveQuadTo(14.5f, 10f)
-                        quadToRelative(0f, 0.35f, -0.1f, 0.67f)
-                        reflectiveQuadTo(14.13f, 11.3f)
-                        close()
-                        moveToRelative(5.38f, 5.35f)
-                        lineToRelative(-1.2f, -1.2f)
-                        quadToRelative(1f, -1.13f, 1.5f, -2.54f)
-                        reflectiveQuadTo(20.3f, 10f)
-                        quadToRelative(0f, -1.65f, -0.61f, -3.19f)
-                        quadTo(19.08f, 5.27f, 17.9f, 4.1f)
-                        lineTo(19.1f, 2.9f)
-                        quadToRelative(1.38f, 1.45f, 2.14f, 3.28f)
-                        reflectiveQuadTo(22f, 10f)
-                        quadToRelative(0f, 1.85f, -0.64f, 3.56f)
-                        reflectiveQuadTo(19.5f, 16.65f)
-                        close()
-                        moveToRelative(0.28f, 5.95f)
-                        lineTo(13f, 15.83f)
-                        verticalLineTo(21f)
-                        horizontalLineTo(11f)
-                        verticalLineTo(13.83f)
-                        lineTo(7f, 9.85f)
-                        quadTo(7f, 9.9f, 7f, 9.92f)
-                        reflectiveQuadTo(7f, 10f)
-                        quadToRelative(0f, 1f, 0.4f, 1.9f)
-                        reflectiveQuadToRelative(1.1f, 1.6f)
-                        lineTo(7.3f, 14.7f)
-                        quadTo(6.35f, 13.75f, 5.83f, 12.55f)
-                        reflectiveQuadTo(5.3f, 10f)
-                        quadTo(5.3f, 9.57f, 5.35f, 9.17f)
-                        reflectiveQuadTo(5.53f, 8.35f)
-                        lineTo(4.25f, 7.07f)
-                        quadTo(3.98f, 7.8f, 3.84f, 8.52f)
-                        reflectiveQuadTo(3.7f, 10f)
-                        quadToRelative(0f, 1.65f, 0.61f, 3.19f)
-                        reflectiveQuadTo(6.1f, 15.9f)
-                        lineTo(4.9f, 17.1f)
-                        quadTo(3.53f, 15.65f, 2.76f, 13.83f)
-                        reflectiveQuadTo(2f, 10f)
-                        quadTo(2f, 8.9f, 2.24f, 7.84f)
-                        reflectiveQuadTo(2.95f, 5.77f)
-                        lineTo(1.4f, 4.22f)
-                        lineTo(2.8f, 2.8f)
-                        lineTo(21.2f, 21.2f)
-                        lineToRelative(-1.43f, 1.4f)
-                        close()
-                    }
-                }
-                .build()
-        return _signal_disconnected!!
-    }
-
-private var _signal_disconnected: ImageVector? = null
+/**
+ * Иконка «Нет сигнала / отключено соединение» — стиль Material Symbols.
+ *
+ * Перечёркнутая антенна с тремя дугами радиосигнала. Сетка 24×24dp, сплошная заливка.
+ * Цвет — Color.Black, реальный tint задаётся через Icon (Material 3).
+ */
+val AppIcons.Outlined.SignalDisconnected: ImageVector by lazy {
+    ImageVector.Builder(
+        name = "SignalDisconnected",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        addPath(
+            pathData = addPathNodes(
+                "M17.1 14.27L15.88 13.05Q16.43 12.4 16.72 11.63T17 10Q17 9 16.6 8.1T15.5 6.5" +
+                        "L16.7 5.3Q17.65 6.25 18.18 7.45T18.7 10Q18.7 11.2 18.28 12.29T17.1 14.27Z" +
+                        "M14.13 11.3L10.7 7.88Q11 7.7 11.33 7.6T12 7.5Q13.05 7.5 13.78 8.22T14.5 10" +
+                        "Q14.5 10.35 14.4 10.67T14.13 11.3ZM19.51 16.65L18.31 15.45Q19.31 14.32 19.81 12.91" +
+                        "T20.3 10Q20.3 8.35 19.69 6.81Q19.08 5.27 17.9 4.1L19.1 2.9Q20.48 4.35 21.24 6.18" +
+                        "T22 10Q22 11.85 21.36 13.56T19.5 16.65ZM19.79 22.6L13 15.83V21H11V13.83L7 9.85" +
+                        "Q7 9.9 7 9.92T7 10Q7 11 7.4 11.9T8.5 13.5L7.3 14.7Q6.35 13.75 5.83 12.55T5.3 10" +
+                        "Q5.3 9.57 5.35 9.17T5.53 8.35L4.25 7.07Q3.98 7.8 3.84 8.52T3.7 10Q3.7 11.65 4.31 13.19" +
+                        "T6.1 15.9L4.9 17.1Q3.53 15.65 2.76 13.83T2 10Q2 8.9 2.24 7.84T2.95 5.77L1.4 4.22" +
+                        "L2.8 2.8L21.2 21.2L19.77 22.6Z",
+            ),
+            fill = SolidColor(Color.Black),
+            fillAlpha = 1f,
+            stroke = null,
+            strokeAlpha = 1f,
+            strokeLineWidth = 1f,
+            strokeLineCap = StrokeCap.Butt,
+            strokeLineJoin = StrokeJoin.Bevel,
+            strokeLineMiter = 1f,
+            pathFillType = PathFillType.NonZero,
+        )
+    }.build()
+}
