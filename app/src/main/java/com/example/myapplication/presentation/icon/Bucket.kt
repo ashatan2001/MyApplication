@@ -1,180 +1,86 @@
 package com.example.myapplication.presentation.icon
 
-import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
 
 /**
- * Бетоновозная телега — вариант Filled.
+ * Бетоновозная телега (Material Symbols rounded, 24×24).
  *
- * Геометрия (сетка 24 dp, живое поле 20 dp):
- * - бункер — перевёрнутая трапеция ≈16.7×12.3 dp со скруглёнными углами;
- * - рама — 16.8×2.8 dp со скруглёнными торцами (ось рамы y = 17.7);
- * - колёса — Ø4.6 dp (колея 9.2 dp) с отверстиями ступиц Ø2.0 dp;
- *   центры колёс лежат на оси рамы, поэтому колесо наполовину заходит на раму.
+ * Геометрия (сетка 24×24, обводка 2, круглые торцы и соединения):
+ * - бункер: перевёрнутая трапеция, верх 18 (x3..21) на y4, низ 6 (x9..15) на y15;
+ *   внешний габарит 20×13 (x2..22, y3..16) — по ширине точно в live area;
+ * - рама: капсула 16×2 (x4..20, y14..16); её середина y15 — нижняя кромка бункера,
+ *   т.е. рама сомкнута с бункером и заменяет её;
+ * - колёса: залитые диски Ø4, центры (7;19)/(17;19), база 10, зазор рама↔колесо 1;
+ * - общий габарит по вертикали y3..21 — центр композиции (12;12).
  *
- * Каждое колесо с ступицей вынесено в отдельный путь с [PathFillType.EvenOdd]:
- * правило чётности вырезает только ступицу, а перекрытие колеса с рамой и бункером
- * просто закрашивается — без паразитных вырезов, которые возникают, если
- * пересекающиеся фигуры лежат в одном even-odd пути.
+ * Filled и Outlined построены по одним осевым линиям, поэтому внешние контуры
+ * совпадают; в Outlined у бункера нет нижней кромки — её заменяет рама.
+ * Цвет — [Color.Black], реальный tint задаётся через Icon (Material 3).
  */
-public val Icons.Filled.Bucket: ImageVector
-    get() {
-        if (_BucketFilled != null) return _BucketFilled!!
-        _BucketFilled = ImageVector.Builder(
-            name = "Filled.Bucket",
+object Bucket {
+
+    /** Filled: бункер, рама и колёса залиты. */
+    val AppIcons.Filled.Bucket: ImageVector by lazy { build(filled = true) }
+
+    /** Outlined: бункер и рама — обводка 2, колёса залиты. */
+    val AppIcons.Outlined.Bucket: ImageVector by lazy { build(filled = false) }
+
+    /**
+     * Собирает [ImageVector] на сетке 24×24.
+     *
+     * @param filled true — бункер залит (fill + stroke одним цветом дают скруглённые
+     *               внешние углы и общий силуэт с Outlined),
+     *               false — только контур бункера и рамы.
+     */
+    private fun build(filled: Boolean): ImageVector =
+        ImageVector.Builder(
+            name = if (filled) "BucketFilled" else "BucketOutlined",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
             viewportWidth = 24f,
-            viewportHeight = 24f
+            viewportHeight = 24f,
         ).apply {
-            // Бункер: перевёрнутая трапеция со скруглёнными углами (литая).
-            path(fill = SolidColor(Color(0xFF000000))) {
-                moveTo(4.5f, 4.0f)
-                lineTo(19.5f, 4.0f)
-                arcTo(1f, 1f, 0f, false, true, 20.35f, 5.45f)
-                lineTo(16.3f, 15.75f)
-                arcTo(1f, 1f, 0f, false, true, 15.4f, 16.3f)
-                lineTo(8.6f, 16.3f)
-                arcTo(1f, 1f, 0f, false, true, 7.7f, 15.75f)
-                lineTo(3.65f, 5.45f)
-                arcTo(1f, 1f, 0f, false, true, 4.5f, 4.0f)
-                close()
+            if (filled) {
+                // Бункер: fill + stroke тем же цветом — скругление внешних углов (r=1)
+                // и единый силуэт с Outlined; перекрытие одного цвета невидно.
+                addPath(
+                    pathData = addPathNodes("M3 4L21 4L15 15L9 15Z"),
+                    fill = SolidColor(Color.Black),
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                )
+            } else {
+                // Бункер: только контур, без нижней кромки (её заменяет рама).
+                addPath(
+                    pathData = addPathNodes("M9 15L3 4L21 4L15 15"),
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                )
             }
-            // Рама со скруглёнными торцами (отдельный путь — см. KDoc).
-            path(fill = SolidColor(Color(0xFF000000))) {
-                moveTo(4.6f, 16.3f)
-                lineTo(19.4f, 16.3f)
-                arcTo(1f, 1f, 0f, false, true, 20.4f, 17.3f)
-                lineTo(20.4f, 18.1f)
-                arcTo(1f, 1f, 0f, false, true, 19.4f, 19.1f)
-                lineTo(4.6f, 19.1f)
-                arcTo(1f, 1f, 0f, false, true, 3.6f, 18.1f)
-                lineTo(3.6f, 17.3f)
-                arcTo(1f, 1f, 0f, false, true, 4.6f, 16.3f)
-                close()
-            }
-            // Левое колесо (центр 7.4; 17.7, радиус 2.3) со ступицей радиуса 1.0.
-            path(
-                fill = SolidColor(Color(0xFF000000)),
-                pathFillType = PathFillType.EvenOdd
-            ) {
-                moveTo(9.7f, 17.7f)
-                arcTo(2.3f, 2.3f, 0f, false, true, 5.1f, 17.7f)
-                arcTo(2.3f, 2.3f, 0f, false, true, 9.7f, 17.7f)
-                close()
-                // Отверстие ступицы — вырезается правилом even-odd.
-                moveTo(8.4f, 17.7f)
-                arcTo(1f, 1f, 0f, false, true, 6.4f, 17.7f)
-                arcTo(1f, 1f, 0f, false, true, 8.4f, 17.7f)
-                close()
-            }
-            // Правое колесо (центр 16.6; 17.7, радиус 2.3) со ступицей радиуса 1.0.
-            path(
-                fill = SolidColor(Color(0xFF000000)),
-                pathFillType = PathFillType.EvenOdd
-            ) {
-                moveTo(18.9f, 17.7f)
-                arcTo(2.3f, 2.3f, 0f, false, true, 14.3f, 17.7f)
-                arcTo(2.3f, 2.3f, 0f, false, true, 18.9f, 17.7f)
-                close()
-                // Отверстие ступицы — вырезается правилом even-odd.
-                moveTo(17.6f, 17.7f)
-                arcTo(1f, 1f, 0f, false, true, 15.6f, 17.7f)
-                arcTo(1f, 1f, 0f, false, true, 17.6f, 17.7f)
-                close()
-            }
-        }.build()
-        return _BucketFilled!!
-    }
-
-/** Ленивый кэш ассета, чтобы не пересобирать ImageVector на каждой рекомпозиции. */
-private var _BucketFilled: ImageVector? = null
-
-/**
- * Бетоновозная телега — вариант Outlined.
- *
- * Геометрия совпадает с [Icons.Filled.Bucket]; контур (штрих 2 dp) получает
- * только бункер — его путь втянут на 1 dp (половину штриха), чтобы внешний
- * край обводки совпадал с силуэтом залитой версии. Рама и колёса остаются
- * литыми, колёса наполовину заходят на раму и имеют отверстия ступиц.
- *
- * Ассет намеренно рисуется чёрным: раскраска задаётся через `Icon(tint = ...)`.
- */
-public val Icons.Outlined.Bucket: ImageVector
-    get() {
-        if (_BucketOutlined != null) return _BucketOutlined!!
-        _BucketOutlined = ImageVector.Builder(
-            name = "Outlined.Bucket",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f
-        ).apply {
-            // Бункер: контурная трапеция без дублей вершин;
-            // скругление углов — за счёт StrokeJoin.Round.
-            path(
-                stroke = SolidColor(Color(0xFF000000)),
+            // Рама: капсула 16×2; середина (y15) совпадает с нижней кромкой бункера.
+            addPath(
+                pathData = addPathNodes("M5 15H19"),
+                stroke = SolidColor(Color.Black),
                 strokeLineWidth = 2f,
                 strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(4.5f, 5.0f)
-                lineTo(19.5f, 5.0f)
-                lineTo(15.4f, 15.3f)
-                lineTo(8.6f, 15.3f)
-                close()
-            }
-            // Рама — идентична Filled-варианту.
-            path(fill = SolidColor(Color(0xFF000000))) {
-                moveTo(4.6f, 16.3f)
-                lineTo(19.4f, 16.3f)
-                arcTo(1f, 1f, 0f, false, true, 20.4f, 17.3f)
-                lineTo(20.4f, 18.1f)
-                arcTo(1f, 1f, 0f, false, true, 19.4f, 19.1f)
-                lineTo(4.6f, 19.1f)
-                arcTo(1f, 1f, 0f, false, true, 3.6f, 18.1f)
-                lineTo(3.6f, 17.3f)
-                arcTo(1f, 1f, 0f, false, true, 4.6f, 16.3f)
-                close()
-            }
-            // Левое колесо со ступицей — идентично Filled-варианту.
-            path(
-                fill = SolidColor(Color(0xFF000000)),
-                pathFillType = PathFillType.EvenOdd
-            ) {
-                moveTo(9.7f, 17.7f)
-                arcTo(2.3f, 2.3f, 0f, false, true, 5.1f, 17.7f)
-                arcTo(2.3f, 2.3f, 0f, false, true, 9.7f, 17.7f)
-                close()
-                moveTo(8.4f, 17.7f)
-                arcTo(1f, 1f, 0f, false, true, 6.4f, 17.7f)
-                arcTo(1f, 1f, 0f, false, true, 8.4f, 17.7f)
-                close()
-            }
-            // Правое колесо со ступицей — идентично Filled-варианту.
-            path(
-                fill = SolidColor(Color(0xFF000000)),
-                pathFillType = PathFillType.EvenOdd
-            ) {
-                moveTo(18.9f, 17.7f)
-                arcTo(2.3f, 2.3f, 0f, false, true, 14.3f, 17.7f)
-                arcTo(2.3f, 2.3f, 0f, false, true, 18.9f, 17.7f)
-                close()
-                moveTo(17.6f, 17.7f)
-                arcTo(1f, 1f, 0f, false, true, 15.6f, 17.7f)
-                arcTo(1f, 1f, 0f, false, true, 17.6f, 17.7f)
-                close()
-            }
+            )
+            // Колёса: два залитых диска Ø4, центры (7;19)/(17;19).
+            addPath(
+                pathData = addPathNodes(
+                    "M5 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" +
+                            "M15 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"
+                ),
+                fill = SolidColor(Color.Black),
+            )
         }.build()
-        return _BucketOutlined!!
-    }
-
-/** Ленивый кэш ассета, чтобы не пересобирать ImageVector на каждой рекомпозиции. */
-private var _BucketOutlined: ImageVector? = null
+}

@@ -19,7 +19,6 @@ import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.presentation.navigation.NavGraph
 import com.example.myapplication.presentation.navigation.Routers
 import com.example.myapplication.presentation.navigation.lightStatusBarRoutes
-import com.example.myapplication.presentation.navigation.navigateClearingBackStack
 import com.example.myapplication.presentation.util.StatusBarIconAppearance
 import com.example.myapplication.presentation.viewmodel.SessionViewModel
 import com.example.myapplication.ui.theme.MyApplicationTheme

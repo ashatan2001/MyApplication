@@ -1,7 +1,6 @@
 package com.example.domain.usecase
 
 import com.example.domain.exception.AppException
-import com.example.domain.exception.DstPointNotFoundException
 import com.example.domain.model.Bucket
 import com.example.domain.repository.BucketRepository
 import com.example.domain.util.CustomResult

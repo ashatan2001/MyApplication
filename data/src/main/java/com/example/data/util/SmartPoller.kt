@@ -2,15 +2,10 @@ package com.example.domain.util
 
 import com.example.domain.exception.AppException
 import com.example.domain.exception.SessionExpiredDomainException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 /**

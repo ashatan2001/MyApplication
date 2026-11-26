@@ -2,7 +2,6 @@ package com.example.domain.repository
 
 import com.example.domain.model.Load
 import com.example.domain.model.LoadUpdateRequest
-import com.example.domain.model.TaskRequest
 
 /**
  * Репозиторий для управления очередью на отгрузочных терминалах.

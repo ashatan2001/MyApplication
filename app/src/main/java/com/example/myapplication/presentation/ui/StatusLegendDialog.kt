@@ -1,36 +1,13 @@
 package com.example.myapplication.presentation.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Help
-import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.BackHand
-import androidx.compose.material.icons.filled.Construction
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.Scale
-import androidx.compose.material.icons.outlined.Cancel
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Downloading
-import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.WifiOff
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,7 +16,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import com.example.domain.model.BucketStatus
 import com.example.domain.model.LoadStatus
+import com.example.myapplication.presentation.icon.AppIcons
 import com.example.myapplication.presentation.icon.Bucket
+import com.example.myapplication.presentation.icon.Bucket.Bucket
+import com.example.myapplication.presentation.icon.UnloadBucket
+import com.example.myapplication.presentation.icon.UnloadBucket.UnloadBucket
 import com.example.myapplication.presentation.util.IconSize
 import com.example.myapplication.presentation.util.Spacing
 import com.example.myapplication.presentation.util.StatusColors
@@ -101,7 +82,7 @@ fun bucketStatusLegendItem(status: BucketStatus?): StatusLegendItem = when (stat
         description = "Телега остановлена и зафиксирована в произвольной точке."
     )
     BucketStatus.UNLOADING -> StatusLegendItem(
-        icon = Icons.Outlined.Downloading,
+        icon = AppIcons.Outlined.UnloadBucket,
         tint = StatusColors.Green,
         title = "Разгрузка",
         description = "Идёт разгрузка телеги в точке назначения."
@@ -140,14 +121,14 @@ fun bucketStatusLegendItem(status: BucketStatus?): StatusLegendItem = when (stat
  */
 fun bucketFullnessLegendItem(isFull: Boolean): StatusLegendItem = if (isFull) {
     StatusLegendItem(
-        icon = Icons.Filled.Bucket,
+        icon = AppIcons.Filled.Bucket,
         tint = StatusColors.Green,
         title = "Загружена",
         description = "Телега загружена."
     )
 } else {
     StatusLegendItem(
-        icon = Icons.Outlined.Bucket,
+        icon = AppIcons.Outlined.Bucket,
         tint = StatusColors.Gray,
         title = "Пуста",
         description = "Телега пуста."

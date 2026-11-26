@@ -17,7 +17,7 @@ interface DstPointApi {
     /**
      * Получение информацию о точке выгрузки бетона.
      *
-     * @param zoneid  код точки выгрузки бетона.
+     * @param zoneId код точки выгрузки бетона.
      * @return [Response<DstPointDto>] с данными точки выгрузки бетона.
      *
      * Коды ответов сервера:
@@ -29,8 +29,8 @@ interface DstPointApi {
      * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
      * - 5xx — внутренняя ошибка получения информации о точках разгрузки
      */
-    @GET("api/apb/dst-points/{zoneid}")
-    suspend fun getDstPoint(@Path("zoneid") id: Int): Response<DstPointDto>
+    @GET("api/apb/dst-points/{zoneId}")
+    suspend fun getDstPoint(@Path("zoneId") id: Int): Response<DstPointDto>
 
     /**
      * Получение полного списка точек выгрузки бетона.

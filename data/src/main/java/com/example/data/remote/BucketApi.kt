@@ -4,6 +4,8 @@ import com.example.data.dto.BucketDto
 import com.example.data.util.safeApiCall
 import retrofit2.Response
 import retrofit2.http.GET
+import retrofit2.http.PUT
+import retrofit2.http.Path
 
 /**
  * Retrofit API для операций c заявками на производство ЖБИ.
@@ -29,4 +31,40 @@ interface BucketApi {
     @GET("api/apb/buckets")
     suspend fun getBuckets(): Response<List<BucketDto>>
 
+    /**
+     * Команда начала разгрузки бетоновозной телеги.
+     *
+     * @param bucketId код бетоновозной телеги
+     * @return [Response<Boolean>] признак загруженности телеги.
+     *
+     * Коды ответов сервера:
+     * - 200 — успешное выполнение команды (в теле запроса JSON)
+     * - 400 — некорректно сформирован запрос
+     * - 401 — необходимо выполнить вход в систему
+     * - 403 — пользователь не имеет необходимых прав на просмотр информации об очереди на отгрузку
+     * - 404 — не найдены участки АПБ.
+     * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
+     * - 5xx — внутренняя ошибка сервера
+     */
+    @PUT("api/apb/buckets/{bucketId}/open")
+
+    suspend fun getBucketOpen(@Path("bucketId") id: Int): Response<Boolean>
+
+    /**
+     * Команда начала разгрузки бетоновозной телеги.
+     *
+     * @param bucketId код бетоновозной телеги
+     * @return [Response<Boolean>] признак загруженности телеги.
+     *
+     * Коды ответов сервера:
+     * - 200 — успешное выполнение команды (в теле запроса JSON)
+     * - 400 — некорректно сформирован запрос
+     * - 401 — необходимо выполнить вход в систему
+     * - 403 — пользователь не имеет необходимых прав на просмотр информации об очереди на отгрузку
+     * - 404 — не найдены участки АПБ.
+     * - 419 — истек срок действия Access Token. Необходимо восстановить его с помощью Refresh Token
+     * - 5xx — внутренняя ошибка сервера
+     */
+    @PUT("api/apb/buckets/{bucketId}/close")
+    suspend fun getBucketClose(@Path("bucketId") id: Int): Response<Boolean>
 }
